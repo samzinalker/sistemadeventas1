@@ -1,6 +1,7 @@
 <?php
 include('../app/config.php');
 include('../layout/sesion.php'); // Incluir layout/sesion.php para definir $nombres_sesion
+include('../layout/permisos.php'); // Validar permisos de administrador
 
 
 // Validar si la sesión está activa

@@ -1,6 +1,7 @@
 <?php
 include ($_SERVER['DOCUMENT_ROOT'] . '/sistemadeventas/app/config.php');
 include ('../layout/sesion.php');
+include('../layout/permisos.php'); // Validar permisos de administrador
 
 include ('../layout/parte1.php');
 

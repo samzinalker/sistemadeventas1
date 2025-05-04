@@ -1,7 +1,15 @@
 <?php
 include ('../app/config.php');
 include ('../layout/sesion.php');
+include('../layout/permisos.php'); // Validar permisos de administrador
 
+// Restringir acceso a usuarios no administradores
+if ($_SESSION['rol'] !== 'administrador') {
+    $_SESSION['mensaje'] = "No tienes permisos para acceder a esta página.";
+    $_SESSION['icono'] = "error";
+    header('Location: /sistemadeventas/index.php');
+    exit();
+}
 include ('../layout/parte1.php');
 include ('../app/controllers/roles/listado_de_roles.php');
 ?>

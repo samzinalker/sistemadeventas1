@@ -1,28 +1,9 @@
 <?php
 include('../app/config.php');
-include('../layout/sesion.php'); // Incluir layout/sesion.php para definir $nombres_sesion
+include('../layout/sesion.php');  // Validar sesión activa
+include('../layout/permisos.php'); // Validar permisos de administrador
 
 
-
-
-
-
-
-// Validar si la sesión está activa
-if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['rol'])) {
-    $_SESSION['mensaje'] = "Debes iniciar sesión para acceder a esta página.";
-    $_SESSION['icono'] = "error";
-    header('Location: /sistemadeventas/login');
-    exit();
-}
-
-// Validar el rol del usuario
-if (strtolower(trim($_SESSION['rol'])) !== 'administrador') {
-    $_SESSION['mensaje'] = "No tienes permisos para acceder a esta página.";
-    $_SESSION['icono'] = "error";
-    header('Location: /sistemadeventas/index.php');
-    exit();
-}
 
 include('../layout/parte1.php');
 include('../app/controllers/usuarios/listado_de_usuarios.php');
