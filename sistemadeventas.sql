@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-05-2025 a las 13:21:26
+-- Tiempo de generación: 04-05-2025 a las 17:04:35
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -205,7 +205,8 @@ CREATE TABLE `tb_roles` (
 
 INSERT INTO `tb_roles` (`id_rol`, `rol`, `fyh_creacion`, `fyh_actualizacion`) VALUES
 (1, 'administrador', '2025-04-10 20:05:00', '2025-04-22 21:05:00'),
-(7, 'vendedor', '2025-05-04 06:18:50', '0000-00-00 00:00:00');
+(7, 'vendedor', '2025-05-04 06:18:50', '0000-00-00 00:00:00'),
+(9, 'xdd', '2025-05-04 09:38:01', '2025-05-04 09:39:15');
 
 -- --------------------------------------------------------
 
@@ -333,7 +334,7 @@ ALTER TABLE `tb_ventas`
 -- AUTO_INCREMENT de la tabla `tb_almacen`
 --
 ALTER TABLE `tb_almacen`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_carrito`
@@ -369,7 +370,7 @@ ALTER TABLE `tb_proveedores`
 -- AUTO_INCREMENT de la tabla `tb_roles`
 --
 ALTER TABLE `tb_roles`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_usuarios`
