@@ -1,6 +1,7 @@
 <?php
 include('../app/config.php');
-session_start();
+include('../layout/sesion.php'); // Incluir layout/sesion.php para definir $nombres_sesion
+
 
 // Validar si la sesión está activa
 if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['rol'])) {
