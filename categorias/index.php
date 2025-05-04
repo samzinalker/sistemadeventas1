@@ -180,90 +180,66 @@ include ('../app/controllers/categorias/listado_de_categoria.php');
             buttons: [{
                 extend: 'collection',
                 text: 'Reportes',
-                orientation: 'landscape',
-                buttons: [{
-                    text: 'Copiar',
-                    extend: 'copy',
-                }, {
-                    extend: 'pdf'
-                },{
-                    extend: 'csv'
-                },{
-                    extend: 'excel'
-                },{
-                    text: 'Imprimir',
-                    extend: 'print'
-                }
+                buttons: [
+                    {
+                        text: 'Copiar',
+                        extend: 'copy',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: 'Exportar PDF',
+                        orientation: 'portrait', // <--- VERTICAL
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: [0, 1]
+                        },
+                        customize: function (doc) {
+                            doc.pageMargins = [20, 20, 20, 20];
+                            doc.defaultStyle.fontSize = 11;
+                            if (doc.content[0].text) {
+                                doc.content[0].alignment = 'center';
+                            }
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 12;
+                            var body = doc.content[1].table.body;
+                            for (var i = 1; i < body.length; i++) {
+                                for (var j = 0; j < body[i].length; j++) {
+                                    body[i][j].alignment = 'center';
+                                }
+                            }
+                            doc.content[1].table.widths = ['15%', '85%'];
+                        }
+                    },
+                    {
+                        extend: 'csv',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        text: 'Imprimir',
+                        extend: 'print',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    }
                 ]
             },
-                {
-                    extend: 'colvis',
-                    text: 'Visor de columnas',
-                    collectionLayout: 'fixed three-column'
-                }
+            {
+                extend: 'colvis',
+                text: 'Visor de columnas',
+                collectionLayout: 'fixed three-column'
+            }
             ],
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
     });
 </script>
-
-
-
-
-
-<!-- modal para registrar categorias -->
-<div class="modal fade" id="modal-create">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #1d36b6;color: white">
-                <h4 class="modal-title">Creación de una nueva categoría</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="">Nombre de la categoría <b>*</b></label>
-                            <input type="text" id="nombre_categoria" class="form-control">
-                            <small style="color: red;display: none" id="lbl_create">* Este campo es requerido</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btn_create">Guardar categoría</button>
-            </div>
-        </div>
-        <!-- /.modal-content -->
-    </div>
-    <!-- /.modal-dialog -->
-</div>
-<!-- /.modal -->
-
-<script>
-    $('#btn_create').click(function () {
-       // alert("guardar");
-        var nombre_categoria = $('#nombre_categoria').val();
-
-        if(nombre_categoria == ""){
-            $('#nombre_categoria').focus();
-            $('#lbl_create').css('display','block');
-        }else{
-            var url = "../app/controllers/categorias/registro_de_categorias.php";
-            $.get(url,{nombre_categoria:nombre_categoria},function (datos) {
-                $('#respuesta').html(datos);
-            });
-        }
-    });
-</script>
-<div id="respuesta"></div>
-
-
-
-
-
-
-
-

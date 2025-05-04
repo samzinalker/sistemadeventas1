@@ -157,20 +157,51 @@ include ('../app/controllers/almacen/listado_de_productos.php');
             buttons: [{
                 extend: 'collection',
                 text: 'Reportes',
-                orientation: 'landscape',
-                buttons: [{
-                    text: 'Copiar',
-                    extend: 'copy',
-                }, {
-                    extend: 'pdf'
-                },{
-                    extend: 'csv'
-                },{
-                    extend: 'excel'
-                },{
-                    text: 'Imprimir',
-                    extend: 'print'
-                }
+                buttons: [
+                    {
+                        text: 'Copiar',
+                        extend: 'copy',
+                    }, 
+                    {
+                        extend: 'pdf',
+                        text: 'Exportar PDF',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                        customize: function (doc) {
+                            // Márgenes pequeños
+                            doc.pageMargins = [10, 10, 10, 10];
+                            doc.defaultStyle.fontSize = 7;
+                            // Centrar el título
+                            if (doc.content[0].text) {
+                                doc.content[0].alignment = 'center';
+                            }
+                            // Centrar cabecera
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 8;
+                            // Centrar contenido de todas las celdas
+                            var body = doc.content[1].table.body;
+                            for (var i = 1; i < body.length; i++) {
+                                for (var j = 0; j < body[i].length; j++) {
+                                    body[i][j].alignment = 'center';
+                                }
+                            }
+                            // Columnas ancho automático
+                            doc.content[1].table.widths = Array(body[0].length + 1).join('*').split('');
+                        }
+                    },
+                    {
+                        extend: 'csv'
+                    },
+                    {
+                        extend: 'excel'
+                    },
+                    {
+                        text: 'Imprimir',
+                        extend: 'print'
+                    }
                 ]
             },
                 {
@@ -182,4 +213,3 @@ include ('../app/controllers/almacen/listado_de_productos.php');
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
     });
 </script>
-

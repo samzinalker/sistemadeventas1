@@ -318,30 +318,126 @@ include ('../app/controllers/compras/listado_de_compras.php');
             buttons: [{
                 extend: 'collection',
                 text: 'Reportes',
-                orientation: 'landscape',
-                buttons: [{
-                    text: 'Copiar',
-                    extend: 'copy',
-                }, {
-                    extend: 'pdf'
-                },{
-                    extend: 'csv'
-                },{
-                    extend: 'excel'
-                },{
-                    text: 'Imprimir',
-                    extend: 'print'
-                }
+                buttons: [
+                    {
+                        text: 'Copiar',
+                        extend: 'copy',
+                        exportOptions: {
+                            columns: ':not(:last-child)',
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if(column === 2 || column === 4) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = data;
+                                        var btn = div.querySelector("button");
+                                        if(btn) return btn.textContent.trim();
+                                        return div.textContent.trim();
+                                    }
+                                    return data;
+                                }
+                            }
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: 'Exportar PDF',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: ':not(:last-child)',
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if(column === 2 || column === 4) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = data;
+                                        var btn = div.querySelector("button");
+                                        if(btn) return btn.textContent.trim();
+                                        return div.textContent.trim();
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (doc) {
+                            doc.pageMargins = [10, 10, 10, 10];
+                            doc.defaultStyle.fontSize = 7;
+                            if (doc.content[0].text) {
+                                doc.content[0].alignment = 'center';
+                            }
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 8;
+                            var body = doc.content[1].table.body;
+                            for (var i = 1; i < body.length; i++) {
+                                for (var j = 0; j < body[i].length; j++) {
+                                    body[i][j].alignment = 'center';
+                                }
+                            }
+                            doc.content[1].table.widths = Array(body[0].length + 1).join('*').split('');
+                        }
+                    },
+                    {
+                        extend: 'csv',
+                        exportOptions: {
+                            columns: ':not(:last-child)',
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if(column === 2 || column === 4) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = data;
+                                        var btn = div.querySelector("button");
+                                        if(btn) return btn.textContent.trim();
+                                        return div.textContent.trim();
+                                    }
+                                    return data;
+                                }
+                            }
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        exportOptions: {
+                            columns: ':not(:last-child)',
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if(column === 2 || column === 4) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = data;
+                                        var btn = div.querySelector("button");
+                                        if(btn) return btn.textContent.trim();
+                                        return div.textContent.trim();
+                                    }
+                                    return data;
+                                }
+                            }
+                        }
+                    },
+                    {
+                        text: 'Imprimir',
+                        extend: 'print',
+                        exportOptions: {
+                            columns: ':not(:last-child)',
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if(column === 2 || column === 4) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = data;
+                                        var btn = div.querySelector("button");
+                                        if(btn) return btn.textContent.trim();
+                                        return div.textContent.trim();
+                                    }
+                                    return data;
+                                }
+                            }
+                        }
+                    }
                 ]
             },
-                {
-                    extend: 'colvis',
-                    text: 'Visor de columnas',
-                    collectionLayout: 'fixed three-column'
-                }
+            {
+                extend: 'colvis',
+                text: 'Visor de columnas',
+                collectionLayout: 'fixed three-column'
+            }
             ],
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
     });
-</script>
-
 </script>
