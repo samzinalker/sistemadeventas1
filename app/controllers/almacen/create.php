@@ -3,6 +3,19 @@
 // Incluir configuración y conexión a la base de datos
 include ('../../config.php');
 
+
+$query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
+$query->bindParam(':id_usuario', $id_usuario);
+$query->execute();
+$user_exists = $query->fetchColumn();
+
+if (!$user_exists) {
+    session_start();
+    $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
+    $_SESSION['icono'] = "error";
+    header('Location: ../almacen/';
+    exit();
+}
 // Recoger datos enviados por el formulario
 $codigo = $_POST['codigo'];
 $id_categoria = $_POST['id_categoria'];
@@ -17,19 +30,7 @@ $precio_venta = (float)$_POST['precio_venta'];
 $fecha_ingreso = $_POST['fecha_ingreso'];
 $fechaHora = date('Y-m-d H:i:s');
 
-// Verificar si el id_usuario existe en la tabla tb_usuarios
-$query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
-$query->bindParam(':id_usuario', $id_usuario);
-$query->execute();
-$user_exists = $query->fetchColumn();
 
-if (!$user_exists) {
-    session_start();
-    $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
-    $_SESSION['icono'] = "error";
-    header('Location: ../../almacen/create.php');
-    exit();
-}
 
 // Procesar la imagen
 $nombreDelArchivo = date("Y-m-d-h-i-s");
@@ -40,7 +41,7 @@ if (!move_uploaded_file($_FILES['image']['tmp_name'], $location)) {
     session_start();
     $_SESSION['mensaje'] = "Error: No se pudo guardar la imagen en el servidor.";
     $_SESSION['icono'] = "error";
-    header('Location: ../../almacen/create.php');
+    header('Location: ../almacen/';
     exit();
 }
 
@@ -69,10 +70,11 @@ try {
     session_start();
     $_SESSION['mensaje'] = "Se registró el producto de la manera correcta.";
     $_SESSION['icono'] = "success";
-    header('Location: ../../almacen/');
+    header('Location: ../almacen/');
+    
 } catch (PDOException $e) {
     session_start();
     $_SESSION['mensaje'] = "Error: No se pudo registrar en la base de datos. " . $e->getMessage();
     $_SESSION['icono'] = "error";
-    header('Location: ../../almacen/create.php');
+    header('Location: ../almacen/';
 }
