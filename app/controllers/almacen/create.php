@@ -2,19 +2,7 @@
 
 <?php
 
-// Verificar si el id_usuario existe en la tabla tb_usuarios
-$query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
-$query->bindParam(':id_usuario', $id_usuario);
-$query->execute();
-$user_exists = $query->fetchColumn();
 
-if (!$user_exists) {
-    session_start();
-    $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
-    $_SESSION['icono'] = "error";
-    header('Location: ../../almacen/create.php');
-    exit();
-}
 
 include ('../../config.php');
 
@@ -36,11 +24,6 @@ $_FILES['image'];
 
 $fechaHora = date("Y-m-d H:i:s");
 
-
-
-
-
-
 // Verificar si el id_usuario existe en la tabla tb_usuarios
 $query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
 $query->bindParam(':id_usuario', $id_usuario);
@@ -51,9 +34,15 @@ if (!$user_exists) {
     session_start();
     $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
     $_SESSION['icono'] = "error";
-    header('Location: ../../almacen/create.php');
+    header('Location: ' . $URL . '/almacen/create.php');
     exit();
 }
+
+
+
+
+
+
 
 $nombreDelArchivo = date("Y-m-d-h-i-s");
 $filename = $nombreDelArchivo."__".$_FILES['image']['name'];
@@ -84,12 +73,12 @@ if($sentencia->execute()){
     session_start();
     $_SESSION['mensaje'] = "Se registro el producto de la manera correcta";
     $_SESSION['icono'] = "success";
-    header('Location: '.$URL.'/almacen/');
+    header('Location: ' . $URL . '/almacen/');
 }else{
     session_start();
     $_SESSION['mensaje'] = "Error no se pudo registrar en la base de datos";
     $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/almacen/create.php');
+    header('Location: ' . $URL . '/almacen/create.php');
 }
 
 
