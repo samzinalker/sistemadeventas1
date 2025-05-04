@@ -1,6 +1,6 @@
 <?php
 include('../app/config.php');
-
+include('../layout/sesion.php'); // Incluir layout/sesion.php para definir $nombres_sesion
 
 
 session_start();

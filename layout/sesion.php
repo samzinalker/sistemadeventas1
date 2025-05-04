@@ -22,6 +22,10 @@ if (isset($_SESSION['sesion_email'])) {
             $_SESSION['id_usuario'] = $usuario['id_usuario'];
             $_SESSION['nombres'] = $usuario['nombres'];
             $_SESSION['rol'] = $usuario['rol'];
+
+            // Definir variables globales
+            $rol_sesion = $_SESSION['rol'];
+            $nombres_sesion = $_SESSION['nombres'];
         } else {
             // Manejo cuando no se encuentra el usuario
             $_SESSION['error'] = "No se encontró un usuario con el email proporcionado.";
@@ -39,4 +43,3 @@ if (isset($_SESSION['sesion_email'])) {
     header('Location: ' . $URL . '/login');
     exit();
 }
-
