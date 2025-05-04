@@ -76,26 +76,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
             </div>
 
 
-            <!-- Sidebar Menu -->
             <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                         with font-awesome or any other icon font library -->
-
-
-
-
-                         <?php
-// Verificar si el usuario tiene permisos de administrador
-$isAdmin = ($_SESSION['rol'] === 'administrador');
-?>
-
-<!-- Menú del sistema -->
 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-    <!-- Opción Usuarios: Solo visible para administradores -->
+
+    <?php $isAdmin = ($_SESSION['rol'] === 'administrador'); ?>
+
     <?php if ($isAdmin): ?>
-    <li class="nav-item">
-        <a href="#" class="nav-link active">
+    <li class="nav-item has-treeview <?php if($modulo_abierto=='usuarios') echo 'menu-open'; ?>">
+        <a href="#" class="nav-link active <?php if($modulo_abierto=='usuarios') echo 'active'; ?>">
             <i class="nav-icon fas fa-users"></i>
             <p>
                 Usuarios
@@ -104,39 +92,27 @@ $isAdmin = ($_SESSION['rol'] === 'administrador');
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
-                <a href="<?php echo $URL;?>/usuarios" class="nav-link">
+                <a href="<?php echo $URL;?>/usuarios" class="nav-link <?php if($pagina_activa=='usuarios') echo 'active'; ?>">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Listado de usuarios</p>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="<?php echo $URL;?>/usuarios/create.php" class="nav-link">
+                <a href="<?php echo $URL;?>/usuarios/create.php" class="nav-link <?php if($pagina_activa=='usuarios_create') echo 'active'; ?>">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Creación de usuario</p>
                 </a>
             </li>
         </ul>
     </li>
-    <?php endif; ?>
 
 
 
 
+    
 
-
-
-
-    <?php
-// Verificar si el usuario tiene permisos de administrador
-$isAdmin = ($_SESSION['rol'] === 'administrador');
-?>
-
-<!-- Menú del sistema -->
-<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-    <!-- Opción Roles: Solo visible para administradores -->
-    <?php if ($isAdmin): ?>
-    <li class="nav-item">
-        <a href="#" class="nav-link active">
+    <li class="nav-item has-treeview <?php if($modulo_abierto=='roles') echo 'menu-open'; ?>">
+        <a href="#" class="nav-link active <?php if($modulo_abierto=='roles') echo 'active'; ?>">
             <i class="nav-icon fas fa-address-card"></i>
             <p>
                 Roles
@@ -145,13 +121,13 @@ $isAdmin = ($_SESSION['rol'] === 'administrador');
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
-                <a href="<?php echo $URL;?>/roles" class="nav-link">
+                <a href="<?php echo $URL;?>/roles" class="nav-link <?php if($pagina_activa=='roles') echo 'active'; ?>">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Listado de roles</p>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="<?php echo $URL;?>/roles/create.php" class="nav-link">
+                <a href="<?php echo $URL;?>/roles/create.php" class="nav-link <?php if($pagina_activa=='roles_create') echo 'active'; ?>">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Creación de rol</p>
                 </a>
