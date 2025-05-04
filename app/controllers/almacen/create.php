@@ -1,9 +1,8 @@
+
+
 <?php
 
-// Incluir configuración y conexión a la base de datos
-include ('../../config.php');
-
-
+// Verificar si el id_usuario existe en la tabla tb_usuarios
 $query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
 $query->bindParam(':id_usuario', $id_usuario);
 $query->execute();
@@ -13,10 +12,13 @@ if (!$user_exists) {
     session_start();
     $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
     $_SESSION['icono'] = "error";
-    header('Location: ../almacen/';
+    header('Location: ../../almacen/create.php');
     exit();
 }
-// Recoger datos enviados por el formulario
+
+include ('../../config.php');
+
+
 $codigo = $_POST['codigo'];
 $id_categoria = $_POST['id_categoria'];
 $nombre = $_POST['nombre'];
@@ -28,53 +30,68 @@ $stock_maximo = $_POST['stock_maximo'];
 $precio_compra = (float)$_POST['precio_compra'];
 $precio_venta = (float)$_POST['precio_venta'];
 $fecha_ingreso = $_POST['fecha_ingreso'];
-$fechaHora = date('Y-m-d H:i:s');
+
+
+$_FILES['image'];
+
+$fechaHora = date("Y-m-d H:i:s");
 
 
 
-// Procesar la imagen
-$nombreDelArchivo = date("Y-m-d-h-i-s");
-$filename = $nombreDelArchivo . "__" . basename($_FILES['image']['name']);
-$location = "../../../almacen/img_productos/" . $filename;
 
-if (!move_uploaded_file($_FILES['image']['tmp_name'], $location)) {
+
+
+// Verificar si el id_usuario existe en la tabla tb_usuarios
+$query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
+$query->bindParam(':id_usuario', $id_usuario);
+$query->execute();
+$user_exists = $query->fetchColumn();
+
+if (!$user_exists) {
     session_start();
-    $_SESSION['mensaje'] = "Error: No se pudo guardar la imagen en el servidor.";
+    $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
     $_SESSION['icono'] = "error";
-    header('Location: ../almacen/';
+    header('Location: ../../almacen/create.php');
     exit();
 }
 
-// Insertar en la base de datos
-try {
-    $sentencia = $pdo->prepare("INSERT INTO tb_almacen
-        (codigo, nombre, descripcion, stock, stock_minimo, stock_maximo, precio_compra, precio_venta, fecha_ingreso, imagen, id_usuario, id_categoria, fyh_creacion) 
-        VALUES (:codigo, :nombre, :descripcion, :stock, :stock_minimo, :stock_maximo, :precio_compra, :precio_venta, :fecha_ingreso, :imagen, :id_usuario, :id_categoria, :fyh_creacion)");
+$nombreDelArchivo = date("Y-m-d-h-i-s");
+$filename = $nombreDelArchivo."__".$_FILES['image']['name'];
+$location = "../../../almacen/img_productos/".$filename;
 
-    $sentencia->bindParam('codigo', $codigo);
-    $sentencia->bindParam('nombre', $nombre);
-    $sentencia->bindParam('descripcion', $descripcion);
-    $sentencia->bindParam('stock', $stock);
-    $sentencia->bindParam('stock_minimo', $stock_minimo);
-    $sentencia->bindParam('stock_maximo', $stock_maximo);
-    $sentencia->bindParam('precio_compra', $precio_compra);
-    $sentencia->bindParam('precio_venta', $precio_venta);
-    $sentencia->bindParam('fecha_ingreso', $fecha_ingreso);
-    $sentencia->bindParam('imagen', $filename);
-    $sentencia->bindParam('id_usuario', $id_usuario);
-    $sentencia->bindParam('id_categoria', $id_categoria);
-    $sentencia->bindParam('fyh_creacion', $fechaHora);
+move_uploaded_file($_FILES['image']['tmp_name'],$location);
 
-    $sentencia->execute();
 
+$sentencia = $pdo->prepare("INSERT INTO tb_almacen
+       ( codigo, nombre, descripcion, stock, stock_minimo, stock_maximo, precio_compra, precio_venta, fecha_ingreso, imagen, id_usuario, id_categoria, fyh_creacion) 
+VALUES (:codigo,:nombre,:descripcion,:stock,:stock_minimo,:stock_maximo,:precio_compra,:precio_venta,:fecha_ingreso,:imagen,:id_usuario,:id_categoria,:fyh_creacion)");
+
+$sentencia->bindParam('codigo',$codigo);
+$sentencia->bindParam('nombre',$nombre);
+$sentencia->bindParam('descripcion',$descripcion);
+$sentencia->bindParam('stock',$stock);
+$sentencia->bindParam('stock_minimo',$stock_minimo);
+$sentencia->bindParam('stock_maximo',$stock_maximo);
+$sentencia->bindParam('precio_compra',$precio_compra);
+$sentencia->bindParam('precio_venta',$precio_venta);
+$sentencia->bindParam('fecha_ingreso',$fecha_ingreso);
+$sentencia->bindParam('imagen',$filename);
+$sentencia->bindParam('id_usuario',$id_usuario);
+$sentencia->bindParam('id_categoria',$id_categoria);
+$sentencia->bindParam('fyh_creacion',$fechaHora);
+
+if($sentencia->execute()){
     session_start();
-    $_SESSION['mensaje'] = "Se registró el producto de la manera correcta.";
+    $_SESSION['mensaje'] = "Se registro el producto de la manera correcta";
     $_SESSION['icono'] = "success";
-    header('Location: ../almacen/');
-    
-} catch (PDOException $e) {
+    header('Location: '.$URL.'/almacen/');
+}else{
     session_start();
-    $_SESSION['mensaje'] = "Error: No se pudo registrar en la base de datos. " . $e->getMessage();
+    $_SESSION['mensaje'] = "Error no se pudo registrar en la base de datos";
     $_SESSION['icono'] = "error";
-    header('Location: ../almacen/';
+    header('Location: '.$URL.'/almacen/create.php');
 }
+
+
+
+
