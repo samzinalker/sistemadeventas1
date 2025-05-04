@@ -105,7 +105,7 @@ include ('../app/controllers/categorias/listado_de_categoria.php');
                                                         <div class="form-group">
                                                             <label for="">Usuario</label>
                                                             <input type="text" class="form-control" value="<?php echo $email_sesion; ?>" disabled>
-                                                            <input type="text" name="id_usuario" value="<?php echo $id_usuario_sesion; ?>" disabled>  
+<input type="text" name="id_usuario" value="<?php echo $id_usuario_sesion; ?>" hidden>  
                                                         </div>
                                                     </div>
                                                     <div class="col-md-8">
