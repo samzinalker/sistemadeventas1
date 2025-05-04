@@ -85,29 +85,39 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
 
 
-                    <li class="nav-item ">
-                        <a href="#" class="nav-link active">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>
-                                Usuarios
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/usuarios" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Listado de usuarios</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/usuarios/create.php" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Creación de usuario</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                         <?php
+// Verificar si el usuario tiene permisos de administrador
+$isAdmin = ($_SESSION['rol'] === 'administrador');
+?>
+
+<!-- Menú del sistema -->
+<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+    <!-- Opción Usuarios: Solo visible para administradores -->
+    <?php if ($isAdmin): ?>
+    <li class="nav-item">
+        <a href="#" class="nav-link active">
+            <i class="nav-icon fas fa-users"></i>
+            <p>
+                Usuarios
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="<?php echo $URL;?>/usuarios" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Listado de usuarios</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo $URL;?>/usuarios/create.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Creación de usuario</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <?php endif; ?>
 
 
 
@@ -115,31 +125,40 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
 
 
-                    <li class="nav-item ">
-                        <a href="#" class="nav-link active">
-                            <i class="nav-icon fas fa-address-card"></i>
-                            <p>
-                                Roles
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/roles" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Listado de roles</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/roles/create.php" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Creación de rol</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
 
+    <?php
+// Verificar si el usuario tiene permisos de administrador
+$isAdmin = ($_SESSION['rol'] === 'administrador');
+?>
 
+<!-- Menú del sistema -->
+<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+    <!-- Opción Roles: Solo visible para administradores -->
+    <?php if ($isAdmin): ?>
+    <li class="nav-item">
+        <a href="#" class="nav-link active">
+            <i class="nav-icon fas fa-address-card"></i>
+            <p>
+                Roles
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="<?php echo $URL;?>/roles" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Listado de roles</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo $URL;?>/roles/create.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Creación de rol</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <?php endif; ?>
 
 
 
