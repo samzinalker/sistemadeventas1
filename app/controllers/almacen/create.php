@@ -16,7 +16,7 @@ $precio_venta = (float)$_POST['precio_venta'];
 $fecha_ingreso = $_POST['fecha_ingreso'];
 
 
-$image = $_POST['image'];
+$_FILES['image']
 
 $nombreDelArchivo = date("Y-m-d-h-i-s");
 $filename = $nombreDelArchivo."__".$_FILES['image']['name'];

@@ -160,35 +160,66 @@ include ('../app/controllers/categorias/listado_de_categoria.php');
 
 
                                             </div>
+                                           
+
+
                                             <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label for="">Imagen del producto</label>
-                                                    <input type="file" name="image" class="form-control" id="file">
-                                                    <br>
-                                                    <output id="list"></output>
-                                                    <script>
-                                                        function archivo(evt) {
-                                                            var files = evt.target.files; // FileList object
-                                                            // Obtenemos la imagen del campo "file".
-                                                            for (var i = 0, f; f = files[i]; i++) {
-                                                                //Solo admitimos imágenes.
-                                                                if (!f.type.match('image.*')) {
-                                                                    continue;
-                                                                }
-                                                                var reader = new FileReader();
-                                                                reader.onload = (function (theFile) {
-                                                                    return function (e) {
-                                                                        // Insertamos la imagen
-                                                                        document.getElementById("list").innerHTML = ['<img class="thumb thumbnail" src="',e.target.result, '" width="100%" title="', escape(theFile.name), '"/>'].join('');
-                                                                    };
-                                                                })(f);
-                                                                reader.readAsDataURL(f);
-                                                            }
-                                                        }
-                                                        document.getElementById('file').addEventListener('change', archivo, false);
-                                                    </script>
-                                                </div>
-                                            </div>
+    <div class="form-group">
+        <label for="file">Imagen del producto</label>
+        <input type="file" name="image" class="form-control" id="file" accept="image/*">
+        <br>
+        <output id="list"></output>
+        <script>
+            function archivo(evt) {
+                const files = evt.target.files; // FileList object
+
+                // Obtenemos la imagen del campo "file".
+                for (let i = 0, f; f = files[i]; i++) {
+                    // Solo admitimos imágenes.
+                    if (!f.type.match('image.*')) {
+                        alert("Por favor, seleccione un archivo de imagen válido.");
+                        continue;
+                    }
+
+                    const reader = new FileReader();
+
+                    // Cuando se carga la imagen correctamente
+                    reader.onload = (function (theFile) {
+                        return function (e) {
+                            // Insertamos la imagen
+                            const imgHtml = `
+                                <img class="thumb thumbnail" 
+                                     src="${e.target.result}" 
+                                     width="100%" 
+                                     title="${encodeURIComponent(theFile.name)}"/>
+                            `;
+                            document.getElementById("list").innerHTML = imgHtml;
+                        };
+                    })(f);
+
+                    // Manejo de errores
+                    reader.onerror = function () {
+                        alert("Ocurrió un error al leer el archivo. Intente nuevamente.");
+                    };
+
+                    // Leer la imagen como una URL base64
+                    reader.readAsDataURL(f);
+                }
+            }
+
+            // Asegúrate de que el elemento con ID "file" exista antes de agregar el listener
+            const fileInput = document.getElementById('file');
+            if (fileInput) {
+                fileInput.addEventListener('change', archivo, false);
+            }
+        </script>
+    </div>
+</div>
+
+
+
+
+
                                         </div>
 
 
