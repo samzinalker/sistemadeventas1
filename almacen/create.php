@@ -44,7 +44,7 @@ include ('../app/controllers/categorias/listado_de_categoria.php');
                             <div class="row">
                                 <div class="col-md-12">
 
-                                    <form action="../app/controllers/almacen/create.php" method="post" enctype="multipart/form-data">
+                                <form action="../app/controllers/almacen/create.php" method="post" enctype="multipart/form-data">
 
                                         <div class="row">
                                             <div class="col-md-9">
