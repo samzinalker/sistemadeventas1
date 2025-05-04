@@ -23,6 +23,23 @@ if (isset($_SESSION['sesion_email'])) {
             $_SESSION['nombres'] = $usuario['nombres'];
             $_SESSION['rol'] = $usuario['rol'];
 
+
+
+
+            if (isset($_SESSION['id_usuario'])) {
+                $id_usuario_sesion = $_SESSION['id_usuario'];
+            } else {
+                // Manejo de error si el usuario no está autenticado
+                session_start();
+                $_SESSION['mensaje'] = "Error: No se ha iniciado sesión correctamente.";
+                $_SESSION['icono'] = "error";
+                header('Location: ../login.php'); // Redirige al login u otra página
+                exit();
+            }
+
+
+
+
             // Definir variables globales
             $rol_sesion = $_SESSION['rol'];
             $nombres_sesion = $_SESSION['nombres'];

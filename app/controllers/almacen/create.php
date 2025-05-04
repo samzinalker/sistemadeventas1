@@ -1,5 +1,19 @@
-<?php
 
+
+<?php
+// Verificar si el id_usuario existe en la tabla tb_usuarios
+$query = $pdo->prepare("SELECT COUNT(*) FROM tb_usuarios WHERE id_usuario = :id_usuario");
+$query->bindParam(':id_usuario', $id_usuario);
+$query->execute();
+$user_exists = $query->fetchColumn();
+
+if (!$user_exists) {
+    session_start();
+    $_SESSION['mensaje'] = "Error: El usuario seleccionado no existe.";
+    $_SESSION['icono'] = "error";
+    header('Location: ../../almacen/create.php');
+    exit();
+}
 include ('../../config.php');
 
 

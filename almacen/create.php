@@ -1,6 +1,6 @@
 <?php
 include ('../app/config.php');
-include ('../layout/sesion.php');
+include('../layout/sesion.php');
 
 include ('../layout/parte1.php');
 
@@ -105,7 +105,7 @@ include ('../app/controllers/categorias/listado_de_categoria.php');
                                                         <div class="form-group">
                                                             <label for="">Usuario</label>
                                                             <input type="text" class="form-control" value="<?php echo $email_sesion; ?>" disabled>
-                                                            <input type="text" name="id_usuario" value="<?php echo $id_usuario_sesion; ?>" hidden>
+                                                            <input type="text" name="id_usuario" value="<?php echo $id_usuario_sesion; ?>" disabled>  
                                                         </div>
                                                     </div>
                                                     <div class="col-md-8">
