@@ -189,7 +189,17 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                                         $.post("../app/controllers/ventas/agregar_al_carrito.php",
                                                             {id_producto:id_producto, cantidad:cantidad},
                                                             function (datos) {
-                                                                location.reload();
+                                                                // Actualiza solo el carrito sin recargar toda la página
+                                                                $('#carrito_contenido').load('carrito_tabla.php');
+                                                                $('#respuesta_carrito').html('<div class="alert alert-success">Producto agregado al carrito.</div>');
+                                                                // Limpia los campos del modal
+                                                                $('#id_producto').val('');
+                                                                $('#producto').val('');
+                                                                $('#descripcion').val('');
+                                                                $('#precio_venta').val('');
+                                                                $('#cantidad').val('');
+                                                                // Cierra el modal
+                                                                $('#modal-buscar_producto').modal('hide');
                                                             }
                                                         );
                                                     }
@@ -200,58 +210,8 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                 </div>
                             </div>
                             <br><br>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm table-hover table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th style="background-color:#4d66ca; text-align:center">Nro</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Producto</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Descripción</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Cantidad</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Precio Unitario</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Subtotal</th>
-                                            <th style="background-color:#4d66ca; text-align:center">Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php 
-                                        $contador_de_carrito = 0;
-                                        $cantidad_total = 0;
-                                        $precio_total = 0;
-                                        foreach ($carrito_datos as $carrito_dato){ 
-                                            $contador_de_carrito++;
-                                            $subtotal = $carrito_dato['cantidad'] * $carrito_dato['precio_venta'];
-                                            $cantidad_total += $carrito_dato['cantidad'];
-                                            $precio_total += $subtotal;
-                                            ?>
-                                            <tr>
-                                                <td><center><?php echo $contador_de_carrito;?></center></td>
-                                                <td><center><?php echo htmlspecialchars($carrito_dato['nombre_producto']); ?></center></td>
-                                                <td><center><?php echo htmlspecialchars($carrito_dato['descripcion']); ?></center></td>
-                                                <td><center><?php echo $carrito_dato['cantidad']; ?></center></td>
-                                                <td><center><?php echo number_format($carrito_dato['precio_venta'],2); ?></center></td>
-                                                <td><center><?php echo number_format($subtotal,2); ?></center></td>
-                                                <td>
-                                                    <center>
-                                                        <form action="../app/controllers/ventas/borrar_carrito.php" method="post" style="display:inline;">
-                                                            <input type="hidden" name="id_carrito" value="<?php echo $carrito_dato['id_carrito']; ?>"> 
-                                                            <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i>Borrar</button>
-                                                        </form>
-                                                    </center>
-                                                </td>
-                                            </tr>
-                                            <?php
-                                        }
-                                        ?>
-                                        <tr>
-                                            <th colspan="3" style="background-color:#aef77d;text-align:right">Total</th>
-                                            <th><center><?php echo $cantidad_total;?></center></th>
-                                            <th></th>
-                                            <th style="background-color:#e0f933"><center><?php echo number_format($precio_total,2);?></center></th>
-                                            <th></th>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div id="carrito_contenido">
+                                <?php include 'carrito_tabla.php'; ?>
                             </div>
                        </div>
                    </div>
@@ -382,7 +342,14 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                 <div class="form-group">
                                     <label>Monto a cancelar</label>
                                     <input type="text" class="form-control" style="text-align: center; background-color:#eef475" id="total_a_cancelar"
-                                    value="<?php echo number_format($precio_total,2); ?>" disabled>
+                                    value="<?php
+                                    // Calcular precio_total actual
+                                    $precio_total = 0;
+                                    foreach ($carrito_datos as $carrito_dato) {
+                                        $precio_total += $carrito_dato['cantidad'] * $carrito_dato['precio_venta'];
+                                    }
+                                    echo number_format($precio_total,2);
+                                    ?>" disabled>
                                 </div>
                                 <input type="hidden" name="id_cliente" id="id_cliente_hidden">
                                 <button type="submit" class="btn btn-success btn-block">Finalizar venta</button>
