@@ -12,7 +12,7 @@ $id_producto = intval($_POST['id_producto']);
 $cantidad = intval($_POST['cantidad']);
 $fyh_creacion = date('Y-m-d H:i:s');
 $fyh_actualizacion = $fyh_creacion;
-$nro_venta = 0; // carrito abierto
+$nro_venta = 0;
 
 // Verifica si ya existe el producto en el carrito abierto
 $sql_check = "SELECT id_carrito, cantidad FROM tb_carrito WHERE id_usuario = :id_usuario AND id_producto = :id_producto AND nro_venta = 0";

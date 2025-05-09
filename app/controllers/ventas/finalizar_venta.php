@@ -14,7 +14,6 @@ $fyh = date('Y-m-d H:i:s');
 try {
     $pdo->beginTransaction();
 
-    // Validar que el carrito no esté vacío
     $sql_check = "SELECT COUNT(*) FROM tb_carrito WHERE id_usuario = :id_usuario AND nro_venta = 0";
     $stmt_check = $pdo->prepare($sql_check);
     $stmt_check->execute([':id_usuario' => $id_usuario]);
@@ -24,10 +23,8 @@ try {
         throw new Exception("El carrito está vacío. No se puede finalizar la venta.");
     }
 
-    // Generar nro_venta único (puedes mejorar este algoritmo si lo prefieres)
     $nro_venta = time();
 
-    // Actualizar el carrito con el nro_venta generado
     $sql_update = "UPDATE tb_carrito SET nro_venta = :nro_venta, fyh_actualizacion = :fyh WHERE id_usuario = :id_usuario AND nro_venta = 0";
     $stmt_update = $pdo->prepare($sql_update);
     $stmt_update->execute([
@@ -36,7 +33,6 @@ try {
         ':id_usuario' => $id_usuario
     ]);
 
-    // Calcular el total a pagar
     $sql_total = "SELECT SUM(c.cantidad * p.precio_venta) as total
                   FROM tb_carrito c
                   INNER JOIN tb_almacen p ON c.id_producto = p.id_producto
@@ -49,7 +45,6 @@ try {
     $total = $stmt_total->fetchColumn();
     if (!$total) $total = 0;
 
-    // Registrar la venta
     $sql_venta = "INSERT INTO tb_ventas (nro_venta, id_cliente, id_usuario, total_pagado, fyh_creacion, fyh_actualizacion)
                   VALUES (:nro_venta, :id_cliente, :id_usuario, :total_pagado, :fyh, :fyh)";
     $stmt_venta = $pdo->prepare($sql_venta);
@@ -61,7 +56,6 @@ try {
         ':fyh' => $fyh
     ]);
 
-    // Descontar stock de los productos vendidos
     $sql_items = "SELECT id_producto, cantidad FROM tb_carrito WHERE id_usuario = :id_usuario AND nro_venta = :nro_venta";
     $stmt_items = $pdo->prepare($sql_items);
     $stmt_items->execute([
