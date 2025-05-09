@@ -1,74 +1,44 @@
 <?php
-
-
 include ('../../config.php');
-
-$codigo = $_POST['codigo'];
-$id_categoria = $_POST['id_categoria'];
-$nombre = $_POST['nombre'];
-$id_usuario = $_POST['id_usuario'];
-$descripcion = $_POST['descripcion'];
-$stock = $_POST['stock'];
-$stock_minimo = $_POST['stock_minimo'];
-$stock_maximo = $_POST['stock_maximo'];
-$precio_compra = (float)$_POST['precio_compra'];
-$precio_venta = (float)$_POST['precio_venta'];
-$fecha_ingreso = $_POST['fecha_ingreso'];
-$id_producto = $_POST['id_producto'];
-$image_text = $_POST['image_text'];
-
-
-if($_FILES['image']['name'] != null){
-    //echo "hay imagen nueva";
-    $nombreDelArchivo = date("Y-m-d-h-i-s");
-    $image_text = $nombreDelArchivo."__".$_FILES['image']['name'];
-    $location = "../../../almacen/img_productos/".$image_text;
-    move_uploaded_file($_FILES['image']['tmp_name'],$location);
-}else{
-   // echo "no hay imagen";
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (!isset($_SESSION['id_usuario'])) {
+    echo "No autenticado";
+    exit();
 }
+$id_usuario = $_SESSION['id_usuario'];
+$id_producto = $_POST['id_producto'] ?? null;
+$nombre = $_POST['nombre'] ?? '';
+$descripcion = $_POST['descripcion'] ?? '';
+$stock = $_POST['stock'] ?? 0;
 
+if ($id_producto) {
+    // Verifica propiedad antes de actualizar
+    $sql_check = "SELECT id_producto FROM tb_almacen WHERE id_producto = :id_producto AND id_usuario = :id_usuario";
+    $query_check = $pdo->prepare($sql_check);
+    $query_check->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
+    $query_check->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+    $query_check->execute();
 
-$sentencia = $pdo->prepare("UPDATE tb_almacen
-    SET nombre=:nombre,
-        descripcion=:descripcion,
-        stock=:stock,
-        stock_minimo=:stock_minimo,
-        stock_maximo=:stock_maximo,
-        precio_compra=:precio_compra,
-        precio_venta=:precio_venta,
-        fecha_ingreso=:fecha_ingreso,
-        imagen=:imagen,
-        id_usuario=:id_usuario,
-        id_categoria=:id_categoria,
-        fyh_actualizacion=:fyh_actualizacion 
-    WHERE id_producto = :id_producto ");
-
-$sentencia->bindParam('nombre',$nombre);
-$sentencia->bindParam('descripcion',$descripcion);
-$sentencia->bindParam('stock',$stock);
-$sentencia->bindParam('stock_minimo',$stock_minimo);
-$sentencia->bindParam('stock_maximo',$stock_maximo);
-$sentencia->bindParam('precio_compra', $precio_compra);
-$sentencia->bindParam('precio_venta', $precio_venta);
-$sentencia->bindParam('fecha_ingreso',$fecha_ingreso);
-$sentencia->bindParam('imagen',$image_text);
-$sentencia->bindParam('id_usuario',$id_usuario);
-$sentencia->bindParam('id_categoria',$id_categoria);
-$sentencia->bindParam('fyh_actualizacion',$fechaHora);
-$sentencia->bindParam('id_producto',$id_producto);
-
-if($sentencia->execute()){
-    session_start();
-    $_SESSION['mensaje'] = "Se actualizo el producto de la manera correcta";
-    $_SESSION['icono'] = "success";
-    header('Location: '.$URL.'/almacen/');
-}else{
-    session_start();
-    $_SESSION['mensaje'] = "Error no se pudo actualizar en la base de datos";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/almacen/update.php?id='.$id_producto);
+    if ($query_check->rowCount() === 1) {
+        // Actualiza solo si es del usuario autenticado
+        $sql = "UPDATE tb_almacen SET nombre = :nombre, descripcion = :descripcion, stock = :stock
+                WHERE id_producto = :id_producto AND id_usuario = :id_usuario";
+        $query = $pdo->prepare($sql);
+        $query->bindParam(':nombre', $nombre, PDO::PARAM_STR);
+        $query->bindParam(':descripcion', $descripcion, PDO::PARAM_STR);
+        $query->bindParam(':stock', $stock, PDO::PARAM_INT);
+        $query->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
+        $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+        if ($query->execute()) {
+            header('Location: ../../../almacen/index.php?mensaje=Producto actualizado correctamente');
+            exit();
+        } else {
+            echo "Error al actualizar el producto";
+        }
+    } else {
+        echo '<div class="alert alert-danger">No tienes permiso para editar este producto.</div>';
+    }
+} else {
+    echo '<div class="alert alert-danger">ID de producto no proporcionado.</div>';
 }
-
-
-
+?>

@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-05-2025 a las 17:04:35
+-- Tiempo de generación: 08-05-2025 a las 14:51:16
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Versión de PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -50,8 +50,8 @@ CREATE TABLE `tb_almacen` (
 --
 
 INSERT INTO `tb_almacen` (`id_producto`, `codigo`, `nombre`, `descripcion`, `stock`, `stock_minimo`, `stock_maximo`, `precio_compra`, `precio_venta`, `fecha_ingreso`, `imagen`, `id_usuario`, `id_categoria`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(1, 'P-00001', 'pepsi', '1 litro', 148, 11, 120, 0.50, 1.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-04-22 14:48:39'),
-(5, 'P-00002', 'logo', 'tiendita', 112, 5, 30, 0.75, 1.90, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '0000-00-00 00:00:00');
+(1, 'P-00001', 'pepsiss', '1 litros', 148, 11, 120, 0.50, 1.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-05-08 04:41:10'),
+(5, 'P-00002', 'logo', 'tiendita', 151, 5, 30, 0.75, 1.90, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '2025-05-08 05:20:51');
 
 -- --------------------------------------------------------
 
@@ -88,7 +88,10 @@ INSERT INTO `tb_carrito` (`id_carrito`, `id_usuario`, `nro_venta`, `id_producto`
 (40, 0, 3, 5, 12, '2025-04-27 11:42:05', '0000-00-00 00:00:00'),
 (41, 0, 3, 5, 100, '2025-04-27 11:42:17', '0000-00-00 00:00:00'),
 (42, 0, 4, 5, 524, '2025-04-27 11:42:51', '0000-00-00 00:00:00'),
-(43, 0, 5, 5, 12, '2025-05-03 00:55:22', '0000-00-00 00:00:00');
+(43, 0, 5, 5, 12, '2025-05-03 00:55:22', '0000-00-00 00:00:00'),
+(44, 0, 4, 1, 12, '2025-05-08 06:07:07', '0000-00-00 00:00:00'),
+(45, 0, 4, 1, 12, '2025-05-08 06:07:16', '0000-00-00 00:00:00'),
+(46, 0, 4, 5, 12, '2025-05-08 06:07:49', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -159,7 +162,7 @@ CREATE TABLE `tb_compras` (
 --
 
 INSERT INTO `tb_compras` (`id_compra`, `id_producto`, `nro_compra`, `fecha_compra`, `id_proveedor`, `comprobante`, `id_usuario`, `precio_compra`, `cantidad`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(8, 1, 1, '2025-04-21', 12, '12', 1, '12', 12, '2025-04-22 16:39:41', '0000-00-00 00:00:00');
+(8, 5, 1, '2025-04-21', 12, '12', 1, '2222', 15, '2025-04-22 16:39:41', '2025-05-08 05:21:02');
 
 -- --------------------------------------------------------
 
@@ -250,15 +253,6 @@ CREATE TABLE `tb_ventas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
 
 --
--- Volcado de datos para la tabla `tb_ventas`
---
-
-INSERT INTO `tb_ventas` (`id_venta`, `nro_venta`, `id_cliente`, `total_pagado`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(8, 1, 1, 100.00, '2025-04-27 10:25:39', '0000-00-00 00:00:00'),
-(9, 2, 1, 23.00, '2025-04-27 10:39:41', '0000-00-00 00:00:00'),
-(40, 4, 1, 1019.60, '2025-04-27 12:06:58', '0000-00-00 00:00:00');
-
---
 -- Índices para tablas volcadas
 --
 
@@ -334,13 +328,13 @@ ALTER TABLE `tb_ventas`
 -- AUTO_INCREMENT de la tabla `tb_almacen`
 --
 ALTER TABLE `tb_almacen`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_carrito`
 --
 ALTER TABLE `tb_carrito`
-  MODIFY `id_carrito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id_carrito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_categorias`
