@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 09-05-2025 a las 03:15:13
+-- Tiempo de generación: 09-05-2025 a las 06:05:56
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -50,8 +50,8 @@ CREATE TABLE `tb_almacen` (
 --
 
 INSERT INTO `tb_almacen` (`id_producto`, `codigo`, `nombre`, `descripcion`, `stock`, `stock_minimo`, `stock_maximo`, `precio_compra`, `precio_venta`, `fecha_ingreso`, `imagen`, `id_usuario`, `id_categoria`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(1, 'P-00001', 'pepsi', '1 litro', 148, 11, 120, 0.50, 1.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-04-22 14:48:39'),
-(5, 'P-00002', 'logo', 'tiendita', 112, 5, 30, 0.75, 1.90, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '0000-00-00 00:00:00');
+(1, 'P-00001', 'pepsi', '1 litro', 109, 11, 120, 0.50, 1.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-04-22 14:48:39'),
+(5, 'P-00002', 'logo', 'tiendita', -589, 5, 30, 0.75, 1.90, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -74,22 +74,21 @@ CREATE TABLE `tb_carrito` (
 --
 
 INSERT INTO `tb_carrito` (`id_carrito`, `id_usuario`, `nro_venta`, `id_producto`, `cantidad`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(17, 0, 4, 1, 12, '2025-04-27 07:56:28', '0000-00-00 00:00:00'),
-(19, 0, 6, 1, 10, '2025-04-27 08:14:42', '0000-00-00 00:00:00'),
-(22, 0, 1, 1, 100, '2025-04-27 10:25:29', '0000-00-00 00:00:00'),
-(23, 0, 2, 5, 12, '2025-04-27 10:39:37', '0000-00-00 00:00:00'),
-(24, 0, 7, 1, 12, '2025-04-27 10:44:59', '0000-00-00 00:00:00'),
-(25, 0, 4, 1, 12, '2025-04-27 10:46:50', '0000-00-00 00:00:00'),
-(26, 0, 11, 1, 12, '2025-04-27 10:47:26', '0000-00-00 00:00:00'),
-(27, 0, 12, 1, 12, '2025-04-27 10:52:27', '0000-00-00 00:00:00'),
-(29, 0, 8, 5, 3, '2025-04-27 10:53:24', '0000-00-00 00:00:00'),
-(30, 0, 7, 1, 3, '2025-04-27 10:53:54', '0000-00-00 00:00:00'),
-(38, 0, 3, 1, 25, '2025-04-27 11:28:37', '0000-00-00 00:00:00'),
-(40, 0, 3, 5, 12, '2025-04-27 11:42:05', '0000-00-00 00:00:00'),
-(41, 0, 3, 5, 100, '2025-04-27 11:42:17', '0000-00-00 00:00:00'),
-(42, 0, 4, 5, 524, '2025-04-27 11:42:51', '0000-00-00 00:00:00'),
-(43, 0, 5, 5, 12, '2025-05-03 00:55:22', '0000-00-00 00:00:00'),
-(44, 0, 1, 1, 11, '2025-05-08 20:13:31', '0000-00-00 00:00:00');
+(46, 1, 1746758424, 1, 25, '2025-05-08 21:39:53', '2025-05-08 21:40:24'),
+(47, 1, 1746758424, 5, 677, '2025-05-08 21:40:06', '2025-05-08 21:40:24'),
+(50, 1, 1746758974, 1, 1, '2025-05-08 21:49:28', '2025-05-08 21:49:34'),
+(53, 1, 1746759588, 1, 1, '2025-05-08 21:59:39', '2025-05-08 21:59:48'),
+(62, 1, 1746760554, 1, 11, '2025-05-08 22:15:47', '2025-05-08 22:15:54'),
+(66, 1, 1746761504, 1, 1, '2025-05-08 22:31:15', '2025-05-08 22:31:44'),
+(67, 1, 1746761504, 5, 2, '2025-05-08 22:31:32', '2025-05-08 22:31:44'),
+(73, 1, 1746762280, 5, 11, '0000-00-00 00:00:00', '2025-05-08 22:44:40'),
+(74, 1, 1746762280, 5, 11, '0000-00-00 00:00:00', '2025-05-08 22:44:40'),
+(75, 1, 0, 1, 11, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(78, 1, 0, 1, 2, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(80, 1, 0, 1, 22, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(82, 1, 0, 1, 11, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(83, 1, 0, 1, 1, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(87, 1, 0, 5, 1, '0000-00-00 00:00:00', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -233,7 +232,8 @@ CREATE TABLE `tb_usuarios` (
 INSERT INTO `tb_usuarios` (`id_usuario`, `nombres`, `email`, `password_user`, `token`, `id_rol`, `fyh_creacion`, `fyh_actualizacion`) VALUES
 (1, 'marcelo mamanid', 'marcelo@gmail.com', '$2y$10$75JF2CgxfIl0D2FvA2n7Ce0lJogqlHHmV9I38Z2SHytN7iElNtSxm', '', 1, '2025-04-14 21:07:42', '2025-05-04 05:58:09'),
 (10, 'administrador', 'admin@gmail.com', '$2y$10$LOP8dOv1tmWBnuZOrxmnw.TK6358ZDbFSgo6FwjuOtm.JVYxd8YGG', '', 1, '2025-05-03 06:55:54', '0000-00-00 00:00:00'),
-(12, 'vender', 'vender@gmail.com', '$2y$10$EBfd4aY2yFbbWpkPSAC1XO4PKFeWTK9r9WKa/WB5iRTD5fRGlRNJi', '', 7, '2025-05-04 06:19:20', '0000-00-00 00:00:00');
+(12, 'vender', 'vender@gmail.com', '$2y$10$EBfd4aY2yFbbWpkPSAC1XO4PKFeWTK9r9WKa/WB5iRTD5fRGlRNJi', '', 7, '2025-05-04 06:19:20', '0000-00-00 00:00:00'),
+(13, 'xd 22', '1@gmail.com', '$2y$10$uzWGvuEd0xTk3.jnYza22.FMIzgIxgsPYuGzl7oHngZDxtE6mrr4S', '', 1, '2025-05-08 21:57:46', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -250,6 +250,18 @@ CREATE TABLE `tb_ventas` (
   `fyh_creacion` datetime NOT NULL,
   `fyh_actualizacion` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `tb_ventas`
+--
+
+INSERT INTO `tb_ventas` (`id_venta`, `nro_venta`, `id_cliente`, `id_usuario`, `total_pagado`, `fyh_creacion`, `fyh_actualizacion`) VALUES
+(42, 1746758424, 1, 1, 1311.30, '2025-05-08 21:40:24', '2025-05-08 21:40:24'),
+(43, 1746758974, 1, 1, 1.00, '2025-05-08 21:49:34', '2025-05-08 21:49:34'),
+(44, 1746759588, 1, 1, 1.00, '2025-05-08 21:59:48', '2025-05-08 21:59:48'),
+(48, 1746760554, 1, 1, 11.00, '2025-05-08 22:15:54', '2025-05-08 22:15:54'),
+(49, 1746761504, 1, 1, 4.80, '2025-05-08 22:31:44', '2025-05-08 22:31:44'),
+(50, 1746762280, 1, 1, 41.80, '2025-05-08 22:44:40', '2025-05-08 22:44:40');
 
 --
 -- Índices para tablas volcadas
@@ -334,7 +346,7 @@ ALTER TABLE `tb_almacen`
 -- AUTO_INCREMENT de la tabla `tb_carrito`
 --
 ALTER TABLE `tb_carrito`
-  MODIFY `id_carrito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id_carrito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_categorias`
@@ -370,13 +382,13 @@ ALTER TABLE `tb_roles`
 -- AUTO_INCREMENT de la tabla `tb_usuarios`
 --
 ALTER TABLE `tb_usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_ventas`
 --
 ALTER TABLE `tb_ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- Restricciones para tablas volcadas

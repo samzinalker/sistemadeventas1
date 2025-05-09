@@ -58,15 +58,16 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                    <div class="card card-outline card-primary">
                        <div class="card-header">
                             <?php 
-                            $contador_de_ventas=0;
-                            foreach($ventas_datos as $ventas_dato){
-                                $contador_de_ventas++;
-                            }
-                            ?>
+                           
+                           $contador_de_ventas = 0;
+                           foreach($ventas_datos as $ventas_dato){
+                               $contador_de_ventas++;
+                           }
+                           ?>
                             <h3 class="card-title">
-                                <i class="fa fa-shopping-bag"></i>Venta Nro 
-                                <input type="text" style="text-align: center;" value="<?php echo $contador_de_ventas + 1; ?>" disabled>
-                            </h3>
+                        <i class="fa fa-shopping-bag"></i> Venta Nro 
+                        <input type="text" style="text-align: center;" value="<?php echo $contador_de_ventas + 1; ?>" disabled>
+                    </h3>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
@@ -189,17 +190,18 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                                         $.post("../app/controllers/ventas/agregar_al_carrito.php",
                                                             {id_producto:id_producto, cantidad:cantidad},
                                                             function (datos) {
-                                                                // Actualiza solo el carrito sin recargar toda la página
-                                                                $('#carrito_contenido').load('carrito_tabla.php');
-                                                                $('#respuesta_carrito').html('<div class="alert alert-success">Producto agregado al carrito.</div>');
-                                                                // Limpia los campos del modal
-                                                                $('#id_producto').val('');
-                                                                $('#producto').val('');
-                                                                $('#descripcion').val('');
-                                                                $('#precio_venta').val('');
-                                                                $('#cantidad').val('');
-                                                                // Cierra el modal
-                                                                $('#modal-buscar_producto').modal('hide');
+                                                              // Recarga la tabla y luego actualiza el monto
+                                                        $('#carrito_contenido').load('carrito_tabla.php?nocache=' + new Date().getTime(), function() {
+                                                            var nuevoTotal = $('#total_carrito').text();
+                                                            $('#monto_total').text(nuevoTotal);
+                                                        });
+                                                        // Limpiar los campos y cerrar modal
+                                                        $('#id_producto').val('');
+                                                        $('#producto').val('');
+                                                        $('#descripcion').val('');
+                                                        $('#precio_venta').val('');
+                                                        $('#cantidad').val('');
+                                                        $('#modal-buscar_producto').modal('hide');
                                                             }
                                                         );
                                                     }
@@ -349,6 +351,7 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                         $precio_total += $carrito_dato['cantidad'] * $carrito_dato['precio_venta'];
                                     }
                                     echo number_format($precio_total,2);
+                                    
                                     ?>" disabled>
                                 </div>
                                 <input type="hidden" name="id_cliente" id="id_cliente_hidden">

@@ -61,7 +61,11 @@ $precio_total = 0;
                 <th colspan="3" style="background-color:#aef77d;text-align:right">Total</th>
                 <th><center><?php echo $cantidad_total;?></center></th>
                 <th></th>
-                <th style="background-color:#e0f933"><center><?php echo number_format($precio_total,2);?></center></th>
+                <th style="background-color:#e0f933">
+                    <center>
+                        <span id="total_carrito"><?php echo number_format($precio_total,2);?></span>
+                    </center>
+                </th>
                 <th></th>
             </tr>
         </tbody>
