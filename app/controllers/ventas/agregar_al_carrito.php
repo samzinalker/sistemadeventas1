@@ -12,9 +12,9 @@ $id_producto = intval($_POST['id_producto']);
 $cantidad = intval($_POST['cantidad']);
 $fyh_creacion = date('Y-m-d H:i:s');
 $fyh_actualizacion = $fyh_creacion;
-$nro_venta = 0; // 0 = carrito pendiente
+$nro_venta = 0; // carrito abierto
 
-// Si ya existe el producto en el carrito, suma cantidades
+// Verifica si ya existe el producto en el carrito abierto
 $sql_check = "SELECT id_carrito, cantidad FROM tb_carrito WHERE id_usuario = :id_usuario AND id_producto = :id_producto AND nro_venta = 0";
 $stmt_check = $pdo->prepare($sql_check);
 $stmt_check->execute([':id_usuario' => $id_usuario, ':id_producto' => $id_producto]);
@@ -28,7 +28,7 @@ if ($row = $stmt_check->fetch(PDO::FETCH_ASSOC)) {
         ':id_carrito' => $row['id_carrito']
     ]);
 } else {
-    $sql_insert = "INSERT INTO tb_carrito (id_usuario, nro_venta, id_producto, cantidad, fyh_creacion, fyh_actualizacion) 
+    $sql_insert = "INSERT INTO tb_carrito (id_usuario, nro_venta, id_producto, cantidad, fyh_creacion, fyh_actualizacion)
                    VALUES (:id_usuario, :nro_venta, :id_producto, :cantidad, :fyh_creacion, :fyh_actualizacion)";
     $stmt_insert = $pdo->prepare($sql_insert);
     $stmt_insert->execute([
