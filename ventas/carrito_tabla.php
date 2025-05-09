@@ -1,6 +1,6 @@
 <?php
 include('../app/config.php');
-
+if (session_status() == PHP_SESSION_NONE) session_start();
 
 $id_usuario_actual = $_SESSION['id_usuario'];
 $sql_carrito = "SELECT c.*, 
