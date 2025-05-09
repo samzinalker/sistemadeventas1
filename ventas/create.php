@@ -21,10 +21,6 @@ $query_carrito->bindParam(':id_usuario', $id_usuario_actual, PDO::PARAM_INT);
 $query_carrito->execute();
 $carrito_datos = $query_carrito->fetchAll(PDO::FETCH_ASSOC);
 
-echo "<pre>DEBUG - Usuario actual: $id_usuario_actual\n";
-echo "Carrito mostrado (solo productos con id_usuario = $id_usuario_actual y nro_venta = 0):\n";
-print_r($carrito_datos);
-echo "</pre>";
 // Para mostrar mensajes de éxito o error tras finalizar venta
 $success_msg = '';
 $error_msg = '';
