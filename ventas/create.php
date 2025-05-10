@@ -46,12 +46,35 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
     <div class="content">
         <div class="container-fluid">
 
-            <?php if ($success_msg): ?>
-                <div class="alert alert-success"><?php echo $success_msg; ?></div>
-            <?php endif; ?>
-            <?php if ($error_msg): ?>
-                <div class="alert alert-danger"><?php echo $error_msg; ?></div>
-            <?php endif; ?>
+        <?php if ($success_msg): ?>
+    <div id="success-alert" class="alert alert-success"><?php echo $success_msg; ?></div>
+    <script>
+        // Ocultar automáticamente el mensaje de éxito después de 3 segundos
+        setTimeout(function() {
+            $('#success-alert').fadeOut('slow', function() {
+                $(this).remove();
+                // Opcionalmente, eliminar el parámetro de la URL
+                var urlWithoutParams = window.location.href.split('?')[0];
+                window.history.replaceState({}, document.title, urlWithoutParams);
+            });
+        }, 3000); // 3000 milisegundos = 3 segundos
+    </script>
+<?php endif; ?>
+
+<?php if ($error_msg): ?>
+    <div id="error-alert" class="alert alert-danger"><?php echo $error_msg; ?></div>
+    <script>
+        // Ocultar automáticamente el mensaje de error después de 3 segundos
+        setTimeout(function() {
+            $('#error-alert').fadeOut('slow', function() {
+                $(this).remove();
+                // Opcionalmente, eliminar el parámetro de la URL
+                var urlWithoutParams = window.location.href.split('?')[0];
+                window.history.replaceState({}, document.title, urlWithoutParams);
+            });
+        }, 2300); // 2300 milisegundos
+    </script>
+<?php endif; ?>
 
            <div class="row">
                <div class="col-md-12">
@@ -84,7 +107,7 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
 
                             <!-- Modal para buscar producto -->
                             <div class="modal fade" id="modal-buscar_producto">
-                                <div class="modal-dialog modal-lg">
+                                  <div class="modal-dialog modal-xl" style="max-width: 95%;">
                                     <div class="modal-content">
                                         <div class="modal-header" style="background-color: #1d36b6;color: white">
                                             <h4 class="modal-title">Búsqueda de producto</h4>
@@ -94,23 +117,23 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                         </div>
                                         <div class="modal-body">
                                             <div class="table-responsive">
-                                                <table id="tabla_productos" class="table table-bordered table-striped table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nro</th>
-                                                            <th>Seleccionar</th>
-                                                            <th>Código</th>
-                                                            <th>Categoría</th>
-                                                            <th>Imagen</th>
-                                                            <th>Nombre</th>
-                                                            <th>Descripción</th>
-                                                            <th>Stock</th>
-                                                            <th>Precio compra</th>
-                                                            <th>Precio venta</th>
-                                                            <th>Fecha ingreso</th>
-                                                            <th>Usuario</th>
-                                                        </tr>
-                                                    </thead>
+                                            <table id="tabla_productos" class="table table-bordered table-striped table-sm" style="width: 100%; font-size: 0.9em;">
+                                              <thead>
+                                                  <tr>
+                                                      <th style="width: 3%;">Nro</th>
+                                                      <th style="width: 8%;">Seleccionar</th>
+                                                       <th style="width: 7%;">Código</th>
+                                                       <th style="width: 8%;">Categoría</th>
+                                                      <th style="width: 6%;">Imagen</th>
+                                                      <th style="width: 12%;">Nombre</th>
+                                                         <th style="width: 16%;">Descripción</th>
+                                                      <th style="width: 5%;">Stock</th>
+                                                      <th style="width: 8%;">P. compra</th>
+                                                      <th style="width: 8%;">P. venta</th>
+                                                      <th style="width: 10%;">F. ingreso</th>
+                                                      <th style="width: 9%;">Usuario</th>
+                                                  </tr>
+                                              </thead>                                                
                                                     <tbody>
                                                         <?php
                                                         $contador = 0;
@@ -135,7 +158,7 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                                                 <td><?php echo $productos_dato['codigo'];?></td>
                                                                 <td><?php echo $productos_dato['categoria'];?></td>
                                                                 <td>
-                                                                    <img src="<?php echo $URL."/almacen/img_productos/".$productos_dato['imagen'];?>" width="50px" alt="img">
+                                                                <img src="<?php echo $URL."/almacen/img_productos/".$productos_dato['imagen'];?>" width="40px" height="40px" style="object-fit: cover;" alt="img">
                                                                 </td>
                                                                 <td><?php echo $productos_dato['nombre'];?></td>
                                                                 <td><?php echo $productos_dato['descripcion'];?></td>
@@ -179,33 +202,34 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                                             <button style="float: right;" id="btn_registrar_carrito" class="btn btn-primary">Agregar al carrito</button>
                                             <div id="respuesta_carrito"></div>
                                             <script>
-                                                $('#btn_registrar_carrito').click(function(){
-                                                    var id_producto= $('#id_producto').val();
-                                                    var cantidad= $('#cantidad').val();
-                                                    if(id_producto==""){
-                                                        alert("Debe seleccionar un producto.");
-                                                    }else if(cantidad=="" || cantidad <= 0){
-                                                        alert("Debe ingresar una cantidad válida.");
-                                                    }else{
-                                                        $.post("../app/controllers/ventas/agregar_al_carrito.php",
-                                                            {id_producto:id_producto, cantidad:cantidad},
-                                                            function (datos) {
-                                                              // Recarga la tabla y luego actualiza el monto
-                                                        $('#carrito_contenido').load('carrito_tabla.php?nocache=' + new Date().getTime(), function() {
-                                                            var nuevoTotal = $('#total_carrito').text();
-                                                            $('#monto_total').text(nuevoTotal);
-                                                        });
-                                                        // Limpiar los campos y cerrar modal
-                                                        $('#id_producto').val('');
-                                                        $('#producto').val('');
-                                                        $('#descripcion').val('');
-                                                        $('#precio_venta').val('');
-                                                        $('#cantidad').val('');
-                                                        $('#modal-buscar_producto').modal('hide');
-                                                            }
-                                                        );
-                                                    }
-                                                });
+                                               $('#btn_registrar_carrito').click(function(){
+    var id_producto= $('#id_producto').val();
+    var cantidad= $('#cantidad').val();
+    if(id_producto==""){
+        alert("Debe seleccionar un producto.");
+    }else if(cantidad=="" || cantidad <= 0){
+        alert("Debe ingresar una cantidad válida.");
+    }else{
+        $.post("../app/controllers/ventas/agregar_al_carrito.php",
+            {id_producto:id_producto, cantidad:cantidad},
+            function (datos) {
+              // Recarga la tabla del carrito
+              $('#carrito_contenido').load('carrito_tabla.php?nocache=' + new Date().getTime(), function() {
+                  // Actualiza el campo correcto con el valor del total del carrito
+                  var nuevoTotal = $('#total_carrito').text();
+                  $('#total_a_cancelar').val(nuevoTotal);
+              });
+              // Limpiar los campos y cerrar modal
+              $('#id_producto').val('');
+              $('#producto').val('');
+              $('#descripcion').val('');
+              $('#precio_venta').val('');
+              $('#cantidad').val('');
+              $('#modal-buscar_producto').modal('hide');
+            }
+        );
+    }
+});
                                             </script>
                                         </div>
                                     </div>
