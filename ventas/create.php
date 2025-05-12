@@ -481,37 +481,37 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
                             </form>
                             <script>
                                $('#form_finalizar_venta').submit(function(e) {
-    // Obtener el valor del span que muestra el total del carrito
-    var total_carrito = parseFloat($('#total_carrito').text().replace(/[^\d.-]/g, ''));
-    
-    // Verificar si hay productos en el carrito
-    if (total_carrito <= 0) {
-        e.preventDefault();
-        Swal.fire({
-            icon: 'warning',
-            title: 'Carrito vacío',
-            text: 'Debe agregar al menos un producto al carrito'
-        });
-        return false;
-    }
-    
-    // Verificar si se ha seleccionado un cliente
-    if (!$('#id_cliente').val()) {
-        e.preventDefault();
-        Swal.fire({
-            icon: 'warning',
-            title: 'Cliente no seleccionado',
-            text: 'Debe seleccionar un cliente antes de finalizar la venta'
-        });
-        return false;
-    }
-    
-    // Transferir ID del cliente y deshabilitar botón
-    $('#id_cliente_hidden').val($('#id_cliente').val());
-    $('#btn_finalizar_venta').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> PROCESANDO...');
-    
-    return true;
-});
+                                    // Obtener el valor del span que muestra el total del carrito
+                                    var total_carrito = parseFloat($('#total_carrito').text().replace(/[^\d.-]/g, ''));
+                                    
+                                    // Verificar si hay productos en el carrito
+                                    if (total_carrito <= 0) {
+                                        e.preventDefault();
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Carrito vacío',
+                                            text: 'Debe agregar al menos un producto al carrito'
+                                        });
+                                        return false;
+                                    }
+                                    
+                                    // Verificar si se ha seleccionado un cliente
+                                    if (!$('#id_cliente').val()) {
+                                        e.preventDefault();
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Cliente no seleccionado',
+                                            text: 'Debe seleccionar un cliente antes de finalizar la venta'
+                                        });
+                                        return false;
+                                    }
+                                    
+                                    // Transferir ID del cliente y deshabilitar botón
+                                    $('#id_cliente_hidden').val($('#id_cliente').val());
+                                    $('#btn_finalizar_venta').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> PROCESANDO...');
+                                    
+                                    return true;
+                                });
                             </script>
                         </div>
                     </div>
@@ -558,6 +558,42 @@ if (isset($_GET['error'])) $error_msg = urldecode($_GET['error']);
             },
             "responsive": true,
             "order": [[2, "asc"]]
+        });
+    });
+
+    // NUEVO SCRIPT: Actualizar el total cuando cambia el carrito por cambios en IVA
+    $(document).ready(function() {
+        // Observador para detectar cambios en el contenido del carrito
+        var carritoObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Esperar un poco a que se actualice completamente el DOM
+                    setTimeout(function() {
+                        var nuevoTotal = $('#total_carrito').text();
+                        $('#total_a_cancelar').val(nuevoTotal);
+                    }, 100);
+                }
+            });
+        });
+        
+        // Configurar el observador para vigilar cambios en el carrito
+        if (document.getElementById('carrito_contenido')) {
+            var config = { childList: true, subtree: true };
+            carritoObserver.observe(document.getElementById('carrito_contenido'), config);
+            
+            // También actualizar el total al cargar la página
+            setTimeout(function() {
+                var totalInicial = $('#total_carrito').text();
+                if (totalInicial) {
+                    $('#total_a_cancelar').val(totalInicial);
+                }
+            }, 200);
+        }
+        
+        // Añadir un manejador de eventos para detectar cuando se actualiza el IVA
+        $(document).on('iva_actualizado', function() {
+            var nuevoTotal = $('#total_carrito').text();
+            $('#total_a_cancelar').val(nuevoTotal);
         });
     });
 </script>
