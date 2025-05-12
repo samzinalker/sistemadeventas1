@@ -7,7 +7,9 @@ $sql_carrito = "SELECT c.*,
                        pro.nombre AS nombre_producto, 
                        pro.descripcion AS descripcion, 
                        pro.precio_venta AS precio_venta, 
-                       pro.stock AS stock 
+                       pro.stock AS stock,
+                       pro.imagen AS imagen,
+                       pro.codigo AS codigo
                 FROM tb_carrito c
                 INNER JOIN tb_almacen pro ON c.id_producto = pro.id_producto
                 WHERE c.id_usuario = :id_usuario AND c.nro_venta = 0";
@@ -47,6 +49,7 @@ if (!isset($_SESSION['iva_productos'])) {
             foreach ($carrito_datos as $carrito_dato): 
                 $contador_de_carrito++;
                 $id_carrito = $carrito_dato['id_carrito'];
+                $id_producto = $carrito_dato['id_producto'];
                 $subtotal = $carrito_dato['cantidad'] * $carrito_dato['precio_venta'];
                 $cantidad_total += $carrito_dato['cantidad'];
                 $precio_total += $subtotal;
@@ -56,11 +59,25 @@ if (!isset($_SESSION['iva_productos'])) {
                 $monto_iva = $subtotal * ($porcentaje_iva / 100);
                 $iva_total += $monto_iva;
                 $total_con_iva = $subtotal + $monto_iva;
+                
+                // Obtener una versión corta de la descripción (máximo 30 caracteres)
+                $descripcion_corta = strlen($carrito_dato['descripcion']) > 30 ? 
+                    substr($carrito_dato['descripcion'], 0, 30) . "..." : 
+                    $carrito_dato['descripcion'];
             ?>
                 <tr>
                     <td><center><?php echo $contador_de_carrito;?></center></td>
                     <td><center><?php echo htmlspecialchars($carrito_dato['nombre_producto']); ?></center></td>
-                    <td><center><?php echo htmlspecialchars($carrito_dato['descripcion']); ?></center></td>
+                    <td>
+                        <div class="d-flex justify-content-center align-items-center">
+                            <?php echo $descripcion_corta; ?>
+                            <button type="button" class="btn btn-sm btn-outline-info ml-2" 
+                                    data-toggle="modal" 
+                                    data-target="#modal-descripcion-carrito<?php echo $id_carrito;?>">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </td>
                     <td><center><?php echo $carrito_dato['cantidad']; ?></center></td>
                     <td><center><?php echo number_format($carrito_dato['precio_venta'],2); ?></center></td>
                     <td><center><?php echo number_format($subtotal,2); ?></center></td>
@@ -69,11 +86,14 @@ if (!isset($_SESSION['iva_productos'])) {
                             <input type="number" class="form-control iva-producto" 
                                    id="iva_producto_<?php echo $id_carrito; ?>"
                                    data-id-carrito="<?php echo $id_carrito; ?>"
+                                   data-id-producto="<?php echo $id_producto; ?>" 
                                    value="<?php echo $porcentaje_iva; ?>"
                                    min="0" step="0.01" style="width: 60px; text-align: center;">
                             <div class="input-group-append">
                                 <button class="btn btn-sm btn-outline-primary btn-actualizar-iva" 
-                                        data-id-carrito="<?php echo $id_carrito; ?>" type="button">
+                                        data-id-carrito="<?php echo $id_carrito; ?>"
+                                        data-id-producto="<?php echo $id_producto; ?>" 
+                                        type="button">
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
                             </div>
@@ -89,6 +109,50 @@ if (!isset($_SESSION['iva_productos'])) {
                         </center>
                     </td>
                 </tr>
+                
+                <!-- Modal para mostrar la descripción completa -->
+                <div class="modal fade" id="modal-descripcion-carrito<?php echo $id_carrito;?>" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header" style="background-color: #343a40; color: white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-file-alt mr-2"></i> Descripción de Producto
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center mb-3">
+                                    <?php if(!empty($carrito_dato['imagen'])): ?>
+                                    <img src="<?php echo $URL."/almacen/img_productos/".$carrito_dato['imagen'];?>" 
+                                         style="max-height: 150px;" alt="Imagen producto" class="img-thumbnail">
+                                    <?php endif; ?>
+                                </div>
+                                <h4 class="text-center mb-3"><?php echo htmlspecialchars($carrito_dato['nombre_producto']); ?></h4>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Descripción Detallada</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text" style="white-space: pre-line;"><?php echo htmlspecialchars($carrito_dato['descripcion']); ?></p>
+                                    </div>
+                                    <div class="card-footer bg-light">
+                                        <div class="d-flex justify-content-between">
+                                            <span><b>Código:</b> <?php echo htmlspecialchars($carrito_dato['codigo']); ?></span>
+                                            <span><b>Precio:</b> $<?php echo number_format($carrito_dato['precio_venta'], 2); ?></span>
+                                            <span><b>Cantidad:</b> <?php echo $carrito_dato['cantidad']; ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
             <?php endforeach; ?>
             <tr>
                 <th colspan="5" style="background-color:#aef77d;text-align:right">Total</th>
@@ -124,11 +188,15 @@ $(document).ready(function() {
     // Función para validar y actualizar el IVA de un producto
     $('.btn-actualizar-iva').on('click', function() {
         const idCarrito = $(this).data('id-carrito');
+        const idProducto = $(this).data('id-producto');
         const inputIva = $('#iva_producto_' + idCarrito);
         let porcentajeIva = parseFloat(inputIva.val());
         
         // Validar que el IVA no sea negativo
-        if (porcentajeIva < 0 || isNaN(porcentajeIva)) {
+        if (isNaN(porcentajeIva)) {
+            porcentajeIva = 0;
+            inputIva.val(0);
+        } else if (porcentajeIva < 0) {
             Swal.fire({
                 icon: 'error',
                 title: 'Valor inválido',
@@ -141,6 +209,7 @@ $(document).ready(function() {
         // Actualizar el valor del IVA en la sesión mediante AJAX
         $.post('../app/controllers/ventas/actualizar_iva_producto.php', {
             id_carrito: idCarrito,
+            id_producto: idProducto,
             porcentaje_iva: porcentajeIva
         }, function(response) {
             try {
