@@ -1,22 +1,13 @@
 <?php
-include ('../../config.php');
+require_once '../../config.php';
+require_once 'LoginController.php';
 
-// Verificar si la sesión está iniciada antes de manipularla
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Instanciar controlador
+$loginController = new LoginController($pdo);
 
-// Limpiar específicamente las variables de sesión
-if (isset($_SESSION['sesion_email']) || isset($_SESSION['id_usuario']) || isset($_SESSION['rol'])) {
-    unset($_SESSION['sesion_email']);
-    unset($_SESSION['id_usuario']);
-    unset($_SESSION['rol']);
-}
+// Cerrar sesión
+$loginController->logout();
 
-// Destruir la sesión completamente
-session_destroy();
-
-// Redirigir al usuario a la página de inicio o login
-header('Location: '.$URL.'/');
+// Redireccionar al login
+header('Location: ' . $URL . '/login');
 exit();
-?>
