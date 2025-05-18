@@ -1,88 +1,53 @@
 <?php
-require_once '../../config.php';
-require_once __DIR__ . '/../../models/UsuarioModel.php';
+// No necesitamos ruta relativa, usamos constantes definidas en config.php
+// El archivo config.php ya está incluido desde perfil/index.php
 
-// Iniciar sesión (si no está iniciada)
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Verificar si el usuario está autenticado
+// Verificar que haya una sesión activa
 if (!isset($_SESSION['id_usuario'])) {
-    $_SESSION['mensaje'] = "Debe iniciar sesión para realizar esta acción";
+    // Redirigir si no hay sesión
+    $_SESSION['mensaje'] = "Error: No se ha iniciado sesión correctamente";
     $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/login');
-    exit();
-}
-
-// Verificar que sea una petición POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $_SESSION['mensaje'] = "Método no permitido";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/perfil');
-    exit();
-}
-
-// Obtener datos del formulario
-$password_actual = isset($_POST['password_actual']) ? $_POST['password_actual'] : '';
-$password_nueva = isset($_POST['password_nueva']) ? $_POST['password_nueva'] : '';
-$password_confirmar = isset($_POST['password_confirmar']) ? $_POST['password_confirmar'] : '';
-
-// Validar datos
-if (empty($password_actual) || empty($password_nueva) || empty($password_confirmar)) {
-    $_SESSION['mensaje'] = "Todos los campos de contraseña son obligatorios";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/perfil');
-    exit();
-}
-
-// Validar longitud mínima de la nueva contraseña
-if (strlen($password_nueva) < 6) {
-    $_SESSION['mensaje'] = "La nueva contraseña debe tener al menos 6 caracteres";
-    $_SESSION['icono'] = "warning";
-    header('Location: ' . $URL . '/perfil');
-    exit();
-}
-
-// Verificar que las nuevas contraseñas coincidan
-if ($password_nueva !== $password_confirmar) {
-    $_SESSION['mensaje'] = "Las nuevas contraseñas no coinciden";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/perfil');
+    header('Location: ' . BASE_URL . '/login');
     exit();
 }
 
 try {
-    // Instanciar modelo de usuario
-    $usuarioModel = new UsuarioModel($pdo);
+    // Obtener datos del usuario actual con información de rol
+    $id_usuario = $_SESSION['id_usuario'];
+
+    $sql = "SELECT u.*, r.rol 
+            FROM tb_usuarios u 
+            INNER JOIN tb_roles r ON u.id_rol = r.id_rol 
+            WHERE u.id_usuario = :id_usuario";
     
-    // Verificar la contraseña actual
-    if (!$usuarioModel->verifyPassword($_SESSION['id_usuario'], $password_actual)) {
-        $_SESSION['mensaje'] = "La contraseña actual es incorrecta";
+    $query = $pdo->prepare($sql);
+    $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+    $query->execute();
+
+    if ($query->rowCount() > 0) {
+        $usuario = $query->fetch(PDO::FETCH_ASSOC);
+        
+        // Asignar variables para usar en la vista
+        $nombres = htmlspecialchars($usuario['nombres']);
+        $email = htmlspecialchars($usuario['email']);
+        $imagen_perfil = $usuario['imagen_perfil'];
+        $rol = htmlspecialchars($usuario['rol']);
+        $fyh_creacion = $usuario['fyh_creacion'];
+        $fyh_actualizacion = $usuario['fyh_actualizacion'];
+    } else {
+        // Redireccionar si no se encuentra el usuario
+        $_SESSION['mensaje'] = "Error: No se encontraron datos del usuario";
         $_SESSION['icono'] = "error";
-        header('Location: ' . $URL . '/perfil');
+        header('Location: ' . BASE_URL . '/login');
         exit();
     }
-    
-    // Actualizar la contraseña
-    $resultado = $usuarioModel->updatePassword($_SESSION['id_usuario'], $password_nueva);
-    
-    if ($resultado === true) {
-        $_SESSION['mensaje'] = "Contraseña actualizada correctamente";
-        $_SESSION['icono'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al actualizar la contraseña";
-        $_SESSION['icono'] = "error";
-    }
-    
-} catch (Exception $e) {
+} catch (PDOException $e) {
     // Registrar error en el log
-    error_log("Error en actualizar_password.php: " . $e->getMessage());
+    error_log("Error en datos_perfil.php: " . $e->getMessage());
     
-    $_SESSION['mensaje'] = "Error interno del sistema";
+    // Redireccionar con mensaje de error
+    $_SESSION['mensaje'] = "Error al cargar datos del perfil";
     $_SESSION['icono'] = "error";
+    header('Location: ' . BASE_URL . '/login');
+    exit();
 }
-
-// Redireccionar de vuelta al perfil
-header('Location: ' . $URL . '/perfil');
-exit();

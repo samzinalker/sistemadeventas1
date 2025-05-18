@@ -2,12 +2,30 @@
 include('../app/config.php');
 include('../layout/sesion.php');
 
-include('../layout/parte1.php');
-include('../app/controllers/perfil/datos_perfil.php');
+// Incluir controlador de perfil
+require_once '../app/controllers/perfil/PerfilController.php';
 
 // Variables para el menú
 $modulo_abierto = 'perfil';
 $pagina_activa = 'perfil_datos';
+
+// Inicializar controlador y obtener datos de perfil
+$perfilController = new PerfilController($pdo);
+$datosPerfil = $perfilController->getDatosPerfilUsuario($_SESSION['id_usuario']);
+
+// Si hay error al obtener los datos, redireccionar
+if (empty($datosPerfil)) {
+    $_SESSION['mensaje'] = "Error al cargar datos del perfil";
+    $_SESSION['icono'] = "error";
+    header('Location: ' . $URL . '/login');
+    exit();
+}
+
+// Extraer variables para la vista
+extract($datosPerfil);
+
+// Incluir el header y la navegación
+include('../layout/parte1.php');
 ?>
 
 <!-- Content Wrapper. Contains page content -->
@@ -33,19 +51,21 @@ $pagina_activa = 'perfil_datos';
                     <div class="card card-primary card-outline">
                         <div class="card-body box-profile">
                             <div class="text-center">
-                                <?php
-                                $ruta_imagen = !empty($imagen_perfil) ? $URL.'/public/images/perfiles/'.$imagen_perfil : $URL.'/public/images/perfiles/user_default.png';
-                                ?>
-                                <img class="profile-user-img img-fluid img-circle" 
-                                     src="<?php echo $ruta_imagen; ?>" 
-                                     alt="Imagen de perfil de usuario"
-                                     style="width: 150px; height: 150px; object-fit: cover;">
+                          
+                            <?php
+                            $ruta_imagen = !empty($imagen_perfil) ? BASE_URL.'/public/images/perfiles/'.$imagen_perfil : BASE_URL.'/public/images/perfiles/user_default.png';
+                            ?>
+                            <img class="profile-user-img img-fluid img-circle" 
+                                 src="<?php echo $ruta_imagen; ?>" 
+                                 alt="Imagen de perfil de usuario"
+                                 style="width: 150px; height: 150px; object-fit: cover;">
                             </div>
 
                             <h3 class="profile-username text-center"><?php echo $nombres; ?></h3>
                             <p class="text-muted text-center"><?php echo $rol; ?></p>
 
                             <form action="../app/controllers/perfil/actualizar_imagen.php" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                 <div class="form-group">
                                     <label for="imagen">Cambiar imagen de perfil</label>
                                     <div class="input-group">
@@ -93,6 +113,7 @@ $pagina_activa = 'perfil_datos';
                         </div>
                         <div class="card-body">
                             <form action="../app/controllers/perfil/actualizar_datos.php" method="post">
+                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                 <div class="form-group">
                                     <label for="nombres">Nombre Completo</label>
                                     <input type="text" class="form-control" id="nombres" name="nombres" value="<?php echo $nombres; ?>" required>
@@ -113,6 +134,7 @@ $pagina_activa = 'perfil_datos';
                         </div>
                         <div class="card-body">
                             <form action="../app/controllers/perfil/actualizar_password.php" method="post" id="form-password">
+                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                 <div class="form-group">
                                     <label for="password_actual">Contraseña Actual</label>
                                     <input type="password" class="form-control" id="password_actual" name="password_actual" required>
