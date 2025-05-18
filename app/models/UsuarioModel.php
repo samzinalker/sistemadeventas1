@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../core/Model.php';
 require_once __DIR__ . '/../utils/Security.php';
+require_once __DIR__ . '/../services/AuthService.php';
+require_once __DIR__ . '/../services/SecurityLogger.php';
 
 /**
  * Modelo para gestión de usuarios
@@ -9,6 +11,8 @@ class UsuarioModel extends Model {
     protected $table = 'tb_usuarios';
     protected $primaryKey = 'id_usuario';
     protected $security;
+    protected $authService;
+    protected $logger;
     
     /**
      * Constructor
@@ -17,6 +21,8 @@ class UsuarioModel extends Model {
     public function __construct($pdo = null) {
         parent::__construct($pdo);
         $this->security = new Security();
+        $this->logger = new SecurityLogger($pdo);
+        $this->authService = new AuthService($pdo, $this->logger);
     }
     
     /**
@@ -42,7 +48,7 @@ class UsuarioModel extends Model {
             
             return $usuarios;
         } catch (PDOException $e) {
-            $this->logError("Error en getAllWithRoles: " . $e->getMessage());
+            $this->logger->logError("Error en getAllWithRoles: " . $e->getMessage());
             return [];
         }
     }
@@ -72,7 +78,7 @@ class UsuarioModel extends Model {
             
             return $usuario;
         } catch (PDOException $e) {
-            $this->logError("Error en getByIdWithRole: " . $e->getMessage());
+            $this->logger->logError("Error en getByIdWithRole: " . $e->getMessage());
             return false;
         }
     }
@@ -93,7 +99,7 @@ class UsuarioModel extends Model {
             
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            $this->logError("Error en findByEmail: " . $e->getMessage());
+            $this->logger->logError("Error en findByEmail: " . $e->getMessage());
             return false;
         }
     }
@@ -126,11 +132,7 @@ class UsuarioModel extends Model {
         try {
             // Cifrar la contraseña con un algoritmo seguro
             if (isset($data['password_user'])) {
-                $data['password_user'] = password_hash(
-                    $data['password_user'], 
-                    PASSWORD_ARGON2ID, 
-                    ['memory_cost' => 2048, 'time_cost' => 4, 'threads' => 3]
-                );
+                $data['password_user'] = $this->authService->hashPassword($data['password_user']);
             }
             
             // Registrar fecha de creación
@@ -146,74 +148,12 @@ class UsuarioModel extends Model {
             $userId = parent::create($data);
             
             // Registrar la creación del usuario
-            $this->logActivity('create', $userId, 'Usuario creado');
+            $this->logger->logActivity('create', $userId, 'Usuario creado');
             
             return $userId;
         } catch (PDOException $e) {
-            $this->logError("Error al crear usuario: " . $e->getMessage());
+            $this->logger->logError("Error al crear usuario: " . $e->getMessage());
             return "Error al crear el usuario: error interno del sistema";
-        }
-    }
-    
-    /**
-     * Actualiza la contraseña de un usuario con validaciones de seguridad
-     * @param int $id ID del usuario
-     * @param string $password Nueva contraseña (sin cifrar)
-     * @param bool $requiresOldPassword Si se requiere la contraseña actual
-     * @param string $oldPassword Contraseña actual (si se requiere)
-     * @return bool|string True si se actualizó o mensaje de error
-     */
-    public function updatePassword($id, $password, $requiresOldPassword = false, $oldPassword = '') {
-        try {
-            // Validar longitud de la contraseña
-            if (strlen($password) < 8) {
-                return "La contraseña debe tener al menos 8 caracteres";
-            }
-            
-            // Verificar complejidad de la contraseña
-            if (!$this->security->isStrongPassword($password)) {
-                return "La contraseña debe incluir números, letras mayúsculas y minúsculas, y al menos un carácter especial";
-            }
-            
-            // Verificar contraseña actual si es requerido
-            if ($requiresOldPassword) {
-                if (!$this->verifyPassword($id, $oldPassword)) {
-                    return "La contraseña actual es incorrecta";
-                }
-            }
-            
-            // Cifrar la nueva contraseña con un algoritmo seguro
-            $hashedPassword = password_hash(
-                $password, 
-                PASSWORD_ARGON2ID, 
-                ['memory_cost' => 2048, 'time_cost' => 4, 'threads' => 3]
-            );
-            
-            // Preparar actualización
-            $sql = "UPDATE {$this->table} SET 
-                    password_user = :password, 
-                    fyh_actualizacion = :fyh_actualizacion
-                    WHERE id_usuario = :id_usuario";
-                    
-            $stmt = $this->pdo->prepare($sql);
-            $fyh_actualizacion = date('Y-m-d H:i:s');
-            
-            $stmt->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
-            $stmt->bindParam(':fyh_actualizacion', $fyh_actualizacion);
-            $stmt->bindParam(':id_usuario', $id, PDO::PARAM_INT);
-            
-            $result = $stmt->execute();
-            
-            if ($result && $stmt->rowCount() > 0) {
-                // Registrar el cambio de contraseña
-                $this->logActivity('update_password', $id, 'Contraseña actualizada');
-                return true;
-            } else {
-                return "No se pudo actualizar la contraseña";
-            }
-        } catch (PDOException $e) {
-            $this->logError("Error al actualizar contraseña: " . $e->getMessage());
-            return "Error interno al actualizar la contraseña";
         }
     }
     
@@ -250,13 +190,13 @@ class UsuarioModel extends Model {
             
             if ($result && $stmt->rowCount() > 0) {
                 // Registrar el cambio de imagen
-                $this->logActivity('update_image', $id, 'Imagen de perfil actualizada');
+                $this->logger->logActivity('update_image', $id, 'Imagen de perfil actualizada');
                 return true;
             } else {
                 return "No se pudo actualizar la imagen de perfil";
             }
         } catch (PDOException $e) {
-            $this->logError("Error al actualizar imagen de perfil: " . $e->getMessage());
+            $this->logger->logError("Error al actualizar imagen de perfil: " . $e->getMessage());
             return "Error interno al actualizar la imagen";
         }
     }
@@ -268,38 +208,7 @@ class UsuarioModel extends Model {
      * @return array|false Datos del usuario si las credenciales son correctas o false
      */
     public function validateCredentials($email, $password) {
-        // Implementar control de intentos fallidos
-        if ($this->tooManyFailedAttempts($email)) {
-            $this->logActivity('login_blocked', 0, "Bloqueo de login para $email por demasiados intentos fallidos");
-            return false;
-        }
-        
-        $user = $this->findByEmail($email);
-        
-        if ($user && password_verify($password, $user['password_user'])) {
-            // Verificar si el hash necesita ser actualizado
-            if (password_needs_rehash($user['password_user'], PASSWORD_ARGON2ID)) {
-                // Actualizar el hash a un algoritmo más seguro
-                $newHash = password_hash($password, PASSWORD_ARGON2ID);
-                $this->updatePasswordHash($user['id_usuario'], $newHash);
-            }
-            
-            // Restablecer contador de intentos fallidos
-            $this->resetFailedAttempts($email);
-            
-            // Registrar login exitoso
-            $this->logActivity('login_success', $user['id_usuario'], 'Login exitoso');
-            
-            return $user;
-        }
-        
-        // Incrementar contador de intentos fallidos
-        $this->recordFailedAttempt($email);
-        
-        // Registrar intento fallido
-        $this->logActivity('login_failed', 0, "Intento fallido para $email");
-        
-        return false;
+        return $this->authService->authenticateUser($email, $password);
     }
     
     /**
@@ -309,32 +218,19 @@ class UsuarioModel extends Model {
      * @return bool True si coincide, false en caso contrario
      */
     public function verifyPassword($userId, $password) {
-        $user = $this->getById($userId);
-        
-        if ($user && password_verify($password, $user['password_user'])) {
-            return true;
-        }
-        
-        return false;
+        return $this->authService->verifyUserPassword($userId, $password);
     }
     
     /**
-     * Actualiza solo el hash de la contraseña (sin cambiar la contraseña)
-     * @param int $userId ID del usuario
-     * @param string $newHash Nuevo hash de contraseña
-     * @return bool Resultado de la operación
+     * Actualiza la contraseña de un usuario con validaciones de seguridad
+     * @param int $id ID del usuario
+     * @param string $password Nueva contraseña (sin cifrar)
+     * @param bool $requiresOldPassword Si se requiere la contraseña actual
+     * @param string $oldPassword Contraseña actual (si se requiere)
+     * @return bool|string True si se actualizó o mensaje de error
      */
-    private function updatePasswordHash($userId, $newHash) {
-        try {
-            $sql = "UPDATE {$this->table} SET password_user = :password_user WHERE id_usuario = :id_usuario";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':password_user', $newHash, PDO::PARAM_STR);
-            $stmt->bindParam(':id_usuario', $userId, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            $this->logError("Error al actualizar hash de contraseña: " . $e->getMessage());
-            return false;
-        }
+    public function updatePassword($id, $password, $requiresOldPassword = false, $oldPassword = '') {
+        return $this->authService->updateUserPassword($id, $password, $requiresOldPassword, $oldPassword);
     }
     
     /**
@@ -372,99 +268,5 @@ class UsuarioModel extends Model {
         }
         
         return $errors;
-    }
-    
-    /**
-     * Verifica si hay demasiados intentos fallidos de login
-     * @param string $email Email del usuario
-     * @return bool True si hay demasiados intentos
-     */
-    private function tooManyFailedAttempts($email) {
-        // Usar una tabla o sistema para rastrear intentos fallidos
-        // Como ejemplo simplificado, guardaremos en la sesión
-        session_start();
-        
-        if (!isset($_SESSION['login_attempts'])) {
-            $_SESSION['login_attempts'] = [];
-        }
-        
-        if (!isset($_SESSION['login_attempts'][$email])) {
-            $_SESSION['login_attempts'][$email] = [
-                'count' => 0,
-                'last_attempt' => 0
-            ];
-        }
-        
-        $attempts = $_SESSION['login_attempts'][$email];
-        $currentTime = time();
-        
-        // Si han pasado más de 30 minutos desde el último intento, reiniciar contador
-        if ($currentTime - $attempts['last_attempt'] > 1800) {
-            $_SESSION['login_attempts'][$email]['count'] = 0;
-            $_SESSION['login_attempts'][$email]['last_attempt'] = $currentTime;
-            return false;
-        }
-        
-        // Bloquear después de 5 intentos fallidos
-        return $attempts['count'] >= 5;
-    }
-    
-    /**
-     * Reinicia el contador de intentos fallidos
-     * @param string $email Email del usuario
-     * @return void
-     */
-    private function resetFailedAttempts($email) {
-        session_start();
-        
-        if (isset($_SESSION['login_attempts']) && isset($_SESSION['login_attempts'][$email])) {
-            $_SESSION['login_attempts'][$email]['count'] = 0;
-            $_SESSION['login_attempts'][$email]['last_attempt'] = time();
-        }
-    }
-    
-    /**
-     * Registra un intento fallido de login
-     * @param string $email Email del usuario
-     * @return void
-     */
-    private function recordFailedAttempt($email) {
-        session_start();
-        
-        if (!isset($_SESSION['login_attempts'])) {
-            $_SESSION['login_attempts'] = [];
-        }
-        
-        if (!isset($_SESSION['login_attempts'][$email])) {
-            $_SESSION['login_attempts'][$email] = [
-                'count' => 0,
-                'last_attempt' => 0
-            ];
-        }
-        
-        $_SESSION['login_attempts'][$email]['count']++;
-        $_SESSION['login_attempts'][$email]['last_attempt'] = time();
-    }
-    
-    /**
-     * Registra actividad del usuario en el log
-     * @param string $activity Tipo de actividad
-     * @param int $userId ID del usuario
-     * @param string $description Descripción de la actividad
-     * @return void
-     */
-    private function logActivity($activity, $userId, $description) {
-        $logDir = __DIR__ . '/../../logs';
-        if (!file_exists($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-        
-        $logFile = $logDir . '/user_activity.log';
-        $date = date('Y-m-d H:i:s');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-        
-        $logMessage = "[$date] Activity: $activity, User ID: $userId, IP: $ip, Description: $description, User-Agent: $userAgent\n";
-        error_log($logMessage, 3, $logFile);
     }
 }
