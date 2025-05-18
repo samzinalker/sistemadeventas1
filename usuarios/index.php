@@ -71,25 +71,23 @@ include('../layout/parte1.php');
                                             <td><?php echo htmlspecialchars($usuario_dato['nombres']); ?></td>
                                             <td><?php echo htmlspecialchars($usuario_dato['email']); ?></td>
                                             <td><center><?php echo htmlspecialchars($usuario_dato['nombre_rol']); ?></center></td> {/* Cambio aquí */}
+                                            // ... (dentro del bucle foreach en la tabla) ...
                                             <td>
                                                 <center>
                                                     <div class="btn-group">
-                                                        <a href="show.php?id=<?php echo $id_usuario; ?>" class="btn btn-info btn-sm">
+                                                        <a href="show.php?id=<?php echo $id_usuario; ?>" class="btn btn-info btn-sm" title="Ver Detalles">
                                                             <i class="fa fa-eye"></i> Ver
                                                         </a>
-                                                        <a href="update.php?id=<?php echo $id_usuario; ?>" class="btn btn-success btn-sm">
+                                                        <a href="update.php?id=<?php echo $id_usuario; ?>" class="btn btn-success btn-sm" title="Editar Usuario">
                                                             <i class="fa fa-pencil-alt"></i> Editar
                                                         </a>
                                                         
-                                                       
-                                                            {/* Para delete.php, es mejor usar un formulario POST o un controlador específico */}
-                                                            {/* Aquí asumiré que delete.php es un controlador que maneja la lógica */}
-                                                            <form action="<?php echo $URL; ?>/app/controllers/usuarios/delete_controller.php" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.');">
-                                                              <input type="hidden" name="id_usuario_a_eliminar" value="<?php echo $id_usuario; ?>">
-                                                              <button type="submit" class="btn btn-danger btn-sm">
-                                                                  <i class="fa fa-trash"></i> Borrar
-                                                              </button>
-                                                              </form>
+                                                        <form action="<?php echo htmlspecialchars($URL . '/app/controllers/usuarios/delete_controller.php'); ?>" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar a este usuario? Esta acción no se puede deshacer.');">
+                                                            <input type="hidden" name="id_usuario_a_eliminar" value="<?php echo htmlspecialchars($id_usuario); ?>">
+                                                            <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Usuario">
+                                                                <i class="fa fa-trash"></i> Borrar
+                                                            </button>
+                                                        </form>
                                                     </div>
                                                 </center>
                                             </td>
