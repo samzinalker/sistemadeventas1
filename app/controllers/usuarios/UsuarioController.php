@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/RolModel.php';
 require_once __DIR__ . '/../../utils/FileUpload.php';
+require_once __DIR__ . '/../../utils/Security.php';
 
 /**
  * Controlador para el módulo de usuarios
@@ -10,6 +11,7 @@ class UsuarioController {
     private $usuarioModel;
     private $rolModel;
     private $fileUpload;
+    private $security;
     
     /**
      * Constructor
@@ -19,6 +21,23 @@ class UsuarioController {
         $this->usuarioModel = new UsuarioModel($pdo);
         $this->rolModel = new RolModel($pdo);
         $this->fileUpload = new FileUpload();
+        $this->security = new Security();
+    }
+    
+    /**
+     * Verifica permisos de administrador
+     * @return bool True si el usuario actual es administrador
+     */
+    public function checkAdminPermission() {
+        if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'administrador') {
+            // Registrar intento no autorizado
+            $this->security->logSuspiciousActivity(
+                'unauthorized_access', 
+                'Intento de acceso a módulo de usuarios sin permisos'
+            );
+            return false;
+        }
+        return true;
     }
     
     /**
@@ -26,7 +45,20 @@ class UsuarioController {
      * @return array Lista de usuarios
      */
     public function index() {
-        return $this->usuarioModel->getAllWithRoles();
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
+            return [
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción',
+                'data' => []
+            ];
+        }
+        
+        $usuarios = $this->usuarioModel->getAllWithRoles();
+        return [
+            'status' => 'success',
+            'data' => $usuarios
+        ];
     }
     
     /**
@@ -34,8 +66,21 @@ class UsuarioController {
      * @return array Datos para el formulario
      */
     public function create() {
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
+            return [
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción',
+                'data' => []
+            ];
+        }
+        
         return [
-            'roles' => $this->rolModel->getAll()
+            'status' => 'success',
+            'data' => [
+                'roles' => $this->rolModel->getAll(),
+                'csrf_token' => $this->security->generateCSRFToken()
+            ]
         ];
     }
     
@@ -46,19 +91,33 @@ class UsuarioController {
      * @return array Resultado de la operación
      */
     public function store($data, $files = []) {
-        // Validar datos
-        if (empty($data['nombres']) || empty($data['email']) || empty($data['password']) || empty($data['id_rol'])) {
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
             return [
-                'status' => 'error', 
-                'message' => 'Todos los campos son obligatorios'
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción'
             ];
         }
         
-        // Verificar que la contraseña tenga al menos 6 caracteres
-        if (strlen($data['password']) < 6) {
+        // Verificar token CSRF
+        if (!isset($data['csrf_token']) || !$this->security->verifyCSRFToken($data['csrf_token'])) {
+            $this->security->logSuspiciousActivity('csrf_attempt', 'Intento CSRF en creación de usuario');
+            return [
+                'status' => 'error',
+                'message' => 'Solicitud inválida o expirada, por favor recargue la página e intente nuevamente'
+            ];
+        }
+        
+        // Sanitizar datos
+        $data = $this->security->sanitizeInput($data);
+        
+        // Validar datos
+        $validationErrors = $this->validateUserData($data);
+        if (!empty($validationErrors)) {
             return [
                 'status' => 'error', 
-                'message' => 'La contraseña debe tener al menos 6 caracteres'
+                'message' => $validationErrors[0], // Mostrar el primer error
+                'errors' => $validationErrors
             ];
         }
         
@@ -109,10 +168,43 @@ class UsuarioController {
     /**
      * Obtener usuario por ID para mostrar
      * @param int $id ID del usuario
-     * @return array|false Datos del usuario o false
+     * @return array Resultado de la operación
      */
     public function show($id) {
-        return $this->usuarioModel->getByIdWithRole($id);
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
+            return [
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción',
+                'data' => null
+            ];
+        }
+        
+        // Validar ID
+        $id = intval($id);
+        if ($id <= 0) {
+            return [
+                'status' => 'error',
+                'message' => 'ID de usuario inválido',
+                'data' => null
+            ];
+        }
+        
+        $usuario = $this->usuarioModel->getByIdWithRole($id);
+        
+        if ($usuario) {
+            return [
+                'status' => 'success',
+                'data' => $usuario,
+                'csrf_token' => $this->security->generateCSRFToken()
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Usuario no encontrado',
+                'data' => null
+            ];
+        }
     }
     
     /**
@@ -121,10 +213,44 @@ class UsuarioController {
      * @return array Datos para el formulario
      */
     public function edit($id) {
-        return [
-            'usuario' => $this->usuarioModel->getById($id),
-            'roles' => $this->rolModel->getAll()
-        ];
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
+            return [
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción',
+                'data' => null
+            ];
+        }
+        
+        // Validar ID
+        $id = intval($id);
+        if ($id <= 0) {
+            return [
+                'status' => 'error',
+                'message' => 'ID de usuario inválido',
+                'data' => null
+            ];
+        }
+        
+        $usuario = $this->usuarioModel->getById($id);
+        $roles = $this->rolModel->getAll();
+        
+        if ($usuario) {
+            return [
+                'status' => 'success',
+                'data' => [
+                    'usuario' => $usuario,
+                    'roles' => $roles,
+                    'csrf_token' => $this->security->generateCSRFToken()
+                ]
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Usuario no encontrado',
+                'data' => null
+            ];
+        }
     }
     
     /**
@@ -135,11 +261,42 @@ class UsuarioController {
      * @return array Resultado de la operación
      */
     public function update($id, $data, $files = []) {
-        // Validar datos
-        if (empty($data['nombres']) || empty($data['email']) || empty($data['id_rol'])) {
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
+            return [
+                'status' => 'error',
+                'message' => 'No tiene permisos para esta acción'
+            ];
+        }
+        
+        // Verificar token CSRF
+        if (!isset($data['csrf_token']) || !$this->security->verifyCSRFToken($data['csrf_token'])) {
+            $this->security->logSuspiciousActivity('csrf_attempt', 'Intento CSRF en actualización de usuario');
+            return [
+                'status' => 'error',
+                'message' => 'Solicitud inválida o expirada, por favor recargue la página e intente nuevamente'
+            ];
+        }
+        
+        // Validar ID
+        $id = intval($id);
+        if ($id <= 0) {
+            return [
+                'status' => 'error',
+                'message' => 'ID de usuario inválido'
+            ];
+        }
+        
+        // Sanitizar datos
+        $data = $this->security->sanitizeInput($data);
+        
+        // Validar datos básicos (sin contraseña)
+        $validationErrors = $this->validateUserDataForUpdate($data);
+        if (!empty($validationErrors)) {
             return [
                 'status' => 'error', 
-                'message' => 'Todos los campos son obligatorios'
+                'message' => $validationErrors[0], // Mostrar el primer error
+                'errors' => $validationErrors
             ];
         }
         
@@ -152,6 +309,15 @@ class UsuarioController {
             ];
         }
         
+        // Verificar email
+        $usuarioExistente = $this->usuarioModel->findByEmail($data['email']);
+        if ($usuarioExistente && $usuarioExistente['id_usuario'] != $id) {
+            return [
+                'status' => 'error',
+                'message' => 'El email ya está en uso por otro usuario'
+            ];
+        }
+        
         // Procesar imagen si se ha subido
         if (!empty($files['imagen']['name'])) {
             $resultado = $this->fileUpload->uploadProfileImage($files['imagen']);
@@ -159,6 +325,14 @@ class UsuarioController {
             if ($resultado['status'] === 'success') {
                 // Actualizar imagen de perfil
                 $this->usuarioModel->updateProfileImage($id, $resultado['filename']);
+                
+                // Eliminar imagen anterior si no es la predeterminada
+                if ($usuario['imagen_perfil'] != 'user_default.png') {
+                    $rutaImagenAnterior = $_SERVER['DOCUMENT_ROOT'] . '/sistemadeventas/public/images/perfiles/' . $usuario['imagen_perfil'];
+                    if (file_exists($rutaImagenAnterior)) {
+                        unlink($rutaImagenAnterior);
+                    }
+                }
             } else {
                 return [
                     'status' => 'error', 
@@ -177,10 +351,17 @@ class UsuarioController {
         
         // Actualizar contraseña si se proporciona
         if (!empty($data['password'])) {
-            if (strlen($data['password']) < 6) {
+            if (strlen($data['password']) < 8) {
                 return [
                     'status' => 'error', 
-                    'message' => 'La contraseña debe tener al menos 6 caracteres'
+                    'message' => 'La contraseña debe tener al menos 8 caracteres'
+                ];
+            }
+            
+            if (!$this->security->isStrongPassword($data['password'])) {
+                return [
+                    'status' => 'error', 
+                    'message' => 'La contraseña debe incluir números, letras mayúsculas y minúsculas, y al menos un carácter especial'
                 ];
             }
             
@@ -210,41 +391,18 @@ class UsuarioController {
     }
     
     /**
-     * Eliminar usuario
+     * Eliminar usuario con confirmación
      * @param int $id ID del usuario
+     * @param string $confirmToken Token de confirmación
      * @return array Resultado de la operación
      */
-    public function destroy($id) {
-        // Verificar que el usuario existe
-        $usuario = $this->usuarioModel->getById($id);
-        if (!$usuario) {
-            return [
-                'status' => 'error', 
-                'message' => 'Usuario no encontrado'
-            ];
-        }
-        
-        // No permitir eliminar el usuario con ID 1 (administrador principal)
-        if ($id == 1) {
-            return [
-                'status' => 'error', 
-                'message' => 'No se puede eliminar el usuario administrador principal'
-            ];
-        }
-        
-        // Eliminar usuario
-        $result = $this->usuarioModel->delete($id);
-        
-        if ($result === true) {
-            return [
-                'status' => 'success',
-                'message' => 'Usuario eliminado correctamente'
-            ];
-        } else {
+    public function destroy($id, $confirmToken) {
+        // Verificar permisos
+        if (!$this->checkAdminPermission()) {
             return [
                 'status' => 'error',
-                'message' => is_string($result) ? $result : 'Error al eliminar el usuario'
+                'message' => 'No tiene permisos para esta acción'
             ];
         }
-    }
-}
+        
+        
