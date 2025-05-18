@@ -1,58 +1,78 @@
 <?php
-include ('../../config.php');
+// Asumimos que config.php (para $pdo, $URL, $fechaHora) y funciones.php ya están cargados 
+// en el script que llama a este controlador (usuarios/create.php o un router central).
+// Si no, deben incluirse aquí. Por seguridad, verificamos:
+if (session_status() === PHP_SESSION_NONE) {
+    session_start(); // Necesario para los mensajes de sesión
+}
 
-// Obtener datos del formulario
-$nombres = $_POST['nombres'];
-$email = $_POST['email'];
-$rol = $_POST['rol'];
-$password_user = $_POST['password_user'];
+// Incluir dependencias
+require_once __DIR__ . '/../../config.php'; // Para $pdo, $URL, $fechaHora
+require_once __DIR__ . '/../../models/UsuarioModel.php';
+require_once __DIR__ . '/../../utils/Validator.php'; // Asumiendo que existe y tiene los métodos necesarios
+require_once __DIR__ . '/funciones.php'; // Para setMensaje, redirigir, procesarPassword
+
+// Verificar que la solicitud sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    setMensaje("Acceso no permitido.", "error");
+    redirigir('/usuarios/create.php'); // Redirigir a la página del formulario
+}
+
+// Instanciar modelos
+$usuarioModel = new UsuarioModel($pdo, $URL);
+
+// Validar campos requeridos
+$campos_requeridos = ['nombres', 'email', 'rol', 'password_user', 'password_repeat'];
+$campos_faltantes = Validator::requiredFields($_POST, $campos_requeridos);
+
+if (!empty($campos_faltantes)) {
+    $campos_str = implode(', ', $campos_faltantes);
+    setMensaje("Los siguientes campos son obligatorios: {$campos_str}.", "error");
+    redirigir('/usuarios/create.php');
+}
+
+// Obtener y limpiar datos del formulario
+$nombres = trim($_POST['nombres']);
+$email = trim($_POST['email']);
+$id_rol = filter_input(INPUT_POST, 'rol', FILTER_VALIDATE_INT);
+$password = $_POST['password_user']; // No trim, la contraseña puede tener espacios intencionales
 $password_repeat = $_POST['password_repeat'];
 
-try {
-    // Verificar si el correo ya está registrado
-    $sql_check = "SELECT COUNT(*) FROM tb_usuarios WHERE email = :email";
-    $query_check = $pdo->prepare($sql_check);
-    $query_check->bindParam(':email', $email, PDO::PARAM_STR);
-    $query_check->execute();
-    $email_exists = $query_check->fetchColumn();
-
-    if ($email_exists > 0) {
-        session_start();
-        $_SESSION['mensaje'] = "El correo ya está registrado. Intente con otro.";
-        $_SESSION['icono'] = "error";
-        header('Location: '.$URL.'/usuarios/create.php');
-        exit();
-    }
-
-    // Validar si las contraseñas coinciden
-    if ($password_user === $password_repeat) {
-        $password_hash = password_hash($password_user, PASSWORD_DEFAULT);
-
-        // Insertar el nuevo usuario
-        $sentencia = $pdo->prepare("INSERT INTO tb_usuarios 
-            (nombres, email, id_rol, password_user, fyh_creacion) 
-            VALUES (:nombres, :email, :id_rol, :password_user, :fyh_creacion)");
-        $sentencia->bindParam(':nombres', $nombres);
-        $sentencia->bindParam(':email', $email);
-        $sentencia->bindParam(':id_rol', $rol);
-        $sentencia->bindParam(':password_user', $password_hash);
-        $sentencia->bindParam(':fyh_creacion', $fechaHora);
-        $sentencia->execute();
-
-        session_start();
-        $_SESSION['mensaje'] = "Usuario registrado correctamente.";
-        $_SESSION['icono'] = "success";
-        header('Location: '.$URL.'/usuarios/');
-    } else {
-        session_start();
-        $_SESSION['mensaje'] = "Las contraseñas no coinciden. Intente de nuevo.";
-        $_SESSION['icono'] = "error";
-        header('Location: '.$URL.'/usuarios/create.php');
-    }
-} catch (Exception $e) {
-    session_start();
-    $_SESSION['mensaje'] = "Ocurrió un error al registrar el usuario.";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/usuarios/create.php');
+// Validaciones adicionales
+if (!Validator::isValidEmail($email)) {
+    setMensaje("El formato del correo electrónico no es válido.", "error");
+    redirigir('/usuarios/create.php');
 }
+
+if ($id_rol === false || $id_rol <= 0) {
+    setMensaje("Seleccione un rol válido.", "error");
+    redirigir('/usuarios/create.php');
+}
+
+// Verificar si el correo ya está registrado
+if ($usuarioModel->emailExiste($email)) {
+    setMensaje("El correo electrónico '{$email}' ya está registrado. Intente con otro.", "error");
+    redirigir('/usuarios/create.php');
+}
+
+// Validar y procesar contraseña
+list($password_hash, $error_password) = procesarPassword($password, $password_repeat); // De funciones.php
+
+if ($error_password) {
+    setMensaje($error_password, "error");
+    redirigir('/usuarios/create.php');
+}
+
+// Crear el usuario
+// La variable $fechaHora viene de config.php
+$creado = $usuarioModel->crearUsuario($nombres, $email, $password_hash, $id_rol, $fechaHora);
+
+if ($creado) {
+    setMensaje("Usuario registrado correctamente.", "success");
+    redirigir('/usuarios/'); // Redirigir al listado de usuarios
+} else {
+    setMensaje("Error al registrar el usuario. Inténtelo de nuevo.", "error");
+    redirigir('/usuarios/create.php');
+}
+
 ?>

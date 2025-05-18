@@ -1,8 +1,16 @@
 <?php
+// No necesitarías incluir config.php aquí si ya está incluido en el flujo principal (ej. en usuarios/index.php antes de este include)
+// Pero sí necesitarás el modelo:
+require_once __DIR__ . '/../../models/UsuarioModel.php'; // Ajusta la ruta según sea necesario
 
+// Asumiendo que $pdo y $URL están disponibles desde app/config.php
+if (!isset($pdo) || !isset($URL)) {
+    // Esto es una salvaguarda, idealmente config.php ya está cargado
+    include __DIR__ . '/../../config.php'; 
+}
 
-$sql_usuarios = "SELECT us.id_usuario as id_usuario, us.nombres as nombres, us.email as email, rol.rol as rol 
-                  FROM tb_usuarios as us INNER JOIN tb_roles as rol ON us.id_rol = rol.id_rol ";
-$query_usuarios = $pdo->prepare($sql_usuarios);
-$query_usuarios->execute();
-$usuarios_datos = $query_usuarios->fetchAll(PDO::FETCH_ASSOC);
+$usuarioModel = new UsuarioModel($pdo, $URL);
+$usuarios_datos = $usuarioModel->getAllUsuarios();
+
+// La variable $usuarios_datos ahora está lista para ser usada en la vista (usuarios/index.php)
+?>

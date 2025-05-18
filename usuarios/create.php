@@ -1,17 +1,21 @@
 <?php
-include ('../app/config.php');
-include ('../layout/sesion.php');
-include('../layout/permisos.php'); // Validar permisos de administrador
+// Incluir configuraciones y sesión primero
+include('../app/config.php'); 
+include('../layout/sesion.php'); 
+include('../layout/permisos.php'); // Asegura que solo administradores accedan
 
-// Restringir acceso a usuarios no administradores
-if ($_SESSION['rol'] !== 'administrador') {
-    $_SESSION['mensaje'] = "No tienes permisos para acceder a esta página.";
-    $_SESSION['icono'] = "error";
-    header('Location: /sistemadeventas/index.php');
-    exit();
-}
-include ('../layout/parte1.php');
-include ('../app/controllers/roles/listado_de_roles.php');
+// Incluir el nuevo RolModel para obtener los roles
+require_once __DIR__ . '/../app/models/RolModel.php';
+$rolModel = new RolModel($pdo);
+$roles_disponibles = $rolModel->getAllRoles();
+
+// Título y módulo
+$titulo_pagina = 'Creación de nuevo usuario';
+$modulo_abierto = 'usuarios';
+$pagina_activa = 'usuarios_create';
+
+// Incluir la parte superior del layout
+include('../layout/parte1.php'); 
 ?>
 
 <!-- Content Wrapper. Contains page content -->
@@ -21,10 +25,10 @@ include ('../app/controllers/roles/listado_de_roles.php');
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0">Registro de un nuevo usuario</h1>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                    <h1 class="m-0"><?php echo htmlspecialchars($titulo_pagina); ?></h1>
+                </div>
+            </div>
+        </div>
     </div>
     <!-- /.content-header -->
 
@@ -32,57 +36,72 @@ include ('../app/controllers/roles/listado_de_roles.php');
     <div class="content">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-5">
+                <div class="col-md-8"> {/* Ajusta el ancho si es necesario */}
                     <div class="card card-primary">
                         <div class="card-header">
                             <h3 class="card-title">Llene los datos con cuidado</h3>
                             <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                                </button>
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
                             </div>
                         </div>
-
-                        <div class="card-body" style="display: block;">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <form action="../app/controllers/usuarios/create.php" method="post">
+                        <!-- /.card-header -->
+                        <div class="card-body">
+                            {/* El action apunta al controlador refactorizado */}
+                            <form action="<?php echo $URL; ?>/app/controllers/usuarios/create.php" method="post">
+                                <div class="row">
+                                    <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="">Nombres</label>
-                                            <input type="text" name="nombres" class="form-control" placeholder="Escriba aquí el nombre del nuevo usuario..." required>
+                                            <label for="nombres">Nombres completos</label>
+                                            <input type="text" name="nombres" id="nombres" class="form-control" required>
                                         </div>
+                                    </div>
+                                    <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="">Email</label>
-                                            <input type="email" name="email" class="form-control" placeholder="Escriba aquí el correo del nuevo usuario..." required>
+                                            <label for="email">Email</label>
+                                            <input type="email" name="email" id="email" class="form-control" required>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="">Rol del usuario</label>
-                                            <select name="rol" id="" class="form-control">
-                                                <?php
-                                                foreach ($roles_datos as $roles_dato) { ?>
-                                                    <option value="<?php echo $roles_dato['id_rol']; ?>"><?php echo $roles_dato['rol']; ?></option>
-                                                <?php
-                                                }
-                                                ?>
+                                            <label for="rol">Rol del usuario</label>
+                                            <select name="rol" id="rol" class="form-control" required>
+                                                <option value="">Seleccione un rol...</option>
+                                                <?php foreach ($roles_disponibles as $rol_dato): ?>
+                                                    <option value="<?php echo htmlspecialchars($rol_dato['id_rol']); ?>">
+                                                        <?php echo htmlspecialchars($rol_dato['rol']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="">Contraseña</label>
-                                            <input type="password" name="password_user" class="form-control" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="">Repita la Contraseña</label>
-                                            <input type="password" name="password_repeat" class="form-control" required>
-                                        </div>
-                                        <hr>
-                                        <div class="form-group">
-                                            <a href="index.php" class="btn btn-secondary">Cancelar</a>
-                                            <button type="submit" class="btn btn-primary">Guardar</button>
-                                        </div>
-                                    </form>
+                                    </div>
                                 </div>
-                            </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="password_user">Contraseña</label>
+                                            <input type="password" name="password_user" id="password_user" class="form-control" required>
+                                            <small class="form-text text-muted">La contraseña debe tener al menos 6 caracteres.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="password_repeat">Repetir Contraseña</label>
+                                            <input type="password" name="password_repeat" id="password_repeat" class="form-control" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="form-group">
+                                    <a href="<?php echo $URL; ?>/usuarios/" class="btn btn-secondary">Cancelar</a>
+                                    <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                                </div>
+                            </form>
                         </div>
+                        <!-- /.card-body -->
                     </div>
+                    <!-- /.card -->
                 </div>
             </div>
             <!-- /.row -->
@@ -92,21 +111,8 @@ include ('../app/controllers/roles/listado_de_roles.php');
 </div>
 <!-- /.content-wrapper -->
 
-<?php include ('../layout/parte2.php'); ?>
-
-<!-- Mostrar mensajes de sesión si existen -->
-<?php
-if (isset($_SESSION['mensaje'])) {
-    echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
-    echo "<script>
-        Swal.fire({
-            icon: '{$_SESSION['icono']}',
-            title: '{$_SESSION['mensaje']}'
-        });
-    </script>";
-
-    // Limpiar los mensajes de sesión para evitar que se muestren al recargar
-    unset($_SESSION['mensaje']);
-    unset($_SESSION['icono']);
-}
+<?php 
+// Incluir mensajes y parte final del layout
+include('../layout/mensajes.php'); 
+include('../layout/parte2.php'); 
 ?>
