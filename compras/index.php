@@ -66,7 +66,9 @@ $id_usuario_actual = $_SESSION['id_usuario'];
                                     $contador = 0;
                                     foreach ($compras_datos as $compras_dato){
                                         $id_compra = $compras_dato['id_compra']; 
+                                        $nro_compra = $compras_dato['nro_compra'];
                                         $precio_compra = $compras_dato['precio_compra'];
+                                        
                                         $cantidad = $compras_dato['cantidad'];
                                         $total = floatval($precio_compra) * intval($cantidad);
                                         $fecha_formateada = date('d/m/Y', strtotime($compras_dato['fecha_compra']));
@@ -269,20 +271,31 @@ $id_usuario_actual = $_SESSION['id_usuario'];
                                             <td><center><?php echo $cantidad;?></center></td>
                                             <td><center><strong>$<?php echo number_format($total, 2);?></strong></center></td>
                                             <td>
-                                                <center>
-                                                    <div class="btn-group">
-                                                        <a href="show.php?id=<?php echo $id_compra; ?>" class="btn btn-info btn-sm">
-                                                            <i class="fa fa-eye"></i>
-                                                        </a>
-                                                        <a href="update.php?id=<?php echo $id_compra; ?>" class="btn btn-success btn-sm">
-                                                            <i class="fa fa-pencil-alt"></i>
-                                                        </a>
-                                                        <a href="delete.php?id=<?php echo $id_compra; ?>" class="btn btn-danger btn-sm" 
-                                                           onclick="return confirm('¿Está seguro que desea eliminar esta compra?')">
-                                                            <i class="fa fa-trash"></i>
-                                                        </a>
-                                                    </div>
-                                                </center>
+                                            <center>
+    <div class="btn-group">
+        <a href="show.php?id=<?php echo $id_compra; ?>" class="btn btn-info btn-sm">
+            <i class="fa fa-eye"></i>
+        </a>
+        <a href="update.php?id=<?php echo $id_compra; ?>" class="btn btn-success btn-sm">
+            <i class="fa fa-pencil-alt"></i>
+        </a>
+        <!-- Reemplaza el botón de borrar existente por este -->
+        <!-- Botón Borrar - Con implementación directa del evento onClick -->
+        <!-- Verifica que cada botón Borrar tenga estos atributos correctos -->
+        <button type="button" class="btn btn-danger btn-sm boton-eliminar" 
+                        data-id="<?php echo $id_compra; ?>" 
+                        data-nro="<?php echo $nro_compra; ?>">
+                    <i class="fa fa-trash"></i>
+                </button>
+
+<script>
+    // Asociar el evento al botón específico de esta compra
+    document.getElementById("btn_borrar_<?php echo $id_compra; ?>").addEventListener("click", function() {
+        eliminarCompra(<?php echo $id_compra; ?>, <?php echo $nro_compra; ?>);
+    });
+</script>
+    </div>
+</center>
                                             </td>
                                         </tr>
                                         <?php
@@ -302,94 +315,241 @@ $id_usuario_actual = $_SESSION['id_usuario'];
 </div>
 <!-- /.content-wrapper -->
 
+
+
+<!-- Spinner para indicar carga -->
+<div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="spinner-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Cargando...</span>
+        </div>
+        <p class="mt-2 text-white">Procesando, por favor espere...</p>
+    </div>
+</div>
+
+<style>
+/* Estilos para el spinner de carga */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner-container {
+    text-align: center;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Mejorar apariencia de botones */
+.boton-eliminar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s;
+}
+</style>
+
+<script>
+// Esta función se ejecutará cuando el documento esté listo
+$(document).ready(function() {
+    // Añadir evento click a todos los botones con clase boton-eliminar
+    $('.boton-eliminar').on('click', function() {
+        var idCompra = $(this).data('id');
+        var nroCompra = $(this).data('nro');
+        
+        console.log("Botón borrar presionado - ID: " + idCompra + ", NRO: " + nroCompra);
+        
+        // Confirmar antes de eliminar
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: "¿Realmente desea eliminar la compra #" + nroCompra + "? Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mostrar spinner
+                $('#loading-overlay').show();
+                
+                // Realizar petición AJAX para eliminar
+                $.ajax({
+                    url: '../app/controllers/compras/borrar_compra_ajax.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        id_compra: idCompra,
+                        nro_compra: nroCompra
+                    },
+                    success: function(response) {
+                        // Ocultar spinner
+                        $('#loading-overlay').hide();
+                        
+                        if (response.success) {
+                            // Mostrar mensaje de éxito y recargar página
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Compra eliminada',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            // Mostrar mensaje de error
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'No se pudo eliminar la compra'
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Ocultar spinner
+                        $('#loading-overlay').hide();
+                        
+                        // Mostrar mensaje de error
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de conexión',
+                            text: 'No se pudo procesar su solicitud. Error: ' + error
+                        });
+                        console.error('Error AJAX:', error);
+                        console.error('Detalles:', xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+
+<style>
+/* Estilos para el spinner de carga */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner-container {
+    text-align: center;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Mejorar apariencia de botones */
+.boton-eliminar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s;
+}
+</style>
+
+
 <?php include ('../layout/mensajes.php'); ?>
 <?php include ('../layout/parte2.php'); ?>
 
 <script>
-    $(function () {
-        $("#example1").DataTable({
-            "pageLength": 10,
-            "language": {
-                "emptyTable": "No hay compras registradas",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ Compras",
-                "infoEmpty": "Mostrando 0 a 0 de 0 Compras",
-                "infoFiltered": "(Filtrado de _MAX_ total Compras)",
-                "lengthMenu": "Mostrar _MENU_ Compras",
-                "search": "Buscar:",
-                "zeroRecords": "Sin resultados encontrados",
-                "paginate": {
-                    "first": "Primero",
-                    "last": "Último",
-                    "next": "Siguiente",
-                    "previous": "Anterior"
+  <!-- Añade esto dentro de las etiquetas <script> existentes al final del archivo -->
+// Función para confirmar y eliminar compras
+// Función para eliminar compra directamente desde compras/index.php mediante AJAX
+function eliminarCompra(idCompra, nroCompra) {
+    console.log("Iniciando proceso de eliminación para compra #" + nroCompra);
+    
+    // Usar SweetAlert2 para confirmación
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "¿Realmente desea eliminar la compra #" + nroCompra + "? Esta acción no se puede deshacer.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            console.log("Confirmación recibida, procediendo a eliminar");
+            
+            // Mostrar el spinner de carga
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            // Crear un objeto FormData para enviar los datos
+            var formData = new FormData();
+            formData.append('id_compra', idCompra);
+            formData.append('nro_compra', nroCompra);
+            
+            // Crear y configurar la solicitud fetch
+            fetch('../app/controllers/compras/borrar_compra_ajax.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Respuesta de red no fue ok');
                 }
-            },
-            "responsive": true,
-            "ordering": true,
-            "order": [[0, "desc"]],
-            buttons: [{
-                extend: 'collection',
-                text: 'Reportes',
-                orientation: 'landscape',
-                buttons: [
-                    {
-                        text: 'Copiar',
-                        extend: 'copy',
-                        exportOptions: {
-                            columns: ':not(:last-child)'
-                        }
-                    },
-                    {
-                        extend: 'pdf',
-                        text: 'Exportar PDF',
-                        orientation: 'landscape',
-                        pageSize: 'A4',
-                        exportOptions: {
-                            columns: ':not(:last-child)'
-                        },
-                        customize: function (doc) {
-                            doc.pageMargins = [10, 10, 10, 10];
-                            doc.defaultStyle.fontSize = 7;
-                            if (doc.content[0].text) {
-                                doc.content[0].alignment = 'center';
-                            }
-                            doc.styles.tableHeader.alignment = 'center';
-                            doc.styles.tableHeader.fontSize = 8;
-                            var body = doc.content[1].table.body;
-                            for (var i = 1; i < body.length; i++) {
-                                for (var j = 0; j < body[i].length; j++) {
-                                    body[i][j].alignment = 'center';
-                                }
-                            }
-                            doc.content[1].table.widths = Array(body[0].length + 1).join('*').split('');
-                        }
-                    },
-                    {
-                        extend: 'csv',
-                        exportOptions: {
-                            columns: ':not(:last-child)'
-                        }
-                    },
-                    {
-                        extend: 'excel',
-                        exportOptions: {
-                            columns: ':not(:last-child)'
-                        }
-                    },
-                    {
-                        text: 'Imprimir',
-                        extend: 'print',
-                        exportOptions: {
-                            columns: ':not(:last-child)'
-                        }
-                    }
-                ]
-            },
-            {
-                extend: 'colvis',
-                text: 'Visor de columnas',
-                collectionLayout: 'fixed three-column'
-            }],
-        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+                return response.json();
+            })
+            .then(data => {
+                // Ocultar el spinner de carga
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Compra eliminada',
+                        text: data.message || 'Compra eliminada correctamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Recargar la página para actualizar la lista de compras
+                        window.location.reload();
+                    });
+                } else {
+                    // Mostrar mensaje de error
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'No se pudo eliminar la compra'
+                    });
+                }
+            })
+            .catch(error => {
+                // Ocultar el spinner de carga
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                console.error('Error:', error);
+                // Mostrar mensaje de error
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo procesar su solicitud. Por favor, inténtelo de nuevo.'
+                });
+            });
+        }
     });
-</script>
+}
