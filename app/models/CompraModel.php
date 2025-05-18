@@ -57,6 +57,47 @@ class CompraModel extends Model {
     }
     
     /**
+     * Obtiene compras con límite para mejorar rendimiento
+     * @param int|null $userId ID del usuario para filtrar
+     * @param int $limit Número máximo de registros
+     * @return array Lista de compras limitada
+     */
+    public function getAllWithLimit($userId = null, $limit = 50) {
+        try {
+            $sql = "SELECT c.*, 
+                    p.nombre as nombre_producto,
+                    p.codigo as codigo_producto,
+                    pr.nombre_proveedor,
+                    pr.empresa as empresa_proveedor,
+                    u.nombres as nombre_usuario
+                    FROM {$this->table} c
+                    INNER JOIN tb_almacen p ON c.id_producto = p.id_producto
+                    INNER JOIN tb_proveedores pr ON c.id_proveedor = pr.id_proveedor
+                    INNER JOIN tb_usuarios u ON c.id_usuario = u.id_usuario";
+            
+            // Filtrar por usuario si se proporciona ID
+            if ($userId !== null) {
+                $sql .= " WHERE c.id_usuario = :userId";
+            }
+            
+            $sql .= " ORDER BY c.fyh_creacion DESC LIMIT :limit";
+            
+            $stmt = $this->pdo->prepare($sql);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $this->logError("Error en getAllWithLimit: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Obtiene una compra por ID con todos sus detalles
      * @param int $id ID de la compra
      * @param int|null $userId ID del usuario para verificación
@@ -147,7 +188,9 @@ class CompraModel extends Model {
             $this->pdo->commit();
             return $compraId;
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             $this->logError($e->getMessage());
             return "Error en la transacción: " . $e->getMessage();
         }
@@ -161,7 +204,6 @@ class CompraModel extends Model {
      */
     public function search($criteria, $userId = null) {
         try {
-            $conditions = [];
             $params = [];
             
             $sql = "SELECT c.*, 
@@ -207,7 +249,8 @@ class CompraModel extends Model {
                 $params[':fecha_hasta'] = $criteria['fecha_hasta'];
             }
             
-            $sql .= " ORDER BY c.fyh_creacion DESC";
+            // Limitar resultados para mejor rendimiento
+            $sql .= " ORDER BY c.fyh_creacion DESC LIMIT 100";
             
             $stmt = $this->pdo->prepare($sql);
             
@@ -218,83 +261,70 @@ class CompraModel extends Model {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            $this->logError($e->getMessage());
+            $this->logError("Error en search: " . $e->getMessage());
             return [];
         }
     }
     
     /**
-     * Obtiene estadísticas de compras
+     * Obtiene estadísticas optimizadas de compras
      * @param int|null $userId ID del usuario para filtrar
-     * @return array Estadísticas (total, mes actual, semana, hoy)
+     * @return array Estadísticas simples (total, mes actual, semana, hoy)
      */
-    public function getStats($userId = null) {
+    public function getStatsOptimized($userId = null) {
         try {
-            // Base de la consulta
-            $baseQuery = "SELECT COUNT(*) as count, COALESCE(SUM(precio_compra * cantidad), 0) as total
-                         FROM {$this->table}";
+            // Obtener las compras del usuario con límite para mayor rendimiento
+            $compras = $this->getAllWithLimit($userId, 500);  // Limitamos a 500 compras para estadísticas
             
-            // Condición de usuario
-            $userCondition = $userId !== null ? " WHERE id_usuario = :userId" : "";
-            
-            // Total de todas las compras
-            $totalQuery = $baseQuery . $userCondition;
-            $stmt = $this->pdo->prepare($totalQuery);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $stmt->execute();
-            $total = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Compras del mes actual
-            $monthQuery = $baseQuery . 
-                          ($userCondition ? $userCondition . " AND" : " WHERE") . 
-                          " MONTH(fecha_compra) = MONTH(CURRENT_DATE()) AND YEAR(fecha_compra) = YEAR(CURRENT_DATE())";
-            $stmt = $this->pdo->prepare($monthQuery);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $stmt->execute();
-            $month = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Compras de la semana actual
-            $weekQuery = $baseQuery . 
-                        ($userCondition ? $userCondition . " AND" : " WHERE") . 
-                        " YEARWEEK(fecha_compra, 1) = YEARWEEK(CURRENT_DATE(), 1)";
-            $stmt = $this->pdo->prepare($weekQuery);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $stmt->execute();
-            $week = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Compras de hoy
-            $todayQuery = $baseQuery . 
-                         ($userCondition ? $userCondition . " AND" : " WHERE") . 
-                         " DATE(fecha_compra) = CURRENT_DATE()";
-            $stmt = $this->pdo->prepare($todayQuery);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $stmt->execute();
-            $today = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            return [
-                'total' => $total,
-                'month' => $month,
-                'week' => $week,
-                'today' => $today
+            // Inicializar contadores
+            $stats = [
+                'total' => ['count' => 0, 'total' => 0],
+                'month' => ['count' => 0, 'total' => 0],
+                'week' => ['count' => 0, 'total' => 0],
+                'today' => ['count' => 0, 'total' => 0]
             ];
-        } catch (PDOException $e) {
-            $this->logError($e->getMessage());
+            
+            // Fechas de referencia
+            $today = date('Y-m-d');
+            $thisMonth = date('Y-m');
+            $thisWeekStart = date('Y-m-d', strtotime('monday this week'));
+            
+            // Calcular estadísticas
+            foreach ($compras as $compra) {
+                // Calcular total
+                $monto = floatval($compra['precio_compra']) * intval($compra['cantidad']);
+                
+                // Incrementar total general
+                $stats['total']['count']++;
+                $stats['total']['total'] += $monto;
+                
+                // Fecha de compra
+                $fechaCompra = substr($compra['fecha_compra'], 0, 10); // Formato Y-m-d
+                $mesCompra = substr($compra['fecha_compra'], 0, 7);   // Formato Y-m
+                
+                // Compras del mes
+                if ($mesCompra === $thisMonth) {
+                    $stats['month']['count']++;
+                    $stats['month']['total'] += $monto;
+                    
+                    // Compras de la semana
+                    if ($fechaCompra >= $thisWeekStart) {
+                        $stats['week']['count']++;
+                        $stats['week']['total'] += $monto;
+                        
+                        // Compras de hoy
+                        if ($fechaCompra === $today) {
+                            $stats['today']['count']++;
+                            $stats['today']['total'] += $monto;
+                        }
+                    }
+                }
+            }
+            
+            return $stats;
+            
+        } catch (Exception $e) {
+            $this->logError("Error en getStatsOptimized: " . $e->getMessage());
             return [
                 'total' => ['count' => 0, 'total' => 0],
                 'month' => ['count' => 0, 'total' => 0],
@@ -302,5 +332,19 @@ class CompraModel extends Model {
                 'today' => ['count' => 0, 'total' => 0]
             ];
         }
+    }
+
+    /**
+     * Registra error en log
+     */
+    protected function logError($message) {
+        $logDir = __DIR__ . '/../../logs';
+        if (!file_exists($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $logFile = $logDir . '/compras_model_errors.log';
+        $date = date('Y-m-d H:i:s');
+        error_log("[$date] $message\n", 3, $logFile);
     }
 }

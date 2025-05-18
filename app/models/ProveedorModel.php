@@ -21,7 +21,7 @@ class ProveedorModel extends Model {
      * @param int|null $userId ID del usuario para filtrar
      * @return array Lista de proveedores
      */
-    public function getAllActive($userId = null) {
+    public function getAll($userId = null) {
         try {
             $sql = "SELECT * FROM {$this->table}";
             

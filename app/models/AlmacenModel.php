@@ -3,7 +3,7 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../core/Model.php';
 
 /**
- * Modelo para el almacén de productos
+ * Modelo para gestionar productos en almacén
  */
 class AlmacenModel extends Model {
     protected $table = 'tb_almacen';
@@ -11,30 +11,29 @@ class AlmacenModel extends Model {
     
     /**
      * Constructor
-     * @param PDO|null $pdo Conexión PDO opcional
      */
     public function __construct($pdo = null) {
         parent::__construct($pdo);
     }
     
     /**
-     * Obtiene todos los productos con datos relacionados
-     * @param int|null $userId ID del usuario para filtrar (null para obtener todos)
+     * Obtiene productos con detalles de categoría
+     * @param int|null $userId ID del usuario para filtrar
      * @return array Lista de productos
      */
     public function getAllWithDetails($userId = null) {
         try {
-            $sql = "SELECT a.*, c.nombre_categoria, u.nombres as usuario_nombres
-                    FROM {$this->table} a
-                    INNER JOIN tb_categorias c ON a.id_categoria = c.id_categoria
-                    INNER JOIN tb_usuarios u ON a.id_usuario = u.id_usuario";
+            $sql = "SELECT p.*, c.nombre_categoria 
+                   FROM {$this->table} p
+                   INNER JOIN tb_categorias c ON p.id_categoria = c.id_categoria";
             
-            // Añadir filtro de usuario si se proporciona
+            // Filtrar por usuario si se proporciona ID
             if ($userId !== null) {
-                $sql .= " WHERE a.id_usuario = :userId";
+                $sql .= " WHERE p.id_usuario = :userId";
             }
             
-            $sql .= " ORDER BY a.fyh_creacion DESC";
+            $sql .= " ORDER BY p.fyh_creacion DESC";
+            
             $stmt = $this->pdo->prepare($sql);
             
             if ($userId !== null) {
@@ -50,25 +49,163 @@ class AlmacenModel extends Model {
     }
     
     /**
-     * Busca productos por término
-     * @param string $term Término de búsqueda
-     * @param int|null $userId ID del usuario para filtrar (null para buscar en todos)
-     * @return array Productos encontrados
+     * Obtiene un producto por ID con detalles de categoría
+     * @param int $id ID del producto
+     * @param int|null $userId ID del usuario para verificación
+     * @return array|false Datos del producto o false
      */
-    public function search($term, $userId = null) {
+    public function getByIdWithDetails($id, $userId = null) {
         try {
-            $term = "%$term%";
-            $sql = "SELECT a.*, c.nombre_categoria
-                    FROM {$this->table} a
-                    INNER JOIN tb_categorias c ON a.id_categoria = c.id_categoria
-                    WHERE (a.nombre LIKE :term OR a.codigo LIKE :term OR a.descripcion LIKE :term)";
+            $sql = "SELECT p.*, c.nombre_categoria 
+                   FROM {$this->table} p
+                   INNER JOIN tb_categorias c ON p.id_categoria = c.id_categoria
+                   WHERE p.{$this->primaryKey} = :id";
             
             // Añadir filtro de usuario si se proporciona
             if ($userId !== null) {
-                $sql .= " AND a.id_usuario = :userId";
+                $sql .= " AND p.id_usuario = :userId";
             }
             
-            $sql .= " ORDER BY a.nombre";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Genera un nuevo código de producto
+     * @return string Código de producto (formato: P-XXXXX)
+     */
+    public function generateProductCode() {
+        try {
+            $sql = "SELECT MAX(SUBSTRING(codigo, 3)) as ultimo FROM {$this->table} 
+                    WHERE codigo LIKE 'P-%'";
+            $stmt = $this->pdo->query($sql);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $ultimo = intval($result['ultimo'] ?? 0);
+            $nuevo = $ultimo + 1;
+            return 'P-' . str_pad($nuevo, 5, '0', STR_PAD_LEFT);
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return 'P-00001'; // Código por defecto en caso de error
+        }
+    }
+    
+    /**
+     * Actualiza el stock de un producto
+     * @param int $id ID del producto
+     * @param int $quantity Cantidad a añadir
+     * @return bool|string True si se actualizó correctamente, mensaje de error si falla
+     */
+    public function updateStock($id, $quantity) {
+        try {
+            // Primero obtenemos el producto para verificar su existencia
+            $producto = $this->getById($id);
+            
+            if (!$producto) {
+                return "Producto no encontrado";
+            }
+            
+            // Actualizar stock
+            $nuevoStock = $producto['stock'] + $quantity;
+            
+            $sql = "UPDATE {$this->table} SET 
+                    stock = :stock,
+                    fyh_actualizacion = :fyh_actualizacion
+                    WHERE {$this->primaryKey} = :id";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $fechaActual = date('Y-m-d H:i:s');
+            
+            $stmt->bindParam(':stock', $nuevoStock, PDO::PARAM_INT);
+            $stmt->bindParam(':fyh_actualizacion', $fechaActual);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return "Error al actualizar stock: " . $e->getMessage();
+        }
+    }
+    
+    /**
+     * Obtiene productos con stock bajo
+     * @param int|null $userId ID del usuario para filtrar
+     * @return array Lista de productos con stock bajo
+     */
+    public function lowStock($userId = null) {
+        try {
+            $sql = "SELECT p.*, c.nombre_categoria 
+                   FROM {$this->table} p
+                   INNER JOIN tb_categorias c ON p.id_categoria = c.id_categoria
+                   WHERE p.stock <= p.stock_minimo";
+            
+            // Filtrar por usuario si se proporciona ID
+            if ($userId !== null) {
+                $sql .= " AND p.id_usuario = :userId";
+            }
+            
+            $sql .= " ORDER BY p.stock ASC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Busca productos por criterios
+     * @param string $term Término de búsqueda
+     * @param int|null $userId ID del usuario para filtrar
+     * @param array|null $options Opciones adicionales (categoría, solo en stock, etc)
+     * @return array Productos encontrados
+     */
+    public function search($term, $userId = null, $options = null) {
+        try {
+            $term = "%$term%";
+            $sql = "SELECT p.*, c.nombre_categoria 
+                   FROM {$this->table} p
+                   INNER JOIN tb_categorias c ON p.id_categoria = c.id_categoria
+                   WHERE (p.nombre LIKE :term 
+                   OR p.codigo LIKE :term 
+                   OR p.descripcion LIKE :term)";
+            
+            // Añadir filtro de usuario si se proporciona
+            if ($userId !== null) {
+                $sql .= " AND p.id_usuario = :userId";
+            }
+            
+            // Filtrar por categoría
+            if (!empty($options['categoria'])) {
+                $sql .= " AND p.id_categoria = :categoria";
+            }
+            
+            // Filtrar solo productos con stock
+            if (!empty($options['en_stock']) && $options['en_stock'] === true) {
+                $sql .= " AND p.stock > 0";
+            }
+            
+            $sql .= " ORDER BY p.nombre ASC";
+            
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':term', $term);
             
@@ -76,36 +213,8 @@ class AlmacenModel extends Model {
                 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
             
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            $this->logError($e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Obtiene productos con stock bajo
-     * @param int|null $userId ID del usuario para filtrar (null para obtener todos)
-     * @return array Productos con stock bajo
-     */
-    public function getLowStock($userId = null) {
-        try {
-            $sql = "SELECT a.*, c.nombre_categoria
-                    FROM {$this->table} a
-                    INNER JOIN tb_categorias c ON a.id_categoria = c.id_categoria
-                    WHERE a.stock <= a.stock_minimo";
-            
-            // Añadir filtro de usuario si se proporciona
-            if ($userId !== null) {
-                $sql .= " AND a.id_usuario = :userId";
-            }
-            
-            $sql .= " ORDER BY a.stock";
-            $stmt = $this->pdo->prepare($sql);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            if (!empty($options['categoria'])) {
+                $stmt->bindParam(':categoria', $options['categoria'], PDO::PARAM_INT);
             }
             
             $stmt->execute();
@@ -117,156 +226,130 @@ class AlmacenModel extends Model {
     }
     
     /**
-     * Genera un código para un nuevo producto
-     * @return string Código generado
+     * Obtiene datos de ventas de producto
+     * @param int $id ID del producto
+     * @param string $period Periodo (daily, weekly, monthly, yearly)
+     * @return array Datos de ventas
      */
-    public function generateCode() {
+    public function getProductSalesData($id, $period = 'monthly') {
         try {
-            $sql = "SELECT MAX(CAST(SUBSTRING(codigo, 3) AS UNSIGNED)) as ultimo 
-                    FROM {$this->table} 
-                    WHERE codigo LIKE 'P-%'";
+            // Determinar la agrupación según el periodo
+            switch ($period) {
+                case 'daily':
+                    $groupBy = "DATE(v.fyh_creacion)";
+                    $dateFormat = "DATE_FORMAT(v.fyh_creacion, '%Y-%m-%d')";
+                    break;
+                case 'weekly':
+                    $groupBy = "YEARWEEK(v.fyh_creacion)";
+                    $dateFormat = "DATE_FORMAT(v.fyh_creacion, '%Y-%u')"; // Año-Semana
+                    break;
+                case 'yearly':
+                    $groupBy = "YEAR(v.fyh_creacion)";
+                    $dateFormat = "DATE_FORMAT(v.fyh_creacion, '%Y')";
+                    break;
+                case 'monthly':
+                default:
+                    $groupBy = "YEAR(v.fyh_creacion), MONTH(v.fyh_creacion)";
+                    $dateFormat = "DATE_FORMAT(v.fyh_creacion, '%Y-%m')"; // Año-Mes
+            }
+            
+            $sql = "SELECT {$dateFormat} as periodo, 
+                    SUM(c.cantidad) as cantidad_vendida,
+                    SUM(c.cantidad * p.precio_venta) as total_ventas
+                    FROM tb_carrito c
+                    INNER JOIN tb_ventas v ON c.nro_venta = v.nro_venta
+                    INNER JOIN {$this->table} p ON c.id_producto = p.id_producto
+                    WHERE p.id_producto = :id
+                    GROUP BY {$groupBy}
+                    ORDER BY v.fyh_creacion ASC";
+            
             $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            $ultimo = (int)($result['ultimo'] ?? 0);
-            $siguiente = $ultimo + 1;
-            
-            return 'P-' . str_pad($siguiente, 5, '0', STR_PAD_LEFT);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             $this->logError($e->getMessage());
-            return 'P-00001'; // Código por defecto
+            return [];
         }
     }
     
     /**
-     * Actualiza el stock de un producto
+     * Comprueba si se puede eliminar un producto
      * @param int $id ID del producto
-     * @param int $quantity Cantidad a aumentar (positivo) o disminuir (negativo)
-     * @param int|null $userId ID del usuario propietario (para verificación)
-     * @return bool|string Resultado de la operación
+     * @return bool|string True si se puede eliminar, mensaje si no
      */
-    public function updateStock($id, $quantity, $userId = null) {
+    public function canDelete($id) {
         try {
-            $this->pdo->beginTransaction();
-            
-            // Construir consulta para obtener el producto
-            $sql = "SELECT stock FROM {$this->table} WHERE {$this->primaryKey} = :id";
-            
-            // Añadir filtro de usuario si se proporciona
-            if ($userId !== null) {
-                $sql .= " AND id_usuario = :userId";
-            }
-            
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $stmt->execute();
-            $product = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$product) {
-                $this->pdo->rollBack();
-                return "Producto no encontrado o no autorizado";
-            }
-            
-            $newStock = $product['stock'] + $quantity;
-            
-            // No permitir stock negativo
-            if ($newStock < 0) {
-                $this->pdo->rollBack();
-                return "Stock insuficiente";
-            }
-            
-            // Actualizar stock
-            $sql = "UPDATE {$this->table} SET 
-                    stock = :stock, 
-                    fyh_actualizacion = :fyh
-                    WHERE {$this->primaryKey} = :id";
-            
-            // Añadir filtro de usuario si se proporciona
-            if ($userId !== null) {
-                $sql .= " AND id_usuario = :userId";
-            }
-            
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':stock', $newStock, PDO::PARAM_INT);
-            $stmt->bindParam(':fyh', date('Y-m-d H:i:s'));
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            
-            if ($userId !== null) {
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            }
-            
-            $result = $stmt->execute();
-            
-            if ($result) {
-                $this->pdo->commit();
-                return true;
-            } else {
-                $this->pdo->rollBack();
-                return "Error al actualizar el stock";
-            }
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            $this->logError($e->getMessage());
-            return "Error: " . $e->getMessage();
-        }
-    }
-    
-    /**
-     * Verifica si un producto está siendo utilizado en otras tablas
-     * @param int $id ID del producto
-     * @return array [enUso, mensaje]
-     */
-    public function isInUse($id) {
-        try {
-            // Verificar en carrito
+            // Verificar si hay ventas asociadas
             $sql = "SELECT COUNT(*) FROM tb_carrito WHERE id_producto = :id";
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            $inCart = $stmt->fetchColumn() > 0;
             
-            if ($inCart) {
-                return [true, "No se puede eliminar: el producto está en el carrito de ventas"];
+            if ($stmt->fetchColumn() > 0) {
+                return "No se puede eliminar: el producto tiene ventas asociadas";
             }
             
-            // Verificar en compras
+            // Verificar si hay compras asociadas
             $sql = "SELECT COUNT(*) FROM tb_compras WHERE id_producto = :id";
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            $inPurchases = $stmt->fetchColumn() > 0;
             
-            if ($inPurchases) {
-                return [true, "No se puede eliminar: el producto está asociado a compras"];
+            if ($stmt->fetchColumn() > 0) {
+                return "No se puede eliminar: el producto tiene compras registradas";
             }
             
-            return [false, ""];
+            return true;
         } catch (PDOException $e) {
             $this->logError($e->getMessage());
-            return [true, "Error al verificar dependencias: " . $e->getMessage()];
+            return "Error al verificar dependencias: " . $e->getMessage();
         }
     }
     
     /**
-     * Sobrescribe el método delete para verificar dependencias
+     * Actualiza el precio de compra y precio de venta
      * @param int $id ID del producto
-     * @param int|null $userId ID del usuario (para verificación)
-     * @return bool|string Resultado de la operación
+     * @param float $precioCompra Nuevo precio de compra
+     * @param float $precioVenta Nuevo precio de venta
+     * @return bool|string True si se actualizó, mensaje si hubo error
+     */
+    public function updatePrices($id, $precioCompra, $precioVenta) {
+        try {
+            $sql = "UPDATE {$this->table} SET 
+                    precio_compra = :precio_compra,
+                    precio_venta = :precio_venta,
+                    fyh_actualizacion = :fyh_actualizacion
+                    WHERE {$this->primaryKey} = :id";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $fechaActual = date('Y-m-d H:i:s');
+            
+            $stmt->bindParam(':precio_compra', $precioCompra);
+            $stmt->bindParam(':precio_venta', $precioVenta);
+            $stmt->bindParam(':fyh_actualizacion', $fechaActual);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return "Error al actualizar precios: " . $e->getMessage();
+        }
+    }
+    
+    /**
+     * Sobrescritura de delete para verificar dependencias
      */
     public function delete($id, $userId = null) {
-        // Verificar dependencias
-        $inUse = $this->isInUse($id);
-        if ($inUse[0]) {
-            return $inUse[1];
+        // Verificar si se puede eliminar
+        $canDelete = $this->canDelete($id);
+        if ($canDelete !== true) {
+            return $canDelete; // Mensaje de error
         }
         
-        // Si no hay dependencias, proceder con la eliminación
+        // Proceder con la eliminación si es seguro
         return parent::delete($id, $userId);
     }
 }
