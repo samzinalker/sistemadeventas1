@@ -19,10 +19,8 @@ class Security {
         // Eliminar espacios en blanco al inicio y final
         $input = trim($input);
         
-        // Eliminar barras invertidas
-        if (get_magic_quotes_gpc()) {
-            $input = stripslashes($input);
-        }
+        // Nota: get_magic_quotes_gpc() ya no existe en PHP 7.4+
+        // Las comillas mágicas ya no son necesarias en PHP moderno
         
         // Convertir caracteres especiales en entidades HTML
         $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
