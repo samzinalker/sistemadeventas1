@@ -405,64 +405,92 @@ $(document).ready(function() {
         var btnOriginalText = btnGuardar.html();
         btnGuardar.html('<i class="fas fa-spinner fa-spin"></i> Procesando...').prop('disabled', true);
         
-        // Enviar formulario
+        // Preparar datos con FormData para permitir adjuntos en el futuro
+        var formData = new FormData(this);
+        formData.append('action', 'store');
+        
         $.ajax({
             url: '../app/ajax/compra.php',
             type: 'POST',
-            data: $(this).serialize() + '&action=store',
+            data: formData,
+            contentType: false,
+            processData: false,
+            cache: false,
             dataType: 'json',
-            timeout: 10000, // 10 segundos de timeout
+            timeout: 30000, // Aumentar timeout a 30 segundos
+            beforeSend: function() {
+                // Mostrar indicador de carga más notable
+                Swal.fire({
+                    title: 'Procesando compra',
+                    text: 'Registrando la compra y actualizando inventario...',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
             success: function(response) {
+                // Cerrar el diálogo de carga
+                Swal.close();
+                
                 if (response.status) {
+                    // Éxito
                     Swal.fire({
                         icon: 'success',
-                        title: 'Compra Registrada',
+                        title: '¡Compra Registrada!',
                         text: response.message,
-                        confirmButtonText: 'Ver Detalles'
+                        confirmButtonText: 'Ver Detalles',
+                        allowOutsideClick: false
                     }).then(function() {
-                        // Redireccionar a la página de detalles
                         window.location.href = 'show.php?id=' + response.id;
                     });
                 } else {
-                    // Restaurar botón
+                    // Error - Restaurar botón
                     btnGuardar.html(btnOriginalText).prop('disabled', false);
                     
-                    // Mostrar error
+                    // Mostrar mensaje de error
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: response.message || 'Error al registrar la compra',
+                        text: response.message || 'Ocurrió un error al procesar la compra',
                         confirmButtonText: 'Entendido'
                     });
+                    
+                    // Registrar error en console para debug
+                    console.error('Error al registrar compra:', response.message);
                 }
             },
             error: function(xhr, status, error) {
                 // Restaurar botón
                 btnGuardar.html(btnOriginalText).prop('disabled', false);
                 
-                // Mostrar error
-                let errorMsg = "Error al procesar la solicitud";
+                // Determinar mensaje de error apropiado
+                let errorMessage = 'Ocurrió un error al procesar la solicitud';
                 
                 if (status === 'timeout') {
-                    errorMsg = "La solicitud ha tardado demasiado. Por favor, inténtelo de nuevo.";
+                    errorMessage = 'La solicitud ha tardado demasiado tiempo. Por favor, inténtelo de nuevo.';
                 } else if (xhr.responseText) {
                     try {
-                        const respuesta = JSON.parse(xhr.responseText);
-                        errorMsg = respuesta.message || errorMsg;
-                    } catch (e) {
-                        // Si no es JSON, podría ser un error PHP
-                        if (xhr.responseText.includes('Fatal error') || xhr.responseText.includes('Warning')) {
-                            errorMsg = "Error en el servidor. Por favor contacte al administrador.";
+                        const errorData = JSON.parse(xhr.responseText);
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
                         }
+                    } catch (e) {
+                        console.error('Error al procesar respuesta:', xhr.responseText);
                     }
                 }
                 
+                // Mostrar mensaje al usuario
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: errorMsg,
+                    text: errorMessage,
                     confirmButtonText: 'Entendido'
                 });
+                
+                // Registrar error en console para debug
+                console.error('Error AJAX:', {status, error, response: xhr.responseText});
             }
         });
     });

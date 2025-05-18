@@ -5,42 +5,38 @@
 abstract class Model {
     protected $pdo;
     protected $table;
-    protected $primaryKey = 'id';
-    protected $logFile;
+    protected $primaryKey;
     
     /**
      * Constructor
      * @param PDO|null $pdo Conexión PDO opcional
      */
     public function __construct($pdo = null) {
-        $this->pdo = $pdo ?: Database::getInstance();
-        $this->logFile = __DIR__ . '/../logs/' . strtolower(get_class($this)) . '.log';
+        global $pdo as $globalPdo;
+        $this->pdo = $pdo ?: $globalPdo;
         
-        // Crear directorio de logs si no existe
-        $logDir = dirname($this->logFile);
-        if (!file_exists($logDir)) {
-            mkdir($logDir, 0755, true);
+        if (!$this->pdo) {
+            throw new Exception("No hay conexión a la base de datos disponible");
         }
     }
     
     /**
-     * Obtiene todos los registros (filtrados por usuario si es necesario)
-     * @param int|null $userId ID del usuario para filtrar (null para obtener todos)
+     * Obtiene todos los registros de la tabla
+     * @param int|null $userId ID del usuario para filtrar
      * @return array Lista de registros
      */
     public function getAll($userId = null) {
         try {
             $sql = "SELECT * FROM {$this->table}";
             
-            // Si se proporciona un ID de usuario y la tabla tiene el campo id_usuario, filtrar
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            // Filtrar por usuario si se proporciona ID y la tabla tiene ese campo
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $sql .= " WHERE id_usuario = :userId";
             }
             
-            $sql .= " ORDER BY fyh_creacion DESC";
             $stmt = $this->pdo->prepare($sql);
             
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
             
@@ -53,25 +49,24 @@ abstract class Model {
     }
     
     /**
-     * Obtiene un registro por ID
+     * Obtiene un registro por su ID
      * @param int $id ID del registro
-     * @param int|null $userId ID del usuario para verificar propiedad (null para omitir)
-     * @return array|false Registro o false si no existe
+     * @param int|null $userId ID del usuario para verificación
+     * @return array|false Datos del registro o false
      */
     public function getById($id, $userId = null) {
         try {
             $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id";
             
-            // Si se proporciona un ID de usuario y la tabla tiene el campo id_usuario, 
-            // verificar que el registro pertenezca al usuario
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            // Añadir filtro de usuario si se proporciona y la tabla tiene ese campo
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $sql .= " AND id_usuario = :userId";
             }
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
             
@@ -85,38 +80,36 @@ abstract class Model {
     
     /**
      * Crea un nuevo registro
-     * @param array $data Datos a insertar
-     * @return bool|string True si fue exitoso, mensaje de error en caso contrario
+     * @param array $data Datos del registro
+     * @return int|string ID del registro insertado o mensaje de error
      */
     public function create(array $data) {
         try {
-            $this->pdo->beginTransaction();
+            // Preparar la consulta INSERT
+            $columns = [];
+            $placeholders = [];
+            $values = [];
             
-            // Construir la consulta
-            $columns = implode(', ', array_keys($data));
-            $placeholders = ':' . implode(', :', array_keys($data));
+            foreach ($data as $column => $value) {
+                $columns[] = $column;
+                $placeholders[] = ":$column";
+                $values[":$column"] = $value;
+            }
             
-            $sql = "INSERT INTO {$this->table} ($columns) VALUES ($placeholders)";
+            $sql = "INSERT INTO {$this->table} (" . implode(', ', $columns) . ") 
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            
             $stmt = $this->pdo->prepare($sql);
             
-            foreach ($data as $key => $value) {
-                $stmt->bindValue(":$key", $value);
+            foreach ($values as $param => $val) {
+                $stmt->bindValue($param, $val);
             }
             
-            $result = $stmt->execute();
-            
-            if ($result) {
-                $lastId = $this->pdo->lastInsertId();
-                $this->pdo->commit();
-                return $lastId;
-            } else {
-                $this->pdo->rollBack();
-                return "Error al insertar en {$this->table}";
-            }
+            $stmt->execute();
+            return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
             $this->logError($e->getMessage());
-            return "Error de base de datos: " . $e->getMessage();
+            return "Error al insertar registro: " . $e->getMessage();
         }
     }
     
@@ -124,135 +117,107 @@ abstract class Model {
      * Actualiza un registro existente
      * @param int $id ID del registro
      * @param array $data Datos a actualizar
-     * @param int|null $userId ID del usuario para verificar propiedad (null para omitir)
-     * @return bool|string True si fue exitoso, mensaje de error en caso contrario
+     * @param int|null $userId ID del usuario para verificación
+     * @return bool|string True si se actualizó, mensaje de error si falla
      */
     public function update($id, array $data, $userId = null) {
         try {
-            // Verificar que el registro exista y pertenezca al usuario si se proporciona ID
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
-                $record = $this->getById($id, $userId);
-                if (!$record) {
-                    return "El registro no existe o no pertenece al usuario";
-                }
+            // Preparar la consulta UPDATE
+            $setParts = [];
+            $values = [];
+            
+            foreach ($data as $column => $value) {
+                $setParts[] = "$column = :$column";
+                $values[":$column"] = $value;
             }
             
-            $this->pdo->beginTransaction();
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $setParts) . " 
+                    WHERE {$this->primaryKey} = :id";
             
-            // Construir la consulta
-            $setClause = [];
-            foreach (array_keys($data) as $column) {
-                $setClause[] = "$column = :$column";
-            }
-            $setClause = implode(', ', $setClause);
-            
-            $sql = "UPDATE {$this->table} SET $setClause WHERE {$this->primaryKey} = :id";
-            
-            // Añadir condición de usuario si es necesario
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            // Añadir filtro de usuario si se proporciona y la tabla tiene ese campo
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $sql .= " AND id_usuario = :userId";
             }
             
             $stmt = $this->pdo->prepare($sql);
             
-            foreach ($data as $key => $value) {
-                $stmt->bindValue(":$key", $value);
-            }
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
-                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            foreach ($values as $param => $val) {
+                $stmt->bindValue($param, $val);
             }
             
-            $result = $stmt->execute();
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             
-            if ($result) {
-                $this->pdo->commit();
-                return true;
-            } else {
-                $this->pdo->rollBack();
-                return "Error al actualizar en {$this->table}";
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
+            
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
             $this->logError($e->getMessage());
-            return "Error de base de datos: " . $e->getMessage();
+            return "Error al actualizar registro: " . $e->getMessage();
         }
     }
     
     /**
      * Elimina un registro
      * @param int $id ID del registro
-     * @param int|null $userId ID del usuario para verificar propiedad (null para omitir)
-     * @return bool|string True si fue exitoso, mensaje de error en caso contrario
+     * @param int|null $userId ID del usuario para verificación
+     * @return bool|string True si se eliminó, mensaje de error si falla
      */
     public function delete($id, $userId = null) {
         try {
-            // Verificar que el registro exista y pertenezca al usuario si se proporciona ID
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
-                $record = $this->getById($id, $userId);
-                if (!$record) {
-                    return "El registro no existe o no pertenece al usuario";
-                }
-            }
-            
-            $this->pdo->beginTransaction();
-            
             $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
             
-            // Añadir condición de usuario si es necesario
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
+            // Añadir filtro de usuario si se proporciona y la tabla tiene ese campo
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
                 $sql .= " AND id_usuario = :userId";
             }
             
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             
-            if ($userId !== null && $this->tableHasColumn('id_usuario')) {
-                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            if ($userId !== null && $this->hasColumn('id_usuario')) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
             
-            $result = $stmt->execute();
-            
-            if ($result) {
-                $this->pdo->commit();
-                return true;
-            } else {
-                $this->pdo->rollBack();
-                return "Error al eliminar de {$this->table}";
-            }
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
             $this->logError($e->getMessage());
-            return "Error de base de datos: " . $e->getMessage();
+            return "Error al eliminar registro: " . $e->getMessage();
         }
     }
     
     /**
      * Verifica si una tabla tiene una columna específica
-     * @param string $columnName Nombre de la columna
-     * @return bool True si la tabla tiene la columna
+     * @param string $column Nombre de la columna
+     * @return bool True si la columna existe
      */
-    protected function tableHasColumn($columnName) {
+    protected function hasColumn($column) {
         try {
-            $sql = "SHOW COLUMNS FROM {$this->table} LIKE :columnName";
+            $sql = "SHOW COLUMNS FROM {$this->table} LIKE :column";
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':columnName', $columnName);
+            $stmt->bindParam(':column', $column);
             $stmt->execute();
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
-            $this->logError("Error al verificar si la tabla tiene la columna: " . $e->getMessage());
             return false;
         }
     }
     
     /**
-     * Registra un error en el archivo de log
+     * Registra errores en el log
      * @param string $message Mensaje de error
      */
     protected function logError($message) {
+        $logDir = __DIR__ . '/../../logs';
+        if (!file_exists($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $logFile = $logDir . '/model_errors.log';
         $date = date('Y-m-d H:i:s');
-        $log = "[$date] ERROR: $message" . PHP_EOL;
-        error_log($log, 3, $this->logFile);
+        error_log("[$date] {$this->table}: $message\n", 3, $logFile);
     }
 }

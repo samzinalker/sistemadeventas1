@@ -165,33 +165,99 @@ class CompraModel extends Model {
      * @return int|string ID de la compra o mensaje de error
      */
     public function createAndUpdateStock(array $data) {
+        // Verificar si PDO está configurado para manejar errores
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
         try {
-            $this->pdo->beginTransaction();
+            // Comprobar si hay transacción activa
+            $transactionActive = $this->pdo->inTransaction();
             
-            // 1. Registrar la compra
-            $compraId = $this->create($data);
+            // Iniciar transacción solo si no hay una activa
+            if (!$transactionActive) {
+                $this->pdo->beginTransaction();
+            }
             
-            if (!is_numeric($compraId)) {
-                $this->pdo->rollBack();
-                return $compraId; // Error al crear compra
+            // 1. Registrar la compra usando el método base insert en lugar de create
+            $columns = [];
+            $placeholders = [];
+            $values = [];
+            
+            foreach ($data as $column => $value) {
+                $columns[] = $column;
+                $placeholders[] = ":$column";
+                $values[":$column"] = $value;
+            }
+            
+            $sql = "INSERT INTO {$this->table} (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+            $stmt = $this->pdo->prepare($sql);
+            
+            foreach ($values as $param => $val) {
+                $stmt->bindValue($param, $val);
+            }
+            
+            $stmt->execute();
+            $compraId = $this->pdo->lastInsertId();
+            
+            if (!is_numeric($compraId) || $compraId <= 0) {
+                // Hacer rollback solo si iniciamos la transacción
+                if (!$transactionActive) {
+                    $this->pdo->rollBack();
+                }
+                return "Error al insertar la compra";
             }
             
             // 2. Actualizar el stock del producto
             $almacenModel = new AlmacenModel($this->pdo);
-            $result = $almacenModel->updateStock($data['id_producto'], $data['cantidad']);
             
-            if ($result !== true) {
-                $this->pdo->rollBack();
-                return $result; // Error al actualizar stock
+            // Obtener el producto para verificar existencia
+            $producto = $almacenModel->getById($data['id_producto']);
+            
+            if (!$producto) {
+                // Hacer rollback solo si iniciamos la transacción
+                if (!$transactionActive) {
+                    $this->pdo->rollBack();
+                }
+                return "Producto no encontrado";
             }
             
-            $this->pdo->commit();
+            // Actualizar stock
+            $nuevoStock = $producto['stock'] + intval($data['cantidad']);
+            
+            $updateSql = "UPDATE tb_almacen SET 
+                      stock = :stock,
+                      fyh_actualizacion = :fyh_actualizacion
+                      WHERE id_producto = :id_producto";
+                
+            $updateStmt = $this->pdo->prepare($updateSql);
+            $fechaActual = date('Y-m-d H:i:s');
+            
+            $updateStmt->bindParam(':stock', $nuevoStock, PDO::PARAM_INT);
+            $updateStmt->bindParam(':fyh_actualizacion', $fechaActual);
+            $updateStmt->bindParam(':id_producto', $data['id_producto'], PDO::PARAM_INT);
+            
+            $updateResult = $updateStmt->execute();
+            
+            if (!$updateResult) {
+                // Hacer rollback solo si iniciamos la transacción
+                if (!$transactionActive) {
+                    $this->pdo->rollBack();
+                }
+                return "Error al actualizar el stock del producto";
+            }
+            
+            // Commit solo si iniciamos la transacción
+            if (!$transactionActive) {
+                $this->pdo->commit();
+            }
+            
             return $compraId;
         } catch (PDOException $e) {
-            if ($this->pdo->inTransaction()) {
+            // Hacer rollback solo si iniciamos la transacción y aún está activa
+            if (!$transactionActive && $this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            $this->logError($e->getMessage());
+            
+            $this->logError("Error en createAndUpdateStock: " . $e->getMessage());
             return "Error en la transacción: " . $e->getMessage();
         }
     }
@@ -335,16 +401,83 @@ class CompraModel extends Model {
     }
 
     /**
-     * Registra error en log
+     * Obtiene estadísticas de compras
+     * @param int|null $userId ID del usuario para filtrar
+     * @return array Estadísticas (total, mes actual, semana, hoy)
      */
-    protected function logError($message) {
-        $logDir = __DIR__ . '/../../logs';
-        if (!file_exists($logDir)) {
-            mkdir($logDir, 0755, true);
+    public function getStats($userId = null) {
+        try {
+            // Base de la consulta
+            $baseQuery = "SELECT COUNT(*) as count, COALESCE(SUM(precio_compra * cantidad), 0) as total
+                         FROM {$this->table}";
+            
+            // Condición de usuario
+            $userCondition = $userId !== null ? " WHERE id_usuario = :userId" : "";
+            
+            // Total de todas las compras
+            $totalQuery = $baseQuery . $userCondition;
+            $stmt = $this->pdo->prepare($totalQuery);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $total = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Compras del mes actual
+            $monthQuery = $baseQuery . 
+                          ($userCondition ? $userCondition . " AND" : " WHERE") . 
+                          " MONTH(fecha_compra) = MONTH(CURRENT_DATE()) AND YEAR(fecha_compra) = YEAR(CURRENT_DATE())";
+            $stmt = $this->pdo->prepare($monthQuery);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $month = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Compras de la semana actual
+            $weekQuery = $baseQuery . 
+                        ($userCondition ? $userCondition . " AND" : " WHERE") . 
+                        " YEARWEEK(fecha_compra, 1) = YEARWEEK(CURRENT_DATE(), 1)";
+            $stmt = $this->pdo->prepare($weekQuery);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $week = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Compras de hoy
+            $todayQuery = $baseQuery . 
+                         ($userCondition ? $userCondition . " AND" : " WHERE") . 
+                         " DATE(fecha_compra) = CURRENT_DATE()";
+            $stmt = $this->pdo->prepare($todayQuery);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            $today = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return [
+                'total' => $total,
+                'month' => $month,
+                'week' => $week,
+                'today' => $today
+            ];
+        } catch (PDOException $e) {
+            $this->logError($e->getMessage());
+            return [
+                'total' => ['count' => 0, 'total' => 0],
+                'month' => ['count' => 0, 'total' => 0],
+                'week' => ['count' => 0, 'total' => 0],
+                'today' => ['count' => 0, 'total' => 0]
+            ];
         }
-        
-        $logFile = $logDir . '/compras_model_errors.log';
-        $date = date('Y-m-d H:i:s');
-        error_log("[$date] $message\n", 3, $logFile);
     }
 }
