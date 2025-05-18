@@ -1,19 +1,30 @@
 <?php
-// 1. Incluir configuración, sesión y permisos
-require_once __DIR__ . '/../app/config.php';        // Define $pdo, $URL, $fechaHora
-require_once __DIR__ . '/../layout/sesion.php';     // Maneja la sesión del usuario
-require_once __DIR__ . '/../layout/permisos.php';   // Verifica si el usuario es administrador
+// 1. INICIAR SESIÓN (si no está activa)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// 2. Definir título y variables para el layout
+// 2. CONFIGURACIÓN PRINCIPAL (define $pdo, $URL, $fechaHora)
+require_once __DIR__ . '/../app/config.php'; 
+
+// 3. MANEJO DE SESIÓN DEL USUARIO (valida sesión, carga datos del usuario)
+require_once __DIR__ . '/../layout/sesion.php'; 
+
+// 4. MANEJO DE PERMISOS (valida si el usuario tiene acceso a esta página/módulo)
+require_once __DIR__ . '/../layout/permisos.php'; 
+
+// ---------------------------------------------------------------------------
+// Lógica específica de la página (variables de título, carga de datos, etc.)
+// ---------------------------------------------------------------------------
 $titulo_pagina = 'Listado de Roles';
-$modulo_abierto = 'roles'; // Para el menú lateral
-$pagina_activa = 'roles_listado'; // Para resaltar en el menú
+$modulo_abierto = 'roles';
+$pagina_activa = 'roles_listado';
 
-// 3. Cargar los datos de los roles usando el controlador de listado
-// Este script definirá la variable $roles_datos
+// Cargar los datos de los roles usando el controlador de listado
 require_once __DIR__ . '/../app/controllers/roles/listado_de_roles.php'; 
+// ---------------------------------------------------------------------------
 
-// 4. Incluir la parte superior del layout (HTML hasta el contenido principal)
+// 5. LAYOUT PARTE 1 (HTML head, navbar, sidebar, SweetAlert JS incluido)
 require_once __DIR__ . '/../layout/parte1.php'; 
 ?>
 
@@ -137,11 +148,12 @@ require_once __DIR__ . '/../layout/parte1.php';
 <!-- /.content-wrapper -->
 
 <?php 
-// 5. Incluir mensajes y la parte final del layout
+// 6. LAYOUT MENSAJES (Lee y muestra $_SESSION['mensaje'] con SweetAlert)
 require_once __DIR__ . '/../layout/mensajes.php'; 
+
+// 7. LAYOUT PARTE 2 (footer, cierre de HTML, otros JS)
 require_once __DIR__ . '/../layout/parte2.php'; 
 ?>
-
 <!-- Scripts para DataTables (opcional, pero recomendado para tablas) -->
 <script>
 $(function () {
