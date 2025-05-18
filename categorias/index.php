@@ -1,382 +1,337 @@
 <?php
-require_once '../app/config.php';
-require_once '../app/controllers/categorias/CategoriaController.php';
+include ('../app/config.php');
+include ('../layout/sesion.php');
 
-// Configuración de página
-$modulo_abierto = 'categorias';
-$pagina_activa = 'categorias';
+include ('../layout/parte1.php');
 
-// Incluir sesión y layout
-include_once '../layout/sesion.php';
-include_once '../layout/parte1.php';
 
-// Instanciar controlador y obtener categorías
-$controller = new CategoriaController($pdo);
-$categorias = $controller->index(true); // true para mostrar solo categorías del usuario actual
+include ('../app/controllers/categorias/listado_de_categoria.php');
+
+
 ?>
 
+<!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
-    <section class="content-header">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1><i class="fas fa-tags"></i> Categorías</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="<?= $URL ?>">Inicio</a></li>
-                        <li class="breadcrumb-item active">Categorías</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-            <!-- Alertas -->
-            <div id="alertaContainer"></div>
-            
-            <!-- Categorías -->
-            <div class="card card-primary card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">Listado de Categorías</h3>
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCrearCategoria">
-                            <i class="fas fa-plus"></i> Nueva Categoría
+                <div class="col-sm-12">
+                    <h1 class="m-0">Listado de Categorías
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-create">
+                           <i class="fa fa-plus"></i> Agregar Nuevo
                         </button>
+                    </h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+<!-- modal para registrar categorias -->
+<div class="modal fade" id="modal-create">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #1d36b6;color: white">
+                <h4 class="modal-title">Creación de una nueva categoría</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="">Nombre de la categoría <b>*</b></label>
+                            <input type="text" id="nombre_categoria" class="form-control">
+                            <small style="color: red;display: none" id="lbl_create">* Este campo es requerido</small>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <table id="tablaCategorias" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th width="10%">#</th>
-                                <th>Categoría</th>
-                                <th width="15%">Productos</th>
-                                <th width="20%">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $contador = 1;
-                            foreach ($categorias as $categoria): 
-                            ?>
-                            <tr id="fila_<?= $categoria['id_categoria'] ?>">
-                                <td class="text-center"><?= $contador++ ?></td>
-                                <td><?= htmlspecialchars($categoria['nombre_categoria']) ?></td>
-                                <td class="text-center">
-                                    <span class="badge badge-info"><?= $categoria['productos_count'] ?? 0 ?></span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-warning btn-sm" 
-                                                onclick="editarCategoria(<?= $categoria['id_categoria'] ?>, '<?= htmlspecialchars($categoria['nombre_categoria'], ENT_QUOTES) ?>')">
-                                            <i class="fas fa-edit"></i> Editar
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm" 
-                                                onclick="confirmarEliminar(<?= $categoria['id_categoria'] ?>, '<?= htmlspecialchars($categoria['nombre_categoria'], ENT_QUOTES) ?>')">
-                                            <i class="fas fa-trash"></i> Eliminar
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn_create">Guardar categoría</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+<script>
+    $('#btn_create').click(function () {
+        var nombre_categoria = $('#nombre_categoria').val();
+
+        if(nombre_categoria == ""){
+            $('#nombre_categoria').focus();
+            $('#lbl_create').css('display','block');
+        }else{
+            var url = "../app/controllers/categorias/registro_de_categorias.php";
+            $.get(url,{nombre_categoria:nombre_categoria},function (datos) {
+                $('#respuesta').html(datos);
+            });
+        }
+    });
+</script>
+<div id="respuesta"></div>
+    <!-- Main content -->
+    <div class="content">
+        <div class="container-fluid">
+
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">Categorías registrados</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div class="card-body" style="display: block;">
+                        <table id="example1" class="table table-bordered table-striped">
+    <thead>
+    <tr>
+        <th><center>Nro</center></th>
+        <th><center>Nombre de la categoría</center></th>
+        <th><center>Acciones</center></th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php
+    $contador = 0;
+    foreach ($categorias_datos as $categorias_dato){
+        $id_categoria = $categorias_dato['id_categoria'];
+        $nombre_categoria = $categorias_dato['nombre_categoria']; ?>
+        <tr>
+            <td><center><?php echo $contador = $contador + 1;?></center></td>
+            <td><?php echo $nombre_categoria;?></td>
+            <td>
+                <center>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success" data-toggle="modal"
+                                data-target="#modal-update<?php echo $id_categoria;?>">
+                            <i class="fa fa-pencil-alt"></i> Editar
+                        </button>
+                        
+                        <!-- Agregamos el botón de eliminar -->
+                        <button type="button" class="btn btn-danger" data-toggle="modal"
+                                data-target="#modal-delete<?php echo $id_categoria;?>">
+                            <i class="fa fa-trash"></i> Eliminar
+                        </button>
+                        
+                        <!-- Modal para eliminar categoría -->
+                        <div class="modal fade" id="modal-delete<?php echo $id_categoria;?>">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger">
+                                        <h4 class="modal-title">¿Está seguro de eliminar esta categoría?</h4>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
                                         </button>
                                     </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+                                    <div class="modal-body">
+                                        <p>Esta acción no se puede deshacer.</p>
+                                        <p>Categoría: <strong><?php echo $nombre_categoria; ?></strong></p>
+                                    </div>
+                                    <div class="modal-footer justify-content-between">
+                                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger" id="btn_delete<?php echo $id_categoria; ?>">Eliminar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <script>
+                            $('#btn_delete<?php echo $id_categoria;?>').click(function() {
+                                var id_categoria = '<?php echo $id_categoria;?>';
+                                var url = "../app/controllers/categorias/delete_de_categorias.php";
+                                
+                                $.get(url, {id_categoria: id_categoria}, function(datos) {
+                                    $('#respuesta_delete<?php echo $id_categoria;?>').html(datos);
+                                });
+                            });
 
-<!-- Modal para Crear Categoría -->
-<div class="modal fade" id="modalCrearCategoria">
+                            
+                        </script>
+                        <div id="respuesta_delete<?php echo $id_categoria;?>"></div>
+                        <!-- Agregar este código dentro del bucle foreach, después del botón de Eliminar y su modal -->
+
+<!-- Modal para actualizar categorías -->
+<div class="modal fade" id="modal-update<?php echo $id_categoria;?>">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
-                <h4 class="modal-title">Nueva Categoría</h4>
+            <div class="modal-header" style="background-color: #116f4a;color: white">
+                <h4 class="modal-title">Actualización de la categoría</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formCrearCategoria">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="nombreCategoria">Nombre de la categoría <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nombreCategoria" name="nombre_categoria" required>
-                        <div class="invalid-feedback">Este campo es obligatorio</div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="">Nombre de la categoría</label>
+                            <input type="text" id="nombre_categoria<?php echo $id_categoria;?>" value="<?php echo $nombre_categoria; ?>" class="form-control">
+                            <small style="color: red;display: none" id="lbl_update<?php echo $id_categoria;?>">* Este campo es requerido</small>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Guardar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Editar Categoría -->
-<div class="modal fade" id="modalEditarCategoria">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h4 class="modal-title">Editar Categoría</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
             </div>
-            <form id="formEditarCategoria">
-                <input type="hidden" id="editIdCategoria" name="id_categoria">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="editNombreCategoria">Nombre de la categoría <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="editNombreCategoria" name="nombre_categoria" required>
-                        <div class="invalid-feedback">Este campo es obligatorio</div>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-save"></i> Actualizar
-                    </button>
-                </div>
-            </form>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btn_update<?php echo $id_categoria;?>">Actualizar</button>
+            </div>
         </div>
+        <!-- /.modal-content -->
     </div>
+    <!-- /.modal-dialog -->
 </div>
+<!-- /.modal -->
 
-<!-- Scripts para la página -->
 <script>
-$(document).ready(function() {
-    // Inicializar DataTable
-    $('#tablaCategorias').DataTable({
-        "responsive": true,
-        "lengthChange": false,
-        "autoWidth": false,
-        "pageLength": 10,
-        "language": {
-            "emptyTable": "No hay categorías registradas",
-            "info": "Mostrando _START_ a _END_ de _TOTAL_ categorías",
-            "infoEmpty": "Mostrando 0 a 0 de 0 categorías",
-            "infoFiltered": "(filtrado de _MAX_ categorías)",
-            "search": "Buscar:",
-            "paginate": {
-                "first": "Primero",
-                "last": "Último",
-                "next": "Siguiente",
-                "previous": "Anterior"
-            }
-        },
-        "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
-    }).buttons().container().appendTo('#tablaCategorias_wrapper .col-md-6:eq(0)');
+    $('#btn_update<?php echo $id_categoria;?>').click(function () {
+        var nombre_categoria = $('#nombre_categoria<?php echo $id_categoria;?>').val();
+        var id_categoria = '<?php echo $id_categoria;?>';
 
-    // Crear Categoría
-    $('#formCrearCategoria').submit(function(e) {
-        e.preventDefault();
-        
-        const nombreCategoria = $('#nombreCategoria').val().trim();
-        if (!nombreCategoria) {
-            $('#nombreCategoria').addClass('is-invalid');
-            return;
-        }
-        
-        $.ajax({
-            url: '../app/ajax/categoria.php',
-            type: 'POST',
-            data: {
-                action: 'store',
-                nombre_categoria: nombreCategoria
-            },
-            dataType: 'json',
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Procesando...',
-                    text: 'Por favor espere',
-                    allowOutsideClick: false,
-                    showConfirmButton: false,
-                    willOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            },
-            success: function(response) {
-                Swal.close();
-                
-                if (response.status) {
-                    // Mostrar alerta de éxito
-                    mostrarAlerta(response.message, 'success');
-                    
-                    // Cerrar modal y recargar página
-                    $('#modalCrearCategoria').modal('hide');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    Swal.fire('Error', response.message, 'error');
-                }
-            },
-            error: function() {
-                Swal.close();
-                Swal.fire('Error', 'Ocurrió un error al procesar la solicitud', 'error');
-            }
-        });
-    });
-
-    // Editar Categoría
-    $('#formEditarCategoria').submit(function(e) {
-        e.preventDefault();
-        
-        const idCategoria = $('#editIdCategoria').val();
-        const nombreCategoria = $('#editNombreCategoria').val().trim();
-        
-        if (!nombreCategoria) {
-            $('#editNombreCategoria').addClass('is-invalid');
-            return;
-        }
-        
-        $.ajax({
-            url: '../app/ajax/categoria.php',
-            type: 'POST',
-            data: {
-                action: 'update',
-                id_categoria: idCategoria,
-                nombre_categoria: nombreCategoria
-            },
-            dataType: 'json',
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Actualizando...',
-                    text: 'Por favor espere',
-                    allowOutsideClick: false,
-                    showConfirmButton: false,
-                    willOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            },
-            success: function(response) {
-                Swal.close();
-                
-                if (response.status) {
-                    // Mostrar alerta de éxito
-                    mostrarAlerta(response.message, 'success');
-                    
-                    // Cerrar modal y recargar página
-                    $('#modalEditarCategoria').modal('hide');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    Swal.fire('Error', response.message, 'error');
-                }
-            },
-            error: function() {
-                Swal.close();
-                Swal.fire('Error', 'Ocurrió un error al procesar la solicitud', 'error');
-            }
-        });
-    });
-
-    // Limpiar campos al cerrar modales
-    $('#modalCrearCategoria').on('hidden.bs.modal', function() {
-        $('#nombreCategoria').val('').removeClass('is-invalid');
-    });
-
-    $('#modalEditarCategoria').on('hidden.bs.modal', function() {
-        $('#editNombreCategoria').val('').removeClass('is-invalid');
-    });
-});
-
-// Mostrar modal de edición
-function editarCategoria(id, nombre) {
-    $('#editIdCategoria').val(id);
-    $('#editNombreCategoria').val(nombre);
-    $('#modalEditarCategoria').modal('show');
-}
-
-// Mostrar confirmación para eliminar
-function confirmarEliminar(id, nombre) {
-    Swal.fire({
-        title: '¿Eliminar categoría?',
-        html: `¿Estás seguro de eliminar la categoría <strong>${nombre}</strong>?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            eliminarCategoria(id);
-        }
-    });
-}
-
-// Eliminar categoría
-function eliminarCategoria(id) {
-    $.ajax({
-        url: '../app/ajax/categoria.php',
-        type: 'POST',
-        data: {
-            action: 'destroy',
-            id_categoria: id
-        },
-        dataType: 'json',
-        beforeSend: function() {
-            Swal.fire({
-                title: 'Eliminando...',
-                text: 'Por favor espere',
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
+        if(nombre_categoria == ""){
+            $('#nombre_categoria<?php echo $id_categoria;?>').focus();
+            $('#lbl_update<?php echo $id_categoria;?>').css('display','block');
+        } else {
+            var url = "../app/controllers/categorias/update_de_categorias.php";
+            $.get(url, {nombre_categoria:nombre_categoria, id_categoria:id_categoria}, function (datos) {
+                $('#respuesta_update<?php echo $id_categoria;?>').html(datos);
             });
-        },
-        success: function(response) {
-            Swal.close();
-            
-            if (response.status) {
-                // Mostrar alerta de éxito
-                mostrarAlerta(response.message, 'success');
-                
-                // Eliminar fila de la tabla
-                $(`#fila_${id}`).fadeOut(500, function() {
-                    $(this).remove();
-                });
-            } else {
-                Swal.fire('Error', response.message, 'error');
-            }
-        },
-        error: function() {
-            Swal.close();
-            Swal.fire('Error', 'Ocurrió un error al procesar la solicitud', 'error');
         }
     });
-}
-
-// Mostrar alerta
-function mostrarAlerta(mensaje, tipo) {
-    const alertaHTML = `
-        <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
-            ${mensaje}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('#alertaContainer').html(alertaHTML);
-    
-    // Auto-ocultar después de 3 segundos
-    setTimeout(() => {
-        $('.alert').alert('close');
-    }, 3000);
-}
 </script>
+<div id="respuesta_update<?php echo $id_categoria;?>"></div>
+                        <!-- Resto del código para el modal de actualización -->
+                    </div>
+                </center>
+            </td>
+        </tr>
+        <?php
+    }
+    ?>
+    </tbody>
+    <tfoot>
+    <tr>
+        <th><center>Nro</center></th>
+        <th><center>Nombre de la categoría</center></th>
+        <th><center>Acciones</center></th>
+    </tr>
+    </tfoot>
+</table>
+                        </div>
 
-<?php include_once '../layout/parte2.php'; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+
+
+<?php include ('../layout/mensajes.php'); ?>
+<?php include ('../layout/parte2.php'); ?>
+
+
+<script>
+    $(function () {
+        $("#example1").DataTable({
+            "pageLength": 5,
+            "language": {
+                "emptyTable": "No hay información",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ Categorías",
+                "infoEmpty": "Mostrando 0 a 0 de 0 Categorías",
+                "infoFiltered": "(Filtrado de _MAX_ total Categorías)",
+                "infoPostFix": "",
+                "thousands": ",",
+                "lengthMenu": "Mostrar _MENU_ Categorías",
+                "loadingRecords": "Cargando...",
+                "processing": "Procesando...",
+                "search": "Buscador:",
+                "zeroRecords": "Sin resultados encontrados",
+                "paginate": {
+                    "first": "Primero",
+                    "last": "Ultimo",
+                    "next": "Siguiente",
+                    "previous": "Anterior"
+                }
+            },
+            "responsive": true, "lengthChange": true, "autoWidth": false,
+            buttons: [{
+                extend: 'collection',
+                text: 'Reportes',
+                buttons: [
+                    {
+                        text: 'Copiar',
+                        extend: 'copy',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: 'Exportar PDF',
+                        orientation: 'portrait', // <--- VERTICAL
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: [0, 1]
+                        },
+                        customize: function (doc) {
+                            doc.pageMargins = [20, 20, 20, 20];
+                            doc.defaultStyle.fontSize = 11;
+                            if (doc.content[0].text) {
+                                doc.content[0].alignment = 'center';
+                            }
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 12;
+                            var body = doc.content[1].table.body;
+                            for (var i = 1; i < body.length; i++) {
+                                for (var j = 0; j < body[i].length; j++) {
+                                    body[i][j].alignment = 'center';
+                                }
+                            }
+                            doc.content[1].table.widths = ['15%', '85%'];
+                        }
+                    },
+                    {
+                        extend: 'csv',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    },
+                    {
+                        text: 'Imprimir',
+                        extend: 'print',
+                        exportOptions: {
+                            columns: [0, 1]
+                        }
+                    }
+                ]
+            },
+            {
+                extend: 'colvis',
+                text: 'Visor de columnas',
+                collectionLayout: 'fixed three-column'
+            }
+            ],
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+    });
+</script>

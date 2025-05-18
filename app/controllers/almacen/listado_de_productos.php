@@ -1,18 +1,26 @@
 <?php
-// Conexión a la base de datos ya establecida en config.php
-
-try {
-    // Consulta SQL para obtener productos con nombres de categorías
-    $sql_productos = "SELECT p.*, c.nombre_categoria 
-                     FROM tb_almacen p 
-                     INNER JOIN tb_categorias c ON p.id_categoria = c.id_categoria 
-                     ORDER BY p.id_producto DESC";
-    $query_productos = $pdo->prepare($sql_productos);
-    $query_productos->execute();
-    $productos_datos = $query_productos->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    // Manejo de errores
-    error_log("Error al cargar productos: " . $e->getMessage());
-    // Inicializamos array vacío para evitar errores
-    $productos_datos = [];
+// 1. Asegura que la sesión esté iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
+
+// 2. Verifica que el usuario está autenticado
+if (!isset($_SESSION['id_usuario'])) {
+    header('Location: /sistemadeventas/login.php');
+    exit();
+}
+
+$id_usuario = $_SESSION['id_usuario'];
+
+// 3. Consulta SOLO los productos del usuario autenticado - SIN EXCEPCIONES
+// Incluso administradores solo ven sus propios productos
+$sql_productos = "SELECT a.*, cat.nombre_categoria as categoria, u.email as email
+                  FROM tb_almacen as a
+                  INNER JOIN tb_categorias as cat ON a.id_categoria = cat.id_categoria
+                  INNER JOIN tb_usuarios as u ON u.id_usuario = a.id_usuario
+                  WHERE a.id_usuario = :id_usuario
+                  ORDER BY a.id_producto DESC";
+$query_productos = $pdo->prepare($sql_productos);
+$query_productos->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+$query_productos->execute();
+$productos_datos = $query_productos->fetchAll(PDO::FETCH_ASSOC);

@@ -1,183 +1,161 @@
 <?php
-require_once '../app/config.php';
-require_once '../app/controllers/almacen/AlmacenController.php';
-
-// Configuración de página
-$modulo_abierto = 'almacen';
-$pagina_activa = 'almacen';
-
-// Incluir sesión y layout
-include_once '../layout/sesion.php';
-include_once '../layout/parte1.php';
-
-// Instanciar controlador y obtener datos
-$controller = new AlmacenController($pdo);
-$productos = $controller->index(true); // true para mostrar solo los productos del usuario actual
+include ('../app/config.php');
+include ('../layout/sesion.php');
+include ('../layout/parte1.php');
+include ('../app/controllers/almacen/listado_de_productos.php');
 ?>
 
+<!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-6">
+                <div class="col-sm-12">
                     <h1 class="m-0">Listado de productos</h1>
-                </div>
-            </div>
-        </div>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
     </div>
+    <!-- /.content-header -->
 
-    <section class="content">
+    <!-- Main content -->
+    <div class="content">
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-primary">
+                    <div class="card card-outline card-primary">
                         <div class="card-header">
                             <h3 class="card-title">Productos registrados</h3>
                             <div class="card-tools">
-                                <a href="create.php" class="btn btn-outline-light">
-                                    <i class="fas fa-plus"></i> Crear nuevo
-                                </a>
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
                             </div>
                         </div>
+
                         <div class="card-body">
-                            <?php if(isset($_SESSION['mensaje'])): ?>
-                                <div class="alert alert-<?= $_SESSION['icono'] ?> alert-dismissible fade show" role="alert">
-                                    <?= $_SESSION['mensaje'] ?>
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <?php 
-                                    unset($_SESSION['mensaje']);
-                                    unset($_SESSION['icono']);
-                                ?>
-                            <?php endif; ?>
-                            
-                            <table id="tabla_productos" class="table table-bordered table-striped">
-                                <thead>
+                            <div class="table table-responsive">
+                                <table id="example1" class="table table-bordered table-striped table-sm">
+                                    <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th>Código</th>
-                                        <th>Nombre</th>
-                                        <th>Stock</th>
-                                        <th>Precio venta</th>
-                                        <th>Categoría</th>
-                                        <th>Imagen</th>
-                                        <th>Acciones</th>
+                                        <th><center>Nro</center></th>
+                                        <th><center>Código</center></th>
+                                        <th><center>Categoría</center></th>
+                                        <th><center>Imagen</center></th>
+                                        <th><center>Nombre</center></th>
+                                        <th><center>Descripción</center></th>
+                                        <th><center>Stock</center></th>
+                                        <th><center>Precio compra</center></th>
+                                        <th><center>Precio venta</center></th>
+                                        <th><center>Total</center></th>
+                                        <th><center>Fecha compra</center></th>
+                                        <th><center>Acciones</center></th>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    $contador = 1;
-                                    foreach($productos as $producto): 
-                                        $rutaImagen = !empty($producto['imagen']) 
-                                            ? $URL . "/public/images/productos/" . $producto['imagen'] 
-                                            : $URL . "/public/images/no-image.png";
+                                    </thead>
+                                    <tbody>
+                                    <?php
+                                    $contador = 0;
+                                    foreach ($productos_datos as $productos_dato){
+                                        $id_producto = $productos_dato['id_producto']; ?>
+                                        <tr>
+                                            <td><?php echo $contador = $contador + 1; ?></td>
+                                            <td><?php echo $productos_dato['codigo'];?></td>
+                                            <td><?php echo $productos_dato['categoria'];?></td>
+                                            <td>
+                                                <img src="<?php echo $URL."/almacen/img_productos/".$productos_dato['imagen'];?>" width="50px" alt="Imagen">
+                                            </td>
+                                            <td><?php echo $productos_dato['nombre'];?></td>
+                                            <td><?php echo $productos_dato['descripcion'];?></td>
+                                            <?php
+                                            $stock_actual = $productos_dato['stock'];
+                                            $stock_maximo = $productos_dato['stock_maximo'];
+                                            $stock_minimo = $productos_dato['stock_minimo'];
+                                            if($stock_actual < $stock_minimo){ ?>
+                                                <td style="background-color: #ee868b"><center><?php echo $productos_dato['stock'];?></center></td>
+                                            <?php
+                                            }
+                                            else if($stock_actual > $stock_maximo){ ?>
+                                                <td style="background-color: #8ac68d"><center><?php echo $productos_dato['stock'];?></center></td>
+                                            <?php
+                                            }else{ ?>
+                                                <td><center><?php echo $productos_dato['stock'];?></center></td>
+                                            <?php
+                                            }
+                                            ?>
+
+                                            <td><?php echo $productos_dato['precio_compra'];?></td>
+                                            <td><?php echo $productos_dato['precio_venta'];?></td>
+                                            <td>
+                                                <center>
+                                                    <?php 
+                                                    $total = $productos_dato['stock'] * $productos_dato['precio_venta'];
+                                                    echo number_format($total, 2);
+                                                    ?>
+                                                </center>
+                                            </td>
+                                            <td><?php echo $productos_dato['fecha_ingreso'];?></td>
+                                            <td>
+                                                <center>
+                                                    <div class="btn-group">
+                                                        <a href="show.php?id=<?php echo $id_producto; ?>" type="button" class="btn btn-info btn-sm"><i class="fa fa-eye"></i> Ver</a>
+                                                        <a href="update.php?id=<?php echo $id_producto; ?>" type="button" class="btn btn-success btn-sm"><i class="fa fa-pencil-alt"></i> Editar</a>
+                                                        <a href="delete.php?id=<?php echo $id_producto; ?>" type="button" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Borrar</a>
+                                                    </div>
+                                                </center>
+                                            </td>
+                                        </tr>
+                                        <?php
+                                    }
                                     ?>
-                                    <tr>
-                                        <td><?= $contador++ ?></td>
-                                        <td><?= $producto['codigo'] ?></td>
-                                        <td><?= $producto['nombre'] ?></td>
-                                        <td>
-                                            <?php if($producto['stock'] <= $producto['stock_minimo']): ?>
-                                                <span class="badge badge-danger"><?= $producto['stock'] ?></span>
-                                            <?php else: ?>
-                                                <span class="badge badge-success"><?= $producto['stock'] ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= $producto['precio_venta'] ?></td>
-                                        <td><?= $producto['nombre_categoria'] ?></td>
-                                        <td class="text-center">
-                                            <img src="<?= $rutaImagen ?>" width="50" alt="<?= $producto['nombre'] ?>">
-                                        </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="show.php?id=<?= $producto['id_producto'] ?>" class="btn btn-info btn-sm" title="Ver detalles">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <a href="edit.php?id=<?= $producto['id_producto'] ?>" class="btn btn-warning btn-sm" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-danger btn-sm" title="Eliminar"
-                                                   onclick="eliminarProducto(<?= $producto['id_producto'] ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </div>
 
+<?php include ('../layout/mensajes.php'); ?>
+<?php include ('../layout/parte2.php'); ?>
+
+<!-- DataTables  & Plugins -->
 <script>
-$(document).ready(function() {
-    // Inicializar DataTable
-    $('#tabla_productos').DataTable({
-        "responsive": true,
-        "lengthChange": false,
-        "autoWidth": false,
-        "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
-    }).buttons().container().appendTo('#tabla_productos_wrapper .col-md-6:eq(0)');
-});
-
-// Función para eliminar un producto
-function eliminarProducto(id) {
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: "Esta acción no se puede revertir",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: '../app/ajax/almacen.php',
-                type: 'POST',
-                data: {
-                    'action': 'destroy',
-                    'id_producto': id
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status) {
-                        Swal.fire(
-                            'Eliminado',
-                            response.message,
-                            'success'
-                        ).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        Swal.fire(
-                            'Error',
-                            response.message,
-                            'error'
-                        );
-                    }
-                },
-                error: function() {
-                    Swal.fire(
-                        'Error',
-                        'Ocurrió un error al procesar la solicitud',
-                        'error'
-                    );
+    $(function () {
+        $("#example1").DataTable({
+            "pageLength": 10,
+            "language": {
+                "emptyTable": "No hay información",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ Productos",
+                "infoEmpty": "Mostrando 0 a 0 de 0 Productos",
+                "infoFiltered": "(Filtrado de _MAX_ total Productos)",
+                "lengthMenu": "Mostrar _MENU_ Productos",
+                "search": "Buscar:",
+                "zeroRecords": "Sin resultados encontrados",
+                "paginate": {
+                    "first": "Primero",
+                    "last": "Último",
+                    "next": "Siguiente",
+                    "previous": "Anterior"
                 }
-            });
-        }
+            },
+            "responsive": true, "lengthChange": true, "autoWidth": false,
+            buttons: [
+                {
+                    extend: 'collection',
+                    text: 'Reportes',
+                    buttons: [
+                        { extend: 'copy', text: 'Copiar' },
+                        { extend: 'excel', text: 'Excel' },
+                        { extend: 'pdf', text: 'PDF' },
+                        { extend: 'print', text: 'Imprimir' }
+                    ]
+                },
+                { extend: 'colvis', text: 'Columnas' }
+            ]
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
     });
-}
 </script>
-
-<?php
-include_once '../layout/parte2.php';
-?>

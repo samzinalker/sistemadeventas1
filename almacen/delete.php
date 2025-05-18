@@ -17,7 +17,7 @@ include ('../app/controllers/almacen/cargar_producto.php');
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0">Datos del producto: <?php echo $nombre;?></h1>
+                    <h1 class="m-0">Datos del producto: <?php echo $nombre;?> a ser eliminado</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -31,9 +31,9 @@ include ('../app/controllers/almacen/cargar_producto.php');
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-info">
+                    <div class="card card-danger">
                         <div class="card-header">
-                            <h3 class="card-title">Datos del producto</h3>
+                            <h3 class="card-title">¿Esta seguro de eliminar el producto?</h3>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
                                 </button>
@@ -44,9 +44,8 @@ include ('../app/controllers/almacen/cargar_producto.php');
                         <div class="card-body" style="display: block;">
                             <div class="row">
                                 <div class="col-md-12">
-
-
-
+                                    <form action="../app/controllers/almacen/delete.php" method="post">
+                                        <input type="text" name="id_producto" value="<?php echo $id_producto_get;?>" hidden>
                                         <div class="row">
                                             <div class="col-md-9">
                                                 <div class="row">
@@ -147,8 +146,9 @@ include ('../app/controllers/almacen/cargar_producto.php');
                                         <hr>
                                         <div class="form-group">
                                             <a href="index.php" class="btn btn-secondary">Cancelar</a>
+                                            <button class="btn btn-danger"><i class="fa fa-trash"></i> Borrar producto</button>
                                         </div>
-
+                                    </form>
                                 </div>
                             </div>
                         </div>

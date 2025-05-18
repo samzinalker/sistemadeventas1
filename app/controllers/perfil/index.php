@@ -141,7 +141,6 @@ $pagina_activa = 'perfil_datos';
 
 <!-- Añadir script para la previsualización de la imagen -->
 <script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-<script src="<?php echo $URL; ?>/public/js/perfil.js"></script>
 <script>
 $(document).ready(function () {
     bsCustomFileInput.init();

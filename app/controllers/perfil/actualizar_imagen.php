@@ -1,90 +1,84 @@
 <?php
-require_once __DIR__ . '/../../models/UsuarioModel.php';
-require_once __DIR__ . '/../../utils/FileUpload.php';
-require_once __DIR__ . '/../../utils/Security.php';
+include('../../config.php');
+session_start();
 
-/**
- * Controlador para el módulo de perfil de usuario
- */
-class PerfilController {
-    private $usuarioModel;
-    private $fileUpload;
-    private $security;
-    
-    /**
-     * Constructor
-     * @param PDO|null $pdo Conexión PDO opcional
-     */
-    public function __construct($pdo = null) {
-        $this->usuarioModel = new UsuarioModel($pdo);
-        $this->fileUpload = new FileUpload();
-        $this->security = new Security();
-    }
-    
-    /**
-     * Verifica que el usuario esté autenticado y sea el propietario del perfil
-     * @param int $userId ID del usuario a verificar
-     * @return bool True si el usuario tiene permisos
-     */
-    public function checkProfileOwnership($userId) {
-        if (!isset($_SESSION['id_usuario'])) {
-            return false;
-        }
-        
-        // Permitir al admin editar cualquier perfil
-        if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador') {
-            return true;
-        }
-        
-        // El usuario solo puede editar su propio perfil
-        return $_SESSION['id_usuario'] == $userId;
-    }
-    
-    /**
-     * Obtiene los datos del perfil del usuario
-     * @param int $userId ID del usuario
-     * @return array Datos del usuario para mostrar en perfil
-     */
-    public function getUserProfile($userId) {
-        try {
-            $sql = "SELECT u.*, r.rol 
-                    FROM tb_usuarios u 
-                    INNER JOIN tb_roles r ON u.id_rol = r.id_rol 
-                    WHERE u.id_usuario = :id_usuario";
-            
-            $query = $this->usuarioModel->getConnection()->prepare($sql);
-            $query->bindParam(':id_usuario', $userId, PDO::PARAM_INT);
-            $query->execute();
-            
-            if ($query->rowCount() > 0) {
-                return $query->fetch(PDO::FETCH_ASSOC);
-            }
-            return null;
-        } catch (Exception $e) {
-            error_log("Error en PerfilController::getUserProfile: " . $e->getMessage());
-            return null;
-        }
-    }
-    
-    /**
-     * Registra actividad del perfil en el log
-     * @param string $activity Tipo de actividad
-     * @param int $userId ID del usuario
-     * @param string $description Descripción de la actividad
-     * @return void
-     */
-    private function logActivity($activity, $userId, $description) {
-        $logDir = __DIR__ . '/../../../logs';
-        if (!file_exists($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-        
-        $logFile = $logDir . '/profile_activity.log';
-        $date = date('Y-m-d H:i:s');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $sessionUserId = $_SESSION['id_usuario'] ?? 'no-session';
-        
-        $logMessage = "[$date] Activity: $activity, User ID: $userId, Session User ID: $sessionUserId, IP: $ip, Description: $description\n";
-        error_log($logMessage, 3, $logFile);
-    }
+// Verificar si hay una sesión activa
+if (!isset($_SESSION['id_usuario'])) {
+    $_SESSION['mensaje'] = "Debes iniciar sesión para realizar esta acción";
+    $_SESSION['icono'] = "error";
+    header('Location: '.$URL.'/login');
+    exit();
 }
+
+// Obtener el ID de usuario de la sesión
+$id_usuario = $_SESSION['id_usuario'];
+
+// Verificar que se haya enviado un archivo
+if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] == UPLOAD_ERR_NO_FILE) {
+    $_SESSION['mensaje'] = "No se ha seleccionado ninguna imagen";
+    $_SESSION['icono'] = "error";
+    header('Location: '.$URL.'/perfil');
+    exit();
+}
+
+// Configuración para la subida de archivos
+$directorio_destino = $_SERVER['DOCUMENT_ROOT'] . '/sistemadeventas/public/images/perfiles/';
+$tipos_permitidos = ['image/jpeg', 'image/png', 'image/gif'];
+$tamano_maximo = 2 * 1024 * 1024; // 2MB
+
+// Obtener información del archivo
+$archivo = $_FILES['imagen'];
+$nombre_archivo = $archivo['name'];
+$tipo_archivo = $archivo['type'];
+$tamano_archivo = $archivo['size'];
+$archivo_temporal = $archivo['tmp_name'];
+
+// Verificar el tipo de archivo
+if (!in_array($tipo_archivo, $tipos_permitidos)) {
+    $_SESSION['mensaje'] = "Tipo de archivo no permitido. Solo se permiten imágenes JPG, PNG y GIF";
+    $_SESSION['icono'] = "error";
+    header('Location: '.$URL.'/perfil');
+    exit();
+}
+
+// Verificar el tamaño del archivo
+if ($tamano_archivo > $tamano_maximo) {
+    $_SESSION['mensaje'] = "El archivo es demasiado grande. El tamaño máximo es 2MB";
+    $_SESSION['icono'] = "error";
+    header('Location: '.$URL.'/perfil');
+    exit();
+}
+
+try {
+    // Generar un nombre único para el archivo
+    $extension = pathinfo($nombre_archivo, PATHINFO_EXTENSION);
+    $nombre_unico = date('Y-m-d-H-i-s') . '_' . uniqid() . '.' . $extension;
+    $ruta_completa = $directorio_destino . $nombre_unico;
+    
+    // Mover el archivo subido al directorio de destino
+    if (move_uploaded_file($archivo_temporal, $ruta_completa)) {
+        // Actualizar la información del usuario en la base de datos
+        $sql = "UPDATE tb_usuarios SET 
+                imagen_perfil = :imagen_perfil,
+                fyh_actualizacion = :fyh_actualizacion
+                WHERE id_usuario = :id_usuario";
+                
+        $query = $pdo->prepare($sql);
+        $query->bindParam(':imagen_perfil', $nombre_unico);
+        $query->bindParam(':fyh_actualizacion', $fechaHora);
+        $query->bindParam(':id_usuario', $id_usuario);
+        $query->execute();
+        
+        $_SESSION['mensaje'] = "Imagen de perfil actualizada correctamente";
+        $_SESSION['icono'] = "success";
+    } else {
+        throw new Exception("Error al subir la imagen");
+    }
+} catch (Exception $e) {
+    $_SESSION['mensaje'] = "Error al actualizar la imagen de perfil: " . $e->getMessage();
+    $_SESSION['icono'] = "error";
+}
+
+header('Location: '.$URL.'/perfil');
+exit();
+?>
