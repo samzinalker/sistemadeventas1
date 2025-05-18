@@ -12,8 +12,13 @@ abstract class Model {
      * @param PDO|null $pdo Conexión PDO opcional
      */
     public function __construct($pdo = null) {
-        global $pdo as $globalPdo;
-        $this->pdo = $pdo ?: $globalPdo;
+        // Versión simplificada para evitar conflictos con la variable global
+        if ($pdo !== null) {
+            $this->pdo = $pdo;
+        } else {
+            global $pdo;
+            $this->pdo = $pdo;
+        }
         
         if (!$this->pdo) {
             throw new Exception("No hay conexión a la base de datos disponible");
