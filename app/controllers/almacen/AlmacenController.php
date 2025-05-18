@@ -22,8 +22,15 @@ class AlmacenController extends Controller {
         $this->almacenModel = new AlmacenModel($pdo);
         $this->validator = new Validator();
         
-        // Directorio de imágenes de productos
-        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . $this->url . '/public/images/productos';
+        // Usar DIRECTORY_SEPARATOR para mejor compatibilidad entre sistemas
+        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . 
+                     trim(str_replace('http://localhost', '', $this->url), '/\\') . 
+                     DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'images' . 
+                     DIRECTORY_SEPARATOR . 'productos';
+                     
+        // Debug - imprime la ruta para verificar
+        error_log("Intentando usar directorio: " . $uploadDir);
+        
         $this->fileHandler = new FileHandler($uploadDir);
     }
     

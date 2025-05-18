@@ -20,9 +20,34 @@ class FileHandler {
             $this->uploadDir = $uploadDir;
         }
         
-        // Crear directorio si no existe
-        if (!file_exists($this->uploadDir)) {
-            mkdir($this->uploadDir, 0755, true);
+        // Crear directorio de forma recursiva
+        $this->createDirectoryIfNotExists($this->uploadDir);
+    }
+    
+    /**
+     * Crea un directorio recursivamente si no existe
+     * @param string $path Ruta del directorio a crear
+     * @return bool True si se creó o ya existía, False si falló
+     */
+    private function createDirectoryIfNotExists($path) {
+        if (file_exists($path)) {
+            return true;
+        }
+        
+        // Obtener ruta absoluta y eliminar cualquier barra extra
+        $path = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path), DIRECTORY_SEPARATOR);
+        
+        // Intentar crear el directorio y todos sus padres
+        try {
+            // Crear la estructura completa de directorios
+            if (!mkdir($path, 0755, true)) {
+                error_log("No se pudo crear el directorio: " . $path);
+                return false;
+            }
+            return true;
+        } catch (Exception $e) {
+            error_log("Error al crear directorio: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -63,10 +88,15 @@ class FileHandler {
      * Sube un archivo al servidor
      * @param array $file Archivo ($_FILES['campo'])
      * @param string $fileName Nombre del archivo
-     * @return bool|string True si éxito, mensaje de error si falla
+     * @return bool|string True si éxito, mensaje error si falla
      */
     public function uploadFile($file, $fileName) {
-        $filePath = $this->uploadDir . '/' . $fileName;
+        // Asegurarse que el directorio existe
+        if (!$this->createDirectoryIfNotExists($this->uploadDir)) {
+            return "No se pudo crear el directorio para guardar la imagen";
+        }
+        
+        $filePath = rtrim($this->uploadDir, '/\\') . DIRECTORY_SEPARATOR . $fileName;
         
         if (!move_uploaded_file($file['tmp_name'], $filePath)) {
             return "Error al subir el archivo";
@@ -81,7 +111,7 @@ class FileHandler {
      * @return bool True si se eliminó, false en caso contrario
      */
     public function deleteFile($fileName) {
-        $filePath = $this->uploadDir . '/' . $fileName;
+        $filePath = rtrim($this->uploadDir, '/\\') . DIRECTORY_SEPARATOR . $fileName;
         if (file_exists($filePath)) {
             return unlink($filePath);
         }
@@ -94,9 +124,7 @@ class FileHandler {
      */
     public function setUploadDir($dir) {
         $this->uploadDir = $dir;
-        if (!file_exists($this->uploadDir)) {
-            mkdir($this->uploadDir, 0755, true);
-        }
+        $this->createDirectoryIfNotExists($this->uploadDir);
     }
     
     /**
@@ -113,5 +141,13 @@ class FileHandler {
      */
     public function setAllowedImageTypes($types) {
         $this->allowedImageTypes = $types;
+    }
+    
+    /**
+     * Obtiene el directorio de subida actual
+     * @return string Directorio de subida
+     */
+    public function getUploadDir() {
+        return $this->uploadDir;
     }
 }
