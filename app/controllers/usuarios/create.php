@@ -1,62 +1,58 @@
 <?php
-include('../../config.php');
-require_once('../../utils/Validator.php');
-require_once('funciones.php');
-require_once('../../models/UsuarioModel.php');
+include ('../../config.php');
 
-session_start();
+// Obtener datos del formulario
+$nombres = $_POST['nombres'];
+$email = $_POST['email'];
+$rol = $_POST['rol'];
+$password_user = $_POST['password_user'];
+$password_repeat = $_POST['password_repeat'];
 
 try {
-    // Validar campos requeridos
-    $campos_requeridos = ['nombres', 'email', 'rol', 'password_user', 'password_repeat'];
-    $campos_faltantes = Validator::requiredFields($_POST, $campos_requeridos);
-    
-    if (!empty($campos_faltantes)) {
-        setMensaje("Todos los campos son obligatorios", "error");
-        redirigir('/usuarios/create.php');
-    }
-    
-    // Obtener y limpiar datos
-    $nombres = trim($_POST['nombres']);
-    $email = trim($_POST['email']);
-    $rol = $_POST['rol'];
-    $password = $_POST['password_user'];
-    $password_repeat = $_POST['password_repeat'];
-    
-    // Validar email
-    if (!Validator::isValidEmail($email)) {
-        setMensaje("El formato del correo electrónico no es válido", "error");
-        redirigir('/usuarios/create.php');
-    }
-    
-    // Inicializar modelo
-    $usuarioModel = new UsuarioModel($pdo);
-    
     // Verificar si el correo ya está registrado
-    if ($usuarioModel->emailExiste($email)) {
-        setMensaje("El correo ya está registrado. Intente con otro", "error");
-        redirigir('/usuarios/create.php');
+    $sql_check = "SELECT COUNT(*) FROM tb_usuarios WHERE email = :email";
+    $query_check = $pdo->prepare($sql_check);
+    $query_check->bindParam(':email', $email, PDO::PARAM_STR);
+    $query_check->execute();
+    $email_exists = $query_check->fetchColumn();
+
+    if ($email_exists > 0) {
+        session_start();
+        $_SESSION['mensaje'] = "El correo ya está registrado. Intente con otro.";
+        $_SESSION['icono'] = "error";
+        header('Location: '.$URL.'/usuarios/create.php');
+        exit();
     }
-    
-    // Validar y procesar contraseña
-    list($password_hash, $error) = procesarPassword($password, $password_repeat);
-    
-    if ($error) {
-        setMensaje($error, "error");
-        redirigir('/usuarios/create.php');
-    }
-    
-    // Crear el usuario
-    $resultado = $usuarioModel->crear($nombres, $email, $rol, $password_hash, $fechaHora);
-    
-    if ($resultado) {
-        setMensaje("Usuario registrado correctamente", "success");
-        redirigir('/usuarios/');
+
+    // Validar si las contraseñas coinciden
+    if ($password_user === $password_repeat) {
+        $password_hash = password_hash($password_user, PASSWORD_DEFAULT);
+
+        // Insertar el nuevo usuario
+        $sentencia = $pdo->prepare("INSERT INTO tb_usuarios 
+            (nombres, email, id_rol, password_user, fyh_creacion) 
+            VALUES (:nombres, :email, :id_rol, :password_user, :fyh_creacion)");
+        $sentencia->bindParam(':nombres', $nombres);
+        $sentencia->bindParam(':email', $email);
+        $sentencia->bindParam(':id_rol', $rol);
+        $sentencia->bindParam(':password_user', $password_hash);
+        $sentencia->bindParam(':fyh_creacion', $fechaHora);
+        $sentencia->execute();
+
+        session_start();
+        $_SESSION['mensaje'] = "Usuario registrado correctamente.";
+        $_SESSION['icono'] = "success";
+        header('Location: '.$URL.'/usuarios/');
     } else {
-        throw new Exception("Error al registrar el usuario");
+        session_start();
+        $_SESSION['mensaje'] = "Las contraseñas no coinciden. Intente de nuevo.";
+        $_SESSION['icono'] = "error";
+        header('Location: '.$URL.'/usuarios/create.php');
     }
-    
 } catch (Exception $e) {
-    setMensaje("Error: " . $e->getMessage(), "error");
-    redirigir('/usuarios/create.php');
+    session_start();
+    $_SESSION['mensaje'] = "Ocurrió un error al registrar el usuario.";
+    $_SESSION['icono'] = "error";
+    header('Location: '.$URL.'/usuarios/create.php');
 }
+?>
