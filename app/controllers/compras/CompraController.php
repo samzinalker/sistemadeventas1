@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../core/Controller.php';
+require_once __DIR__ . '/../../core/Validator.php';  // Añadir esta línea
 require_once __DIR__ . '/../../models/CompraModel.php';
 require_once __DIR__ . '/../../models/AlmacenModel.php';
 require_once __DIR__ . '/../../models/ProveedorModel.php';

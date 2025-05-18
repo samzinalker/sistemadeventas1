@@ -98,4 +98,101 @@ $total = $compra['precio_compra'] * $compra['cantidad'];
                                                     <td><?= date('d/m/Y H:i:s', strtotime($compra['fyh_creacion'])) ?></td>
                                                 </tr>
                                             </table>
-                                        
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Información del proveedor -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h3 class="card-title">Datos del Proveedor</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered">
+                                                <tr>
+                                                    <th style="width: 40%">Nombre:</th>
+                                                    <td><?= htmlspecialchars($compra['nombre_proveedor']) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Empresa:</th>
+                                                    <td><?= htmlspecialchars($compra['empresa_proveedor']) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Teléfono:</th>
+                                                    <td><?= htmlspecialchars($compra['celular_proveedor']) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Dirección:</th>
+                                                    <td><?= htmlspecialchars($compra['direccion_proveedor']) ?></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <!-- Detalles del producto -->
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h3 class="card-title">Producto Comprado</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <table class="table table-bordered">
+                                                        <tr>
+                                                            <th style="width: 40%">Código:</th>
+                                                            <td><?= htmlspecialchars($compra['codigo_producto']) ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Nombre:</th>
+                                                            <td><?= htmlspecialchars($compra['nombre_producto']) ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Descripción:</th>
+                                                            <td><?= htmlspecialchars($compra['descripcion_producto'] ?? 'Sin descripción') ?></td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <table class="table table-bordered">
+                                                        <tr>
+                                                            <th style="width: 40%">Cantidad:</th>
+                                                            <td><?= $compra['cantidad'] ?> unidades</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Precio Unitario:</th>
+                                                            <td>$<?= number_format($compra['precio_compra'], 2) ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Total:</th>
+                                                            <td>
+                                                                <strong>$<?= number_format($total, 2) ?></strong>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Script para imprimir comprobante -->
+<script>
+function imprimirComprobante() {
+    window.print();
+}
+</script>
+
+<?php include_once '../layout/parte2.php'; ?>
