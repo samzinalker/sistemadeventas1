@@ -1,89 +1,90 @@
 <?php
-require_once '../../config.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../utils/FileUpload.php';
+require_once __DIR__ . '/../../utils/Security.php';
 
-// Iniciar sesión (si no está iniciada)
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Verificar si el usuario está autenticado
-if (!isset($_SESSION['id_usuario'])) {
-    $_SESSION['mensaje'] = "Debe iniciar sesión para realizar esta acción";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/login');
-    exit();
-}
-
-// Verificar que sea una petición POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $_SESSION['mensaje'] = "Método no permitido";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/perfil');
-    exit();
-}
-
-// Verificar que se haya subido un archivo
-if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] === UPLOAD_ERR_NO_FILE) {
-    $_SESSION['mensaje'] = "No se ha seleccionado ninguna imagen";
-    $_SESSION['icono'] = "error";
-    header('Location: ' . $URL . '/perfil');
-    exit();
-}
-
-try {
-    // Instanciar utilidad para subir archivos
-    $fileUpload = new FileUpload();
+/**
+ * Controlador para el módulo de perfil de usuario
+ */
+class PerfilController {
+    private $usuarioModel;
+    private $fileUpload;
+    private $security;
     
-    // Subir la nueva imagen
-    $resultado = $fileUpload->uploadProfileImage($_FILES['imagen']);
-    
-    if ($resultado['status'] === 'success') {
-        // Instanciar modelo de usuario
-        $usuarioModel = new UsuarioModel($pdo);
-        
-        // Obtener la imagen de perfil actual para eliminarla luego si no es la predeterminada
-        $usuario = $usuarioModel->getById($_SESSION['id_usuario']);
-        $imagenAnterior = $usuario['imagen_perfil'];
-        
-        // Actualizar la imagen de perfil en la base de datos
-        $actualizado = $usuarioModel->updateProfileImage($_SESSION['id_usuario'], $resultado['filename']);
-        
-        if ($actualizado === true) {
-            // Eliminar la imagen anterior si existe y no es la predeterminada
-            if ($imagenAnterior != 'user_default.png') {
-                $rutaImagenAnterior = $_SERVER['DOCUMENT_ROOT'] . '/sistemadeventas/public/images/perfiles/' . $imagenAnterior;
-                if (file_exists($rutaImagenAnterior)) {
-                    unlink($rutaImagenAnterior);
-                }
-            }
-            
-            $_SESSION['mensaje'] = "Imagen de perfil actualizada correctamente";
-            $_SESSION['icono'] = "success";
-        } else {
-            // Si falla la actualización en la base de datos, eliminar la imagen recién subida
-            $rutaImagenNueva = $_SERVER['DOCUMENT_ROOT'] . '/sistemadeventas/public/images/perfiles/' . $resultado['filename'];
-            if (file_exists($rutaImagenNueva)) {
-                unlink($rutaImagenNueva);
-            }
-            
-            $_SESSION['mensaje'] = "Error al actualizar la imagen de perfil en la base de datos";
-            $_SESSION['icono'] = "error";
-        }
-    } else {
-        $_SESSION['mensaje'] = $resultado['message'];
-        $_SESSION['icono'] = "error";
+    /**
+     * Constructor
+     * @param PDO|null $pdo Conexión PDO opcional
+     */
+    public function __construct($pdo = null) {
+        $this->usuarioModel = new UsuarioModel($pdo);
+        $this->fileUpload = new FileUpload();
+        $this->security = new Security();
     }
     
-} catch (Exception $e) {
-    // Registrar error en el log
-    error_log("Error en actualizar_imagen.php: " . $e->getMessage());
+    /**
+     * Verifica que el usuario esté autenticado y sea el propietario del perfil
+     * @param int $userId ID del usuario a verificar
+     * @return bool True si el usuario tiene permisos
+     */
+    public function checkProfileOwnership($userId) {
+        if (!isset($_SESSION['id_usuario'])) {
+            return false;
+        }
+        
+        // Permitir al admin editar cualquier perfil
+        if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador') {
+            return true;
+        }
+        
+        // El usuario solo puede editar su propio perfil
+        return $_SESSION['id_usuario'] == $userId;
+    }
     
-    $_SESSION['mensaje'] = "Error interno del sistema al procesar la imagen";
-    $_SESSION['icono'] = "error";
+    /**
+     * Obtiene los datos del perfil del usuario
+     * @param int $userId ID del usuario
+     * @return array Datos del usuario para mostrar en perfil
+     */
+    public function getUserProfile($userId) {
+        try {
+            $sql = "SELECT u.*, r.rol 
+                    FROM tb_usuarios u 
+                    INNER JOIN tb_roles r ON u.id_rol = r.id_rol 
+                    WHERE u.id_usuario = :id_usuario";
+            
+            $query = $this->usuarioModel->getConnection()->prepare($sql);
+            $query->bindParam(':id_usuario', $userId, PDO::PARAM_INT);
+            $query->execute();
+            
+            if ($query->rowCount() > 0) {
+                return $query->fetch(PDO::FETCH_ASSOC);
+            }
+            return null;
+        } catch (Exception $e) {
+            error_log("Error en PerfilController::getUserProfile: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Registra actividad del perfil en el log
+     * @param string $activity Tipo de actividad
+     * @param int $userId ID del usuario
+     * @param string $description Descripción de la actividad
+     * @return void
+     */
+    private function logActivity($activity, $userId, $description) {
+        $logDir = __DIR__ . '/../../../logs';
+        if (!file_exists($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $logFile = $logDir . '/profile_activity.log';
+        $date = date('Y-m-d H:i:s');
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $sessionUserId = $_SESSION['id_usuario'] ?? 'no-session';
+        
+        $logMessage = "[$date] Activity: $activity, User ID: $userId, Session User ID: $sessionUserId, IP: $ip, Description: $description\n";
+        error_log($logMessage, 3, $logFile);
+    }
 }
-
-// Redireccionar de vuelta al perfil
-header('Location: ' . $URL . '/perfil');
-exit();
