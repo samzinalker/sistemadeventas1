@@ -1,69 +1,69 @@
 <?php
-include('../../config.php');
+// 1. Incluir configuración y dependencias principales
+require_once __DIR__ . '/../../config.php'; // Para $pdo, $URL, $fechaHora
+require_once __DIR__ . '/../../utils/funciones_globales.php'; // Para setMensaje, redirigir
+require_once __DIR__ . '/../../models/UsuarioModel.php';    // Modelo de Usuario
 
-// Obtener los datos del formulario
-$email = trim($_POST['email']); // Añadido trim para limpiar espacios
-$password_user = $_POST['password_user'];
+// 2. Iniciar sesión (setMensaje y la propia sesión de usuario lo requieren)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+// 3. Verificar que la solicitud sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    setMensaje("Acceso no permitido.", "error");
+    redirigir('/login/'); // Redirigir a la página de login
+}
+
+// 4. Obtener y sanear datos del formulario
+$email_ingresado = trim($_POST['email'] ?? '');
+$password_ingresada = $_POST['password_user'] ?? '';
+
+if (empty($email_ingresado) || empty($password_ingresada)) {
+    setMensaje("Email y contraseña son requeridos.", "warning");
+    redirigir('/login/');
+}
+
+// 5. Lógica de autenticación usando el Modelo
 try {
-    // Preparar consulta parametrizada
-    $sql = "SELECT u.*, r.rol FROM tb_usuarios u 
-            INNER JOIN tb_roles r ON u.id_rol = r.id_rol
-            WHERE u.email = :email";
-    $query = $pdo->prepare($sql);
-    $query->bindParam(':email', $email, PDO::PARAM_STR);
-    $query->execute();
+    $usuarioModel = new UsuarioModel($pdo, $URL);
+    $usuario_data = $usuarioModel->getUsuarioByEmail($email_ingresado);
 
-    // Verificar si el usuario existe
-    $usuario = $query->fetch(PDO::FETCH_ASSOC);
+    if ($usuario_data) {
+        // Usuario encontrado, verificar contraseña
+        if (password_verify($password_ingresada, $usuario_data['password_user'])) {
+            // Contraseña correcta: Iniciar sesión
+            $_SESSION['id_usuario'] = $usuario_data['id_usuario'];
+            $_SESSION['sesion_email'] = $usuario_data['email']; // Usado por layout/sesion.php
+            $_SESSION['rol'] = $usuario_data['nombre_rol'];   // UsuarioModel devuelve 'nombre_rol'
+            $_SESSION['nombres'] = $usuario_data['nombres'];
 
-    if ($usuario) {
-        $email_tabla = $usuario['email'];
-        $password_user_tabla = $usuario['password_user'];
-
-        // Verificar la contraseña
-        if (password_verify($password_user, $password_user_tabla)) {
-            session_start();
-            $_SESSION['id_usuario'] = $usuario['id_usuario'];
-            $_SESSION['sesion_email'] = $usuario['email'];
-            $_SESSION['rol'] = $usuario['rol'];
-            $_SESSION['nombres'] = $usuario['nombres'];
-
-            // Actualizar hora de último acceso
-            $fyh_actualizacion = date('Y-m-d H:i:s');
-            $sql_update = "UPDATE tb_usuarios SET fyh_actualizacion = :fyh_actualizacion 
-                         WHERE id_usuario = :id_usuario";
-            $query_update = $pdo->prepare($sql_update);
-            $query_update->bindParam(':fyh_actualizacion', $fyh_actualizacion);
-            $query_update->bindParam(':id_usuario', $usuario['id_usuario']);
-            $query_update->execute();
-
-            header('Location: ' . $URL . '/index.php');
-            exit();
+            // Actualizar fecha y hora de última actualización (o login)
+            // $fechaHora global de config.php
+            $usuarioModel->actualizarFechaHoraLogin($usuario_data['id_usuario'], $fechaHora);
+            
+            redirigir('/index.php'); // Redirigir al panel principal
         } else {
             // Contraseña incorrecta
-            session_start();
-            $_SESSION['mensaje'] = "Contraseña incorrecta";
-            $_SESSION['icono'] = "error";
-            header('Location: ' . $URL . '/login');
-            exit();
+            setMensaje("Contraseña incorrecta. Inténtelo de nuevo.", "error");
+            redirigir('/login/');
         }
     } else {
         // Usuario no encontrado
-        session_start();
-        $_SESSION['mensaje'] = "Usuario no encontrado";
-        $_SESSION['icono'] = "error";
-        header('Location: ' . $URL . '/login');
-        exit();
+        setMensaje("Usuario no encontrado. Verifique el email ingresado.", "error");
+        redirigir('/login/');
     }
-} catch (Exception $e) {
+
+} catch (PDOException $e) {
     // Error en la base de datos
-    session_start();
-    $_SESSION['mensaje'] = "Error en el sistema. Intenta más tarde";
-    $_SESSION['icono'] = "error";
-    // En producción, lo ideal sería registrar el error pero no mostrarlo
-    // error_log("Error en login: " . $e->getMessage());
-    header('Location: ' . $URL . '/login');
-    exit();
+    error_log("Error en login (ingreso.php): " . $e->getMessage()); // Registrar el error real
+    setMensaje("Error en el sistema al intentar iniciar sesión. Por favor, intente más tarde.", "error");
+    redirigir('/login/');
+} catch (Exception $e) {
+    // Otros errores inesperados
+    error_log("Error general en login (ingreso.php): " . $e->getMessage());
+    setMensaje("Ocurrió un error inesperado. Por favor, intente más tarde.", "error");
+    redirigir('/login/');
 }
+
 ?>

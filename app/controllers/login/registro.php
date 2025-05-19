@@ -1,90 +1,93 @@
 <?php
-include('../../config.php');
-session_start();
+// 1. Incluir configuración y dependencias principales
+require_once __DIR__ . '/../../config.php'; // Para $pdo, $URL, $fechaHora
+require_once __DIR__ . '/../../utils/Validator.php'; // Para validaciones directas si son necesarias
+require_once __DIR__ . '/../../utils/funciones_globales.php'; // Para setMensaje, redirigir, procesarPassword, sanear
+require_once __DIR__ . '/../../models/UsuarioModel.php';    // Modelo de Usuario
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Capturar datos del formulario
-    $nombres = trim($_POST['nombres']);
-    $email = trim($_POST['email']); // Este será el usuario
-    $password = $_POST['password_user'];
-    $repassword = $_POST['repassword'];
-    
-    // Validaciones básicas
-    if (empty($nombres) || empty($email) || empty($password) || empty($repassword)) {
-        $_SESSION['mensaje'] = "Todos los campos son obligatorios";
-        $_SESSION['icono'] = "warning";
-        header("Location: " . $URL . "/login/registro.php");
-        exit();
-    }
-    
-    // Verificar contraseñas
-    if ($password !== $repassword) {
-        $_SESSION['mensaje'] = "Las contraseñas no coinciden";
-        $_SESSION['icono'] = "error";
-        header("Location: " . $URL . "/login/registro.php");
-        exit();
-    }
-    
-    // Verificar longitud mínima de contraseña
-    if (strlen($password) < 6) {
-        $_SESSION['mensaje'] = "La contraseña debe tener al menos 6 caracteres";
-        $_SESSION['icono'] = "warning";
-        header("Location: " . $URL . "/login/registro.php");
-        exit();
-    }
-    
-    try {
-        // Verificar si el usuario ya existe
-        $sql_check = "SELECT * FROM tb_usuarios WHERE email = :email";
-        $query_check = $pdo->prepare($sql_check);
-        $query_check->bindParam(':email', $email);
-        $query_check->execute();
-        
-        if ($query_check->rowCount() > 0) {
-            $_SESSION['mensaje'] = "Este nombre de usuario ya está registrado";
-            $_SESSION['icono'] = "warning";
-            header("Location: " . $URL . "/login/registro.php");
-            exit();
-        }
-        
-        // Hashear contraseña
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
-        // ID del rol vendedor (ajusta según tu configuración)
-        $id_rol = 7; // vendedor por defecto
-        
-        // Fechas
-        $fyh_creacion = date('Y-m-d H:i:s');
-        $fyh_actualizacion = "0000-00-00 00:00:00";
-        
-        // Insertar nuevo usuario
-        $sql = "INSERT INTO tb_usuarios (nombres, email, password_user, token, id_rol, fyh_creacion, fyh_actualizacion) 
-                VALUES (:nombres, :email, :password_user, '', :id_rol, :fyh_creacion, :fyh_actualizacion)";
-        
-        $query = $pdo->prepare($sql);
-        $query->bindParam(':nombres', $nombres);
-        $query->bindParam(':email', $email);
-        $query->bindParam(':password_user', $password_hash);
-        $query->bindParam(':id_rol', $id_rol);
-        $query->bindParam(':fyh_creacion', $fyh_creacion);
-        $query->bindParam(':fyh_actualizacion', $fyh_actualizacion);
-        
-        if ($query->execute()) {
-            $_SESSION['mensaje'] = "Usuario registrado correctamente. Ya puedes iniciar sesión.";
-            $_SESSION['icono'] = "success";
-            header("Location: " . $URL . "/login");
-            exit();
-        } else {
-            throw new PDOException("Error al insertar datos");
-        }
-    } catch (PDOException $e) {
-        $_SESSION['mensaje'] = "Error en el sistema: " . $e->getMessage();
-        $_SESSION['icono'] = "error";
-        header("Location: " . $URL . "/login/registro.php");
-        exit();
-    }
-} else {
-    // Si no es método POST, redirigir
-    header("Location: " . $URL . "/login");
-    exit();
+// 2. Iniciar sesión (setMensaje lo requiere)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
+
+// 3. Verificar que la solicitud sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    setMensaje("Acceso no permitido.", "error");
+    redirigir('/login/registro.php');
+}
+
+// 4. Obtener y sanear datos del formulario
+$nombres = trim($_POST['nombres'] ?? '');
+$email = trim($_POST['email'] ?? ''); // Este será el "usuario" para login
+$password = $_POST['password_user'] ?? '';
+$password_repeat = $_POST['repassword'] ?? ''; // Corregido de 'repassword' a 'password_repeat' si es necesario o viceversa, asegurar consistencia con el form. El form usa 'repassword'.
+                                              // Mantendré 'repassword' para coincidir con el form que me pasaste.
+
+// Guardar datos en sesión para repoblar el formulario en caso de error
+$_SESSION['form_data_registro'] = $_POST;
+
+// 5. Validaciones
+$campos_requeridos = ['nombres', 'email', 'password_user', 'repassword'];
+$campos_faltantes = Validator::requiredFields($_POST, $campos_requeridos);
+
+if (!empty($campos_faltantes)) {
+    $campos_str = implode(', ', array_map('sanear', $campos_faltantes));
+    setMensaje("Todos los campos marcados son obligatorios: {$campos_str}.", "warning");
+    redirigir('/login/registro.php');
+}
+
+if (!Validator::isValidEmail($email)) {
+    setMensaje("El formato del correo electrónico no es válido.", "error");
+    redirigir('/login/registro.php');
+}
+
+// Validar y procesar contraseña usando la función global
+list($password_hash, $error_password) = procesarPassword($password, $password_repeat, 6); // procesarPassword ya valida longitud y coincidencia
+
+if ($error_password) {
+    setMensaje($error_password, "error"); // El mensaje de error viene de procesarPassword
+    redirigir('/login/registro.php');
+}
+
+// 6. Lógica de registro usando el Modelo
+try {
+    $usuarioModel = new UsuarioModel($pdo, $URL);
+
+    // Verificar si el email (usuario) ya existe
+    if ($usuarioModel->emailExiste($email)) {
+        setMensaje("El nombre de usuario (email) '" . sanear($email) . "' ya está registrado. Intente con otro.", "warning");
+        redirigir('/login/registro.php');
+    }
+
+    // Determinar el ID del rol para nuevos usuarios (ej. "vendedor")
+    // Este ID puede venir de una constante, configuración, o una consulta si es dinámico.
+    // Por ahora, usamos el ID 7 (vendedor) como en tu código original.
+    $id_rol_defecto = 7; 
+    // En una mejora futura, podrías obtener el ID del rol "vendedor" por su nombre desde RolModel.
+
+    // $fechaHora global de config.php
+    $creado = $usuarioModel->crearUsuario($nombres, $email, $password_hash, $id_rol_defecto, $fechaHora);
+
+    if ($creado) {
+        unset($_SESSION['form_data_registro']); // Limpiar datos del formulario de la sesión
+        setMensaje("Usuario registrado correctamente. Ahora puede iniciar sesión.", "success");
+        redirigir('/login/'); // Redirigir a la página de login
+    } else {
+        setMensaje("Error al registrar el usuario. Inténtelo de nuevo.", "error");
+        redirigir('/login/registro.php');
+    }
+
+} catch (PDOException $e) {
+    error_log("Error en registro (registro.php): " . $e->getMessage());
+    setMensaje("Error en el sistema durante el registro. Por favor, intente más tarde.", "error");
+    redirigir('/login/registro.php');
+} catch (Exception $e) {
+    error_log("Error general en registro (registro.php): " . $e->getMessage());
+    setMensaje("Ocurrió un error inesperado durante el registro. Por favor, intente más tarde.", "error");
+    redirigir('/login/registro.php');
+}
+?>// En login/registro.php, dentro del formulario:
+    <?php $form_data = $_SESSION['form_data_registro'] ?? []; ?>
+<input type="text" name="nombres" class="form-control" placeholder="Nombre completo" required value="<?php echo sanear($form_data['nombres'] ?? ''); ?>">
+    // ... y así para otros campos.
+    <?php unset($_SESSION['form_data_registro']); // Limpiar después de usar ?>

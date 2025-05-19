@@ -158,6 +158,14 @@ class UsuarioModel {
 
         return $query->execute();
     }
+    
+    public function actualizarFechaHoraLogin(int $id_usuario, string $fyh_actualizacion): bool {
+        $sql = "UPDATE tb_usuarios SET fyh_actualizacion = :fyh_actualizacion WHERE id_usuario = :id_usuario";
+        $query = $this->pdo->prepare($sql);
+        $query->bindParam(':fyh_actualizacion', $fyh_actualizacion, PDO::PARAM_STR);
+        $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+        return $query->execute();
+    }
 
     /**
      * Elimina un usuario por su ID.
