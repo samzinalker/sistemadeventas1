@@ -12,7 +12,9 @@ require_once __DIR__ . '/../layout/sesion.php';
 
 // 4. MANEJO DE PERMISOS (valida si el usuario tiene acceso a esta página/módulo)
 require_once __DIR__ . '/../layout/permisos.php'; 
+// DEBUG START
 
+// DEBUG END
 // ---------------------------------------------------------------------------
 // Lógica específica de la página (variables de título, carga de datos, etc.)
 // ---------------------------------------------------------------------------
@@ -160,8 +162,8 @@ $(function () {
     $("#tabla-roles").DataTable({
         "responsive": true, "lengthChange": false, "autoWidth": false,
         // "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"], // Puedes habilitar botones si los necesitas
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+        "language": { 
+            "url": "<?php echo $URL; ?>/public/plugins/datatables/i18n/Spanish.json" // URL LOCAL
         },
         "order": [[1, "asc"]] // Ordenar por nombre de rol por defecto
     });
