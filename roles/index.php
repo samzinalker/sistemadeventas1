@@ -12,21 +12,16 @@ require_once __DIR__ . '/../layout/sesion.php';
 
 // 4. MANEJO DE PERMISOS (valida si el usuario tiene acceso a esta página/módulo)
 require_once __DIR__ . '/../layout/permisos.php'; 
-// DEBUG START
 
-// DEBUG END
-// ---------------------------------------------------------------------------
 // Lógica específica de la página (variables de título, carga de datos, etc.)
-// ---------------------------------------------------------------------------
 $titulo_pagina = 'Listado de Roles';
 $modulo_abierto = 'roles';
 $pagina_activa = 'roles_listado';
 
 // Cargar los datos de los roles usando el controlador de listado
 require_once __DIR__ . '/../app/controllers/roles/listado_de_roles.php'; 
-// ---------------------------------------------------------------------------
 
-// 5. LAYOUT PARTE 1 (HTML head, navbar, sidebar, SweetAlert JS incluido)
+// LAYOUT PARTE 1 (HTML head, navbar, sidebar, SweetAlert JS incluido)
 require_once __DIR__ . '/../layout/parte1.php'; 
 ?>
 
@@ -62,6 +57,10 @@ require_once __DIR__ . '/../layout/parte1.php';
                                 <a href="create.php" class="btn btn-primary btn-sm">
                                     <i class="fas fa-plus"></i> Nuevo Rol
                                 </a>
+                                <!-- BOTÓN PARA REPORTE PDF/VISTA PREVIA -->
+                                <a href="reporte_roles_vista.php" target="_blank" class="btn btn-info btn-sm">
+                                    <i class="fas fa-file-pdf"></i> Generar Reporte
+                                </a>
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
@@ -96,20 +95,9 @@ require_once __DIR__ . '/../layout/parte1.php';
                                                             <i class="fa fa-pencil-alt"></i> Editar
                                                         </a>
                                                         <?php
-                                                        // No permitir borrar roles "administrador" o roles críticos por defecto.
-                                                        // Podrías tener una lista de roles protegidos.
-                                                        // Aquí, como ejemplo, impedimos borrar el rol con ID 1 si asumimos que es 'administrador'.
-                                                        // Y también el rol actual del usuario logueado (aunque ya se valida en el controlador, doble seguro).
-                                                        $esRolAdminPrincipal = ($id_rol == 1); // Asumiendo que ID 1 es el admin principal.
-                                                        $esRolDelUsuarioLogueado = false;
-                                                        if (isset($_SESSION['id_rol_sesion']) && $_SESSION['id_rol_sesion'] == $id_rol) {
-                                                            // Necesitaríamos guardar el id_rol en sesión en layout/sesion.php
-                                                            // $esRolDelUsuarioLogueado = true; 
-                                                            // Por ahora, esta comprobación es más robusta en el controlador de borrado.
-                                                        }
-
-                                                        if (!$esRolAdminPrincipal /* && !$esRolDelUsuarioLogueado */ ): ?>
-                                                            <form action="<?php echo htmlspecialchars($URL . '/app/controllers/roles/delete_controller.php'); ?>" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este rol? Si hay usuarios asignados, no se podrá eliminar.');">
+                                                        $esRolAdminPrincipal = ($id_rol == 1); 
+                                                        if (!$esRolAdminPrincipal): ?>
+                                                            <form action="<?php echo htmlspecialchars($URL . '/app/controllers/roles/delete_controller.php'); ?>" method="POST" style="display:inline;" onsubmit="return confirm('¿Está realmente seguro de que desea eliminar este rol? Esta acción no se puede deshacer.');">
                                                                 <input type="hidden" name="id_rol_a_eliminar" value="<?php echo htmlspecialchars($id_rol); ?>">
                                                                 <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Rol">
                                                                     <i class="fa fa-trash"></i> Borrar
@@ -125,14 +113,14 @@ require_once __DIR__ . '/../layout/parte1.php';
                                             </td>
                                         </tr>
                                     <?php 
-                                        } // Fin foreach
-                                    } else { // Si no hay roles
+                                        } 
+                                    } else { 
                                     ?>
                                         <tr>
                                             <td colspan="4"><center>No hay roles registrados.</center></td>
                                         </tr>
                                     <?php
-                                    } // Fin if-else empty
+                                    } 
                                     ?>
                                 </tbody>
                             </table>
@@ -150,24 +138,17 @@ require_once __DIR__ . '/../layout/parte1.php';
 <!-- /.content-wrapper -->
 
 <?php 
-// 6. LAYOUT MENSAJES (Lee y muestra $_SESSION['mensaje'] con SweetAlert)
 require_once __DIR__ . '/../layout/mensajes.php'; 
-
-// 7. LAYOUT PARTE 2 (footer, cierre de HTML, otros JS)
 require_once __DIR__ . '/../layout/parte2.php'; 
 ?>
-<!-- Scripts para DataTables (opcional, pero recomendado para tablas) -->
 <script>
 $(function () {
     $("#tabla-roles").DataTable({
         "responsive": true, "lengthChange": false, "autoWidth": false,
-        // "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"], // Puedes habilitar botones si los necesitas
         "language": { 
-            "url": "<?php echo $URL; ?>/public/plugins/datatables/i18n/Spanish.json" // URL LOCAL
+            "url": "<?php echo $URL; ?>/public/plugins/datatables/i18n/Spanish.json"
         },
-        "order": [[1, "asc"]] // Ordenar por nombre de rol por defecto
+        "order": [[1, "asc"]] 
     });
-    // Si habilitas botones:
-    // .buttons().container().appendTo('#tabla-roles_wrapper .col-md-6:eq(0)');
 });
 </script>
