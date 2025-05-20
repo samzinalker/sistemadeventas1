@@ -307,13 +307,19 @@ $(document).ready(function () {
         ]
     }).buttons().container().appendTo('#tabla_productos_wrapper .col-md-6:eq(0)');
 
-    function mostrarAlerta(title, text, icon) {
+    function mostrarAlerta(title, text, icon, callback) { // Añadimos un callback opcional
         Swal.fire({
             title: title,
             text: text,
             icon: icon,
-            timer: icon === 'success' ? 2000 : 3500, // Éxito: 2 seg, Otros: 3.5 seg
-            showConfirmButton: icon !== 'success' // Muestra botón OK para errores/advertencias
+            timer: icon === 'success' ? 2500 : 4000, // Aumentamos timer para éxito a 2.5s, otros a 4s
+            showConfirmButton: icon !== 'success', // Muestra botón OK para errores/advertencias
+            allowOutsideClick: false, // Evita que se cierre al hacer clic fuera
+            allowEscapeKey: false // Evita que se cierre con la tecla Esc
+        }).then((result) => { // Usamos .then() para ejecutar el callback después de que la alerta se cierre (automáticamente o por el usuario)
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
         });
     }
 
@@ -342,26 +348,35 @@ $(document).ready(function () {
     });
 
     $('#form-create-producto').submit(function (e) {
-        e.preventDefault();
-        $('#error_message_create').hide();
-        var formData = new FormData(this);
+            e.preventDefault();
+            $('#error_message_create').hide();
+            var formData = new FormData(this);
 
-        $.ajax({
+            $.ajax({
             url: "../app/controllers/almacen/create_producto.php",
             type: "POST", data: formData, contentType: false, processData: false, dataType: "json",
             success: function(response) {
                 if (response.status === 'success') {
                     $('#modal-create-producto').modal('hide');
-                    mostrarAlerta('¡Éxito!', response.message, 'success');
-                    recargarTablaProductos();
+                    // Mostrar alerta y LUEGO recargar
+                    mostrarAlerta('¡Éxito!', response.message, 'success', function() {
+                        recargarTablaProductos();
+                    });
                 } else {
+                    // Para errores en el modal, no recargamos, solo mostramos el error en el modal.
                     $('#error_message_create').text(response.message || 'Error desconocido.').show();
+                    // Opcionalmente, un SweetAlert también para errores de modal si se prefiere:
                     // mostrarAlerta('Error', response.message || 'No se pudo crear.', response.status || 'error');
                 }
-                if (response.redirectTo) { window.location.href = response.redirectTo; }
+                if (response.redirectTo) { // Si la sesión expira
+                     mostrarAlerta('Sesión Expirada', response.message, 'warning', function() {
+                        window.location.href = response.redirectTo;
+                    });
+                }
             },
             error: function() {
-                $('#error_message_create').text('Error de conexión.').show();
+                 // Error de conexión, mostrar en el modal o con SweetAlert
+                $('#error_message_create').text('Error de conexión con el servidor.').show();
                 // mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
             }
         });
@@ -449,16 +464,25 @@ $(document).ready(function () {
             success: function(response) {
                 if (response.status === 'success') {
                     $('#modal-update-producto').modal('hide');
-                    mostrarAlerta('¡Éxito!', response.message, 'success');
-                    recargarTablaProductos();
+                    // Mostrar alerta y LUEGO recargar
+                    mostrarAlerta('¡Éxito!', response.message, 'success', function() {
+                        recargarTablaProductos();
+                    });
                 } else {
+                     // Para errores en el modal, no recargamos, solo mostramos el error en el modal.
                     $('#error_message_update').text(response.message || 'Error desconocido.').show();
+                     // Opcionalmente, un SweetAlert también para errores de modal si se prefiere:
                     // mostrarAlerta('Error', response.message || 'No se pudo actualizar.', response.status || 'error');
                 }
-                if (response.redirectTo) { window.location.href = response.redirectTo; }
+                 if (response.redirectTo) { // Si la sesión expira
+                     mostrarAlerta('Sesión Expirada', response.message, 'warning', function() {
+                        window.location.href = response.redirectTo;
+                    });
+                }
             },
             error: function() {
-                $('#error_message_update').text('Error de conexión.').show();
+                // Error de conexión, mostrar en el modal o con SweetAlert
+                $('#error_message_update').text('Error de conexión con el servidor.').show();
                 // mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
             }
         });
@@ -476,14 +500,20 @@ $(document).ready(function () {
         $.post("../app/controllers/almacen/delete_producto.php", { id_producto: id_producto }, function (response) {
             $('#modal-delete-producto').modal('hide');
             if (response.status === 'success') {
-                mostrarAlerta('¡Eliminado!', response.message, 'success');
-                recargarTablaProductos();
+                // Mostrar alerta y LUEGO recargar
+                mostrarAlerta('¡Eliminado!', response.message, 'success', function() {
+                    recargarTablaProductos();
+                });
             } else {
-                // Para errores o advertencias (ej. producto en uso), el timer será más largo
-                // y se mostrará el botón de confirmación debido al cambio en mostrarAlerta.
+                // Para errores o advertencias (ej. producto en uso)
                 mostrarAlerta(response.status === 'warning' ? 'Advertencia' : 'Error', response.message || 'No se pudo eliminar.', response.status || 'error');
+                // No recargamos la tabla aquí para que el usuario vea el estado actual si la eliminación falló.
             }
-            if (response.redirectTo) { window.location.href = response.redirectTo; }
+            if (response.redirectTo) { // Si la sesión expira
+                 mostrarAlerta('Sesión Expirada', response.message, 'warning', function() {
+                    window.location.href = response.redirectTo;
+                });
+            }
         }, "json").fail(function() {
             $('#modal-delete-producto').modal('hide');
             mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
