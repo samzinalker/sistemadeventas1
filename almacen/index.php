@@ -400,10 +400,12 @@ $(document).ready(function () {
     }
 
     $('#tabla_productos tbody').on('click', '.btn-show-producto, .btn-edit-producto', function () {
-        var id_producto = $(this).data('id');
+        var id_producto = $(this).data('id'); // Verifica que 'data-id' esté en los botones HTML
         var esParaEditar = $(this).hasClass('btn-edit-producto');
 
+        // Verifica la URL y el parámetro
         $.get("../app/controllers/almacen/get_producto.php", { id_producto: id_producto }, function(response) {
+            // El tercer parámetro "json" en $.get es importante para que jQuery parsee automáticamente la respuesta
             if (response.status === 'success' && response.data) {
                 if(esParaEditar) {
                     popularModalUpdate(response.data);
@@ -411,11 +413,15 @@ $(document).ready(function () {
                     popularModalShow(response.data);
                 }
             } else {
-                mostrarAlerta('Error', response.message || 'No se pudo cargar el producto.', 'error');
-                if (response.redirectTo) { window.location.href = response.redirectTo; }
+                mostrarAlerta('Error al Cargar', response.message || 'No se pudo cargar la información del producto.', 'error');
+                if (response.redirectTo) { // Si la sesión expiró
+                    window.location.href = response.redirectTo;
+                }
             }
-        }, "json").fail(function() {
-            mostrarAlerta('Error de Conexión', 'No se pudo obtener datos del producto.', 'error');
+        }, "json").fail(function(jqXHR, textStatus, errorThrown) { // Manejo de error de la petición AJAX
+            console.error("Error en AJAX a get_producto.php:", textStatus, errorThrown);
+            console.error("Respuesta del servidor:", jqXHR.responseText); // Muestra lo que devolvió el servidor
+            mostrarAlerta('Error de Conexión', 'No se pudo obtener datos del producto. Revise la consola para más detalles.', 'error');
         });
     });
     

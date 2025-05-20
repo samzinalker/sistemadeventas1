@@ -90,6 +90,13 @@ class AlmacenModel {
      * @param int $id_usuario
      * @return array|false
      */
+     /**
+     * Obtiene un producto específico por su ID y el ID del usuario propietario.
+     * Se une con la tabla de categorías para obtener el nombre de la categoría.
+     * @param int $id_producto
+     * @param int $id_usuario
+     * @return array|false Los datos del producto o false si no se encuentra o no pertenece al usuario.
+     */
     public function getProductoByIdAndUsuarioId(int $id_producto, int $id_usuario) {
         $sql = "SELECT p.*, c.nombre_categoria as categoria
                 FROM tb_almacen as p
@@ -99,7 +106,7 @@ class AlmacenModel {
         $query->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $query->execute();
-        return $query->fetch(PDO::FETCH_ASSOC);
+        return $query->fetch(PDO::FETCH_ASSOC); // Devuelve una sola fila o false
     }
     
     /**
