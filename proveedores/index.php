@@ -32,55 +32,55 @@ $pagina_activa = 'proveedores_listado'; // Para resaltar en el menú (si tienes 
 
     <!-- MODAL GENÉRICO PARA CREAR/ACTUALIZAR PROVEEDOR -->
     <div class="modal fade" id="modal-proveedor-form" tabindex="-1" role="dialog" aria-labelledby="modalProveedorFormLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalProveedorFormLabel">Agregar Nuevo Proveedor</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <form id="form-proveedor">
-                    <input type="hidden" id="id_proveedor_form" name="id_proveedor_update"> <!-- Para diferenciar update de create -->
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label for="nombre_proveedor_form">Nombre Proveedor <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="nombre_proveedor_form" name="nombre_proveedor_update" required>
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label for="celular_form">Celular <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="celular_form" name="celular_update" required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label for="telefono_form">Teléfono</label>
-                                <input type="text" class="form-control" id="telefono_form" name="telefono_update">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label for="empresa_form">Empresa</label>
-                                <input type="text" class="form-control" id="empresa_form" name="empresa_update">
-                            </div>
-                        </div>
-                        <div class="row">
-                             <div class="col-md-6 form-group">
-                                <label for="email_form">Email</label>
-                                <input type="email" class="form-control" id="email_form" name="email_update">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label for="direccion_form">Dirección</label>
-                                <textarea class="form-control" id="direccion_form" name="direccion_update" rows="2"></textarea>
-                            </div>
-                        </div>
-                        <div id="error_message_form" class="alert alert-danger" style="display: none;"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="btn_submit_proveedor_form">Guardar</button>
-                    </div>
-                </form>
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalProveedorFormLabel">Agregar Nuevo Proveedor</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
+            <form id="form-proveedor" novalidate> <!-- AÑADIDO novalidate AQUÍ -->
+                <input type="hidden" id="id_proveedor_form" name="id_proveedor_update">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="nombre_proveedor_form">Nombre Proveedor <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre_proveedor_form" name="nombre_proveedor_update" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="celular_form">Celular <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="celular_form" name="celular_update" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="telefono_form">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono_form" name="telefono_update">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="empresa_form">Empresa</label>
+                            <input type="text" class="form-control" id="empresa_form" name="empresa_update">
+                        </div>
+                    </div>
+                    <div class="row">
+                         <div class="col-md-6 form-group">
+                            <label for="email_form">Email</label>
+                            <input type="email" class="form-control" id="email_form" name="email_update">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="direccion_form">Dirección</label>
+                            <textarea class="form-control" id="direccion_form" name="direccion_update" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div id="error_message_form" class="alert alert-danger" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn_submit_proveedor_form">Guardar</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
     <!-- MODAL PARA ELIMINAR PROVEEDOR -->
     <div class="modal fade" id="modal-delete-proveedor" tabindex="-1" role="dialog" aria-labelledby="modalDeleteProveedorLabel" aria-hidden="true">
@@ -260,27 +260,35 @@ $(document).ready(function () {
     $('#form-proveedor').submit(function (e) {
         e.preventDefault();
         $('#error_message_form').hide();
-        var formData = $(this).serializeArray(); // Usar serializeArray para POST simple
+        var formData = $(this).serializeArray(); 
         var id_proveedor = $('#id_proveedor_form').val();
         var url = id_proveedor ? "../app/controllers/proveedores/update.php" : "../app/controllers/proveedores/create.php";
         
         // Convertir serializeArray a un objeto para pasarlo a $.post
         var postData = {};
         $.each(formData, function(i, field){
-            // Renombrar los campos para que coincidan con lo que esperan los controladores POST
-            // Los controladores esperan 'nombre_proveedor', 'celular', etc. sin el '_update' o '_form'
-            var key = field.name.replace('_form', '').replace('_update', '');
-            postData[key] = field.value;
+            // Si es para actualizar, y el campo ya tiene '_update', lo conservamos.
+            // Si es para crear, o si el campo no tiene '_update' (ej. id_proveedor_form), lo limpiamos.
+            // El controlador create.php espera los nombres sin sufijos.
+            // El controlador update.php espera los nombres CON el sufijo _update.
+            
+            if (id_proveedor) { // Es una ACTUALIZACIÓN
+                // Para la actualización, el controlador update.php espera los nombres con _update
+                // y también 'id_proveedor_update'.
+                // El input hidden id_proveedor_form ya se llama 'id_proveedor_update'
+                postData[field.name] = field.value; 
+            } else { // Es una CREACIÓN
+                // Para la creación, el controlador create.php espera los nombres sin _update
+                var key = field.name.replace('_form', '').replace('_update', '');
+                postData[key] = field.value;
+            }
         });
-         if(id_proveedor) { // Si es update, el ID ya está en el hidden input, pero hay que asegurar el nombre correcto
-            postData['id_proveedor_update'] = id_proveedor; // el controlador update.php espera id_proveedor_update
-        }
 
 
         $.ajax({
             url: url,
             type: "POST", 
-            data: postData, // Enviar como objeto
+            data: postData,
             dataType: "json",
             success: function(response) {
                 if (response.status === 'success') {

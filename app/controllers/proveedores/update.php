@@ -1,6 +1,6 @@
 <?php
 // Resumen: Controlador para actualizar un proveedor existente.
-// Recibe datos vía POST, valida el ID del proveedor y los datos a actualizar.
+// Recibe datos vía POST, valida el ID del proveedor y los datos a actualizar (incluyendo emails con Unicode/IDN).
 // Utiliza ProveedorModel para la actualización y devuelve una respuesta JSON.
 
 header('Content-Type: application/json');
@@ -26,18 +26,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-$id_proveedor = filter_var($_POST['id_proveedor_update'] ?? null, FILTER_VALIDATE_INT); // Asegúrate que el form envía este ID
+$id_proveedor = filter_var($_POST['id_proveedor_update'] ?? null, FILTER_VALIDATE_INT);
 if (!$id_proveedor) {
     $response['message'] = 'ID de proveedor no válido o no proporcionado.';
     echo json_encode($response);
     exit();
 }
 
-// Validación de campos (similar a create.php)
+// Validación de campos
 $nombre_proveedor = trim($_POST['nombre_proveedor_update'] ?? '');
 $celular = trim($_POST['celular_update'] ?? '');
-$empresa = trim($_POST['empresa_update'] ?? '');
-$direccion = trim($_POST['direccion_update'] ?? '');
+$empresa = trim($_POST['empresa_update'] ?? ''); // Opcional según HTML
+$direccion = trim($_POST['direccion_update'] ?? ''); // Opcional según HTML
 $telefono = trim($_POST['telefono_update'] ?? null);
 $email = trim($_POST['email_update'] ?? null);
 
@@ -53,7 +53,9 @@ if (empty($celular)) {
     echo json_encode($response);
     exit();
 }
-if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+// Validación de Email con soporte para Unicode (IDN)
+if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
     $response['message'] = 'El formato del email no es válido para actualizar.';
     $response['status'] = 'warning';
     echo json_encode($response);
@@ -64,21 +66,13 @@ if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 try {
     $proveedorModel = new ProveedorModel($pdo, $URL);
 
-    // Opcional: Verificar si el nuevo nombre de proveedor ya existe para otro proveedor del mismo usuario
-    // if ($proveedorModel->nombreProveedorExisteParaUsuario($nombre_proveedor, $id_usuario_logueado, $id_proveedor)) {
-    //     $response['message'] = "Ya existe otro proveedor con el nombre '" . sanear($nombre_proveedor) . "'.";
-    //     $response['status'] = 'warning';
-    //     echo json_encode($response);
-    //     exit();
-    // }
-
     $datos_actualizar = [
         'nombre_proveedor' => $nombre_proveedor,
         'celular' => $celular,
         'telefono' => $telefono ?: null,
-        'empresa' => $empresa,
+        'empresa' => $empresa ?: null, // Guardar null si está vacío y es opcional
         'email' => $email ?: null,
-        'direccion' => $direccion,
+        'direccion' => $direccion ?: null, // Guardar null si está vacío y es opcional
         'fyh_actualizacion' => $fechaHora
     ];
 
@@ -86,8 +80,6 @@ try {
         $response['status'] = 'success';
         $response['message'] = "Proveedor '" . sanear($nombre_proveedor) . "' actualizado correctamente.";
     } else {
-        // Esto podría ser porque el proveedor no existe, no pertenece al usuario, o no hubo cambios reales.
-        // El modelo ya verifica pertenencia. Si no hay cambios, la consulta podría no afectar filas.
         $response['message'] = "No se pudo actualizar el proveedor. Verifique los datos o si el proveedor pertenece a su cuenta.";
     }
 

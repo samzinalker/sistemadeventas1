@@ -1,6 +1,7 @@
 <?php
 // Resumen: Controlador para crear un nuevo proveedor.
-// Recibe datos vía POST, los valida, y utiliza ProveedorModel para la inserción.
+// Recibe datos vía POST, los valida (incluyendo emails con caracteres Unicode/IDN), 
+// y utiliza ProveedorModel para la inserción.
 // Devuelve una respuesta JSON indicando el resultado de la operación.
 
 header('Content-Type: application/json');
@@ -26,13 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Validación de campos (ejemplo básico, expandir según necesidad)
+// Validación de campos
 $nombre_proveedor = trim($_POST['nombre_proveedor'] ?? '');
 $celular = trim($_POST['celular'] ?? '');
-$empresa = trim($_POST['empresa'] ?? '');
-$direccion = trim($_POST['direccion'] ?? '');
-$telefono = trim($_POST['telefono'] ?? null); // Opcional
-$email = trim($_POST['email'] ?? null);       // Opcional
+$empresa = trim($_POST['empresa'] ?? ''); // Empresa es opcional según el HTML, pero si es requerida, añadir validación
+$direccion = trim($_POST['direccion'] ?? ''); // Dirección es opcional según el HTML
+$telefono = trim($_POST['telefono'] ?? null); 
+$email = trim($_POST['email'] ?? null);       
 
 // Validaciones básicas
 if (empty($nombre_proveedor)) {
@@ -47,33 +48,27 @@ if (empty($celular)) {
     echo json_encode($response);
     exit();
 }
-// Aquí podrías añadir más validaciones: longitud, formato de email, formato de teléfono/celular, etc.
-if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+// Validación de Email con soporte para Unicode (IDN)
+if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
     $response['message'] = 'El formato del email no es válido.';
     $response['status'] = 'warning';
     echo json_encode($response);
     exit();
 }
+// Aquí podrías añadir más validaciones: longitud de campos, etc.
 
 
 try {
     $proveedorModel = new ProveedorModel($pdo, $URL);
 
-    // Opcional: Verificar si el nombre del proveedor ya existe para este usuario
-    // if ($proveedorModel->nombreProveedorExisteParaUsuario($nombre_proveedor, $id_usuario_logueado)) {
-    //     $response['message'] = "Ya existe un proveedor con el nombre '" . sanear($nombre_proveedor) . "'.";
-    //     $response['status'] = 'warning';
-    //     echo json_encode($response);
-    //     exit();
-    // }
-
     $datos_proveedor = [
         'nombre_proveedor' => $nombre_proveedor,
         'celular' => $celular,
-        'telefono' => $telefono ?: null, // Guardar null si está vacío
-        'empresa' => $empresa,
-        'email' => $email ?: null, // Guardar null si está vacío
-        'direccion' => $direccion,
+        'telefono' => $telefono ?: null,
+        'empresa' => $empresa ?: null, // Guardar null si está vacío y es opcional
+        'email' => $email ?: null,
+        'direccion' => $direccion ?: null, // Guardar null si está vacío y es opcional
         'id_usuario' => $id_usuario_logueado,
         'fyh_creacion' => $fechaHora,
         'fyh_actualizacion' => $fechaHora
