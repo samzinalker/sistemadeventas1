@@ -45,7 +45,7 @@ if (isset($_SESSION['sesion_email'])) {
                 $_SESSION['mensaje'] = "Tu sesión ha expirado o el usuario no es válido. Por favor, inicia sesión de nuevo.";
                 $_SESSION['icono'] = "warning";
             }
-            header('Location: ' . rtrim($URL, '/') . '/login.php');
+            header('Location: ' . rtrim($URL, '/') . '/login/');
             exit();
         }
     } catch (PDOException $e) {
@@ -57,14 +57,14 @@ if (isset($_SESSION['sesion_email'])) {
             $_SESSION['mensaje'] = "Error de base de datos al verificar la sesión. Intenta de nuevo.";
             $_SESSION['icono'] = "error";
         }
-        header('Location: ' . rtrim($URL, '/') . '/login.php');
+        header('Location: ' . rtrim($URL, '/') . '/login/');
         exit();
     }
 } else {
     // Si no existe $_SESSION['sesion_email'], redirigir al login.
     // No se sobreescribe $_SESSION['mensaje'] aquí, para permitir que un mensaje flash de una acción previa (si existe) se muestre en la página de login.
     // Si la página de login necesita mostrar un mensaje específico para este caso, ella misma lo puede gestionar.
-    header('Location: ' . rtrim($URL, '/') . '/login.php');
+    header('Location: ' . rtrim($URL, '/') . '/login/');
     exit();
 }
 ?>

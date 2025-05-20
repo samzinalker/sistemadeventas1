@@ -17,6 +17,6 @@ if (isset($_SESSION['sesion_email']) || isset($_SESSION['id_usuario']) || isset(
 session_destroy();
 
 // Redirigir al usuario a la página de inicio o login
-header('Location: '.$URL.'/');
+header('Location: '.$URL.'/login/');
 exit();
 ?>

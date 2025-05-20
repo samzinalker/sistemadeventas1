@@ -15,7 +15,7 @@ if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['rol'])) {
         $_SESSION['mensaje'] = "Debes iniciar sesión para acceder a esta página.";
         $_SESSION['icono'] = "error";
     }
-    header('Location: ' . rtrim($URL, '/') . '/login.php');
+    header('Location: ' . rtrim($URL, '/') . '/login/');
     exit();
 }
 
