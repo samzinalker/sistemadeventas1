@@ -253,7 +253,7 @@ $pagina_activa = 'almacen_listado'; // Para resaltar en el menú
                                                                 <i class="fa fa-eye"></i>
                                                             </button>
                                                             <button type="button" class="btn btn-success btn-xs btn-edit-producto" data-id="<?php echo $id_producto_loop; ?>" title="Editar">
-                                                                <i class="fa fa-pencil-alt"></i>
+                                                                <i class="fa fa-pencil-alt"></i> <!-- Asegúrate que este ícono esté aquí -->
                                                             </button>
                                                             <button type="button" class="btn btn-danger btn-xs btn-delete-producto" data-id="<?php echo $id_producto_loop; ?>" data-nombre="<?php echo sanear($item['nombre']); ?>" title="Eliminar">
                                                                 <i class="fa fa-trash"></i>
@@ -308,7 +308,13 @@ $(document).ready(function () {
     }).buttons().container().appendTo('#tabla_productos_wrapper .col-md-6:eq(0)');
 
     function mostrarAlerta(title, text, icon) {
-        Swal.fire({ title: title, text: text, icon: icon, timer: icon === 'success' ? 2000 : 3500, showConfirmButton: icon !== 'success' });
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            timer: icon === 'success' ? 2000 : 3500, // Éxito: 2 seg, Otros: 3.5 seg
+            showConfirmButton: icon !== 'success' // Muestra botón OK para errores/advertencias
+        });
     }
 
     function recargarTablaProductos() { 
@@ -473,7 +479,9 @@ $(document).ready(function () {
                 mostrarAlerta('¡Eliminado!', response.message, 'success');
                 recargarTablaProductos();
             } else {
-                mostrarAlerta('Error', response.message || 'No se pudo eliminar.', response.status || 'error');
+                // Para errores o advertencias (ej. producto en uso), el timer será más largo
+                // y se mostrará el botón de confirmación debido al cambio en mostrarAlerta.
+                mostrarAlerta(response.status === 'warning' ? 'Advertencia' : 'Error', response.message || 'No se pudo eliminar.', response.status || 'error');
             }
             if (response.redirectTo) { window.location.href = response.redirectTo; }
         }, "json").fail(function() {
