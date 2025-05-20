@@ -1,71 +1,69 @@
 <?php
-include ('../../config.php');
+header('Content-Type: application/json');
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../utils/funciones_globales.php';
+require_once __DIR__ . '/../../models/CategoriaModel.php';
 
-// Verificar sesión
+$response = ['status' => 'error', 'message' => 'Error desconocido.'];
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verificar si está logueado
 if (!isset($_SESSION['id_usuario'])) {
-    $_SESSION['mensaje'] = "Debe iniciar sesión para realizar esta acción";
-    $_SESSION['icono'] = "error";
-    echo "<script>location.href = '$URL/login';</script>";
+    $response['message'] = 'Debe iniciar sesión para realizar esta acción.';
+    $response['redirectTo'] = $URL . '/login/';
+    echo json_encode($response);
+    exit();
+}
+$id_usuario_logueado = (int)$_SESSION['id_usuario'];
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['id_categoria']) || !isset($_POST['nombre_categoria'])) {
+    $response['message'] = 'Datos incompletos para actualizar.';
+    echo json_encode($response);
     exit();
 }
 
-$nombre_categoria = $_GET['nombre_categoria'];
-$id_categoria = $_GET['id_categoria'];
-$id_usuario_actual = $_SESSION['id_usuario'];
+$id_categoria = filter_var($_POST['id_categoria'], FILTER_VALIDATE_INT);
+$nombre_categoria_nuevo = trim($_POST['nombre_categoria']);
 
-// Verificar si el usuario es propietario de la categoría
-$consulta = $pdo->prepare("SELECT id_usuario FROM tb_categorias WHERE id_categoria = :id_categoria");
-$consulta->bindParam(':id_categoria', $id_categoria, PDO::PARAM_INT);
-$consulta->execute();
-$categoria = $consulta->fetch(PDO::FETCH_ASSOC);
-
-// Si no es su categoría, denegar acceso
-if ($categoria['id_usuario'] != $id_usuario_actual) {
-    $_SESSION['mensaje'] = "No tiene permiso para modificar esta categoría";
-    $_SESSION['icono'] = "error";
-    echo "<script>location.href = '$URL/categorias';</script>";
+if (!$id_categoria || empty($nombre_categoria_nuevo)) {
+    $response['message'] = 'ID de categoría o nombre no válidos.';
+    $response['status'] = 'warning';
+    echo json_encode($response);
     exit();
 }
 
-// Verificar si otra categoría del mismo usuario ya tiene ese nombre
-$consulta_duplicado = $pdo->prepare("SELECT COUNT(*) AS total FROM tb_categorias 
-                                   WHERE nombre_categoria = :nombre_categoria 
-                                   AND id_usuario = :id_usuario 
-                                   AND id_categoria != :id_categoria");
-$consulta_duplicado->bindParam(':nombre_categoria', $nombre_categoria);
-$consulta_duplicado->bindParam(':id_usuario', $id_usuario_actual);
-$consulta_duplicado->bindParam(':id_categoria', $id_categoria);
-$consulta_duplicado->execute();
-$resultado = $consulta_duplicado->fetch(PDO::FETCH_ASSOC);
+try {
+    $categoriaModel = new CategoriaModel($pdo);
+    $categoria_existente = $categoriaModel->getCategoriaByIdAndUsuarioId($id_categoria, $id_usuario_logueado);
 
-if ($resultado['total'] > 0) {
-    $_SESSION['mensaje'] = "Ya existe otra categoría con este nombre";
-    $_SESSION['icono'] = "warning";
-    echo "<script>location.href = '$URL/categorias';</script>";
-    exit();
+    if (!$categoria_existente) {
+        $response['message'] = 'No tiene permiso para modificar esta categoría o no existe.';
+        echo json_encode($response);
+        exit();
+    }
+
+    if ($categoriaModel->nombreCategoriaExisteParaUsuario($nombre_categoria_nuevo, $id_usuario_logueado, $id_categoria)) {
+        $response['message'] = "El nombre de categoría '" . sanear($nombre_categoria_nuevo) . "' ya está en uso por otra de tus categorías.";
+        $response['status'] = 'warning';
+    } else {
+        if ($categoriaModel->actualizarCategoria($id_categoria, $nombre_categoria_nuevo, $id_usuario_logueado, $fechaHora)) {
+            $response['status'] = 'success';
+            $response['message'] = "Categoría actualizada correctamente.";
+        } else {
+            $response['message'] = "Error al actualizar la categoría en la base de datos.";
+        }
+    }
+} catch (PDOException $e) {
+    error_log("Error de BD en update_de_categorias.php: " . $e->getMessage());
+    $response['message'] = "Error en el sistema al actualizar la categoría.";
+} catch (Exception $e) {
+    error_log("Error general en update_de_categorias.php: " . $e->getMessage());
+    $response['message'] = "Ocurrió un error inesperado.";
 }
 
-// Si pasa todas las validaciones, proceder con la actualización
-$sentencia = $pdo->prepare("UPDATE tb_categorias
-    SET nombre_categoria = :nombre_categoria,
-        fyh_actualizacion = :fyh_actualizacion 
-    WHERE id_categoria = :id_categoria");
-
-$sentencia->bindParam(':nombre_categoria', $nombre_categoria);
-$sentencia->bindParam(':fyh_actualizacion', $fechaHora);
-$sentencia->bindParam(':id_categoria', $id_categoria);
-
-if($sentencia->execute()){
-    $_SESSION['mensaje'] = "Se actualizó la categoría correctamente";
-    $_SESSION['icono'] = "success";
-    echo "<script>location.href = '$URL/categorias';</script>";
-} else {
-    $_SESSION['mensaje'] = "Error al actualizar en la base de datos";
-    $_SESSION['icono'] = "error";
-    echo "<script>location.href = '$URL/categorias';</script>";
-}
+setMensaje($response['message'], $response['status']);
+echo json_encode($response);
+exit();
+?>

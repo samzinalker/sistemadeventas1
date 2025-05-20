@@ -1,22 +1,25 @@
 <?php
-// Verificar sesión y permisos
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Este script se incluye desde categorias/index.php donde config.php, funciones_globales.php y layout/sesion.php ya están cargados.
+// Por lo tanto, $pdo, $URL, $_SESSION['id_usuario'] y las funciones globales deberían estar disponibles.
+
+// 1. Asegurar que las dependencias necesarias estén disponibles
+if (!isset($pdo) || !isset($URL) || !isset($_SESSION['id_usuario'])) {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    setMensaje("Error crítico: Faltan dependencias para listar categorías.", "error");
+    if (isset($URL)) redirigir('/login/');
+    else { header('Location: ../../login/'); exit(); }
 }
 
-if (!isset($_SESSION['id_usuario'])) {
-    header('Location: ' . $URL . '/login.php');
-    exit();
-}
+// 2. Incluir el Modelo de Categoría
+require_once __DIR__ . '/../../models/CategoriaModel.php'; // Ajusta la ruta si es diferente
 
-// Obtener el ID del usuario actual
-$id_usuario = $_SESSION['id_usuario'];
+// 3. Obtener el ID del usuario de la sesión
+$id_usuario_logueado = (int)$_SESSION['id_usuario'];
 
-// Consulta SQL para mostrar solo las categorías del usuario actual
-$sql_categorias = "SELECT * FROM tb_categorias 
-                  WHERE id_usuario = :id_usuario
-                  ORDER BY id_categoria DESC";
-$query_categorias = $pdo->prepare($sql_categorias);
-$query_categorias->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
-$query_categorias->execute();
-$categorias_datos = $query_categorias->fetchAll(PDO::FETCH_ASSOC);
+// 4. Instanciar el modelo y obtener las categorías del usuario
+$categoriaModel = new CategoriaModel($pdo);
+$categorias_datos = $categoriaModel->getCategoriasByUsuarioId($id_usuario_logueado);
+
+// La variable $categorias_datos ahora está lista para ser usada en la vista (categorias/index.php)
+// y ya viene filtrada por el id_usuario.
+?>
