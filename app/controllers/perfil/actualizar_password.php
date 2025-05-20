@@ -1,96 +1,89 @@
 <?php
-include('../../config.php');
-session_start();
+// 1. Iniciar sesión
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Verificar si hay una sesión activa
+// 2. Incluir configuración y dependencias
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../utils/Validator.php'; // Para isValidPasswordLength
+require_once __DIR__ . '/../../utils/funciones_globales.php'; // Para setMensaje, redirigir, procesarPassword
+require_once __DIR__ . '/../../models/UsuarioModel.php';
+
+// 3. Verificar que el usuario esté logueado
 if (!isset($_SESSION['id_usuario'])) {
-    $_SESSION['mensaje'] = "Debes iniciar sesión para realizar esta acción";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/login');
-    exit();
+    setMensaje("Debe iniciar sesión para realizar esta acción.", "error");
+    redirigir('/login/');
+}
+$id_usuario_actualizar = (int)$_SESSION['id_usuario'];
+
+// 4. Verificar que la solicitud sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    setMensaje("Acceso no permitido.", "error");
+    redirigir('/perfil/');
 }
 
-// Obtener el ID de usuario de la sesión
-$id_usuario = $_SESSION['id_usuario'];
+// 5. Obtener datos del formulario
+$password_actual_ingresada = $_POST['password_actual'] ?? '';
+$password_nueva = $_POST['password_nueva'] ?? '';
+$password_confirmar = $_POST['password_confirmar'] ?? '';
 
-// Verificar que se enviaron los datos del formulario
-if (!isset($_POST['password_actual']) || !isset($_POST['password_nueva']) || !isset($_POST['password_confirmar'])) {
-    $_SESSION['mensaje'] = "Faltan datos requeridos";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/perfil');
-    exit();
+// 6. Validaciones
+if (empty($password_actual_ingresada) || empty($password_nueva) || empty($password_confirmar)) {
+    setMensaje("Todos los campos de contraseña son obligatorios.", "warning");
+    redirigir('/perfil/');
 }
 
-$password_actual = $_POST['password_actual'];
-$password_nueva = $_POST['password_nueva'];
-$password_confirmar = $_POST['password_confirmar'];
-
-// Verificar que los campos no estén vacíos
-if (empty($password_actual) || empty($password_nueva) || empty($password_confirmar)) {
-    $_SESSION['mensaje'] = "Todos los campos de contraseña son obligatorios";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/perfil');
-    exit();
+if (!Validator::isValidPasswordLength($password_nueva, 6)) {
+    setMensaje("La nueva contraseña debe tener al menos 6 caracteres.", "warning");
+    redirigir('/perfil/');
 }
 
-// Verificar que las contraseñas nuevas coincidan
 if ($password_nueva !== $password_confirmar) {
-    $_SESSION['mensaje'] = "Las contraseñas nuevas no coinciden";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/perfil');
-    exit();
+    setMensaje("La nueva contraseña y su confirmación no coinciden.", "error");
+    redirigir('/perfil/');
 }
 
-// Verificar longitud mínima de contraseña
-if (strlen($password_nueva) < 6) {
-    $_SESSION['mensaje'] = "La contraseña debe tener al menos 6 caracteres";
-    $_SESSION['icono'] = "warning";
-    header('Location: '.$URL.'/perfil');
-    exit();
-}
-
+// 7. Lógica de actualización de contraseña usando el Modelo
 try {
-    // Obtener la contraseña actual del usuario
-    $sql = "SELECT password_user FROM tb_usuarios WHERE id_usuario = :id_usuario";
-    $query = $pdo->prepare($sql);
-    $query->bindParam(':id_usuario', $id_usuario);
-    $query->execute();
-    
-    if ($query->rowCount() > 0) {
-        $usuario = $query->fetch(PDO::FETCH_ASSOC);
-        $password_hash = $usuario['password_user'];
-        
-        // Verificar si la contraseña actual es correcta
-        if (password_verify($password_actual, $password_hash)) {
-            // La contraseña actual es correcta, actualizar a la nueva
-            $nuevo_hash = password_hash($password_nueva, PASSWORD_DEFAULT);
-            
-            $sql_update = "UPDATE tb_usuarios SET 
-                           password_user = :password_user,
-                           fyh_actualizacion = :fyh_actualizacion
-                           WHERE id_usuario = :id_usuario";
-            
-            $query_update = $pdo->prepare($sql_update);
-            $query_update->bindParam(':password_user', $nuevo_hash);
-            $query_update->bindParam(':fyh_actualizacion', $fechaHora);
-            $query_update->bindParam(':id_usuario', $id_usuario);
-            $query_update->execute();
-            
-            $_SESSION['mensaje'] = "Contraseña actualizada correctamente";
-            $_SESSION['icono'] = "success";
+    $usuarioModel = new UsuarioModel($pdo, $URL);
+
+    // Obtener el hash de la contraseña actual del usuario desde la BD
+    $usuario_data = $usuarioModel->getUsuarioById($id_usuario_actualizar);
+    if (!$usuario_data || !isset($usuario_data['password_user'])) {
+        setMensaje("Error al verificar la información del usuario.", "error");
+        redirigir('/perfil/');
+    }
+    $password_hash_actual_bd = $usuario_data['password_user'];
+
+    // Verificar si la contraseña actual ingresada es correcta
+    if (password_verify($password_actual_ingresada, $password_hash_actual_bd)) {
+        // La contraseña actual es correcta, proceder a hashear y actualizar la nueva
+        $nuevo_password_hash = password_hash($password_nueva, PASSWORD_DEFAULT);
+        if ($nuevo_password_hash === false) {
+            // Error en la función password_hash del servidor
+            setMensaje("Error interno al procesar la nueva contraseña.", "error");
+            redirigir('/perfil/');
+        }
+
+        // $fechaHora viene de config.php
+        if ($usuarioModel->actualizarPassword($id_usuario_actualizar, $nuevo_password_hash, $fechaHora)) {
+            setMensaje("Contraseña actualizada correctamente.", "success");
+            // Opcional: Forzar logout o enviar notificación por email sobre cambio de contraseña
         } else {
-            $_SESSION['mensaje'] = "La contraseña actual es incorrecta";
-            $_SESSION['icono'] = "error";
+            setMensaje("No se pudo actualizar la contraseña en la base de datos.", "error");
         }
     } else {
-        $_SESSION['mensaje'] = "Error al verificar la contraseña";
-        $_SESSION['icono'] = "error";
+        // La contraseña actual ingresada es incorrecta
+        setMensaje("La contraseña actual que ingresó es incorrecta.", "error");
     }
+} catch (PDOException $e) {
+    error_log("Error de BD en actualizar_password.php: " . $e->getMessage());
+    setMensaje("Error en el sistema al actualizar la contraseña. Por favor, intente más tarde.", "error");
 } catch (Exception $e) {
-    $_SESSION['mensaje'] = "Error al actualizar la contraseña";
-    $_SESSION['icono'] = "error";
+    error_log("Error general en actualizar_password.php: " . $e->getMessage());
+    setMensaje("Ocurrió un error inesperado al actualizar la contraseña. Por favor, intente más tarde.", "error");
 }
 
-header('Location: '.$URL.'/perfil');
-exit();
+redirigir('/perfil/');
 ?>

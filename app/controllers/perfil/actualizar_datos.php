@@ -1,78 +1,95 @@
 <?php
-include('../../config.php');
-session_start();
+// 1. Iniciar sesión
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Verificar si hay una sesión activa
+// 2. Incluir configuración y dependencias
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../utils/Validator.php';
+require_once __DIR__ . '/../../utils/funciones_globales.php';
+require_once __DIR__ . '/../../models/UsuarioModel.php';
+
+// 3. Verificar que el usuario esté logueado
 if (!isset($_SESSION['id_usuario'])) {
-    $_SESSION['mensaje'] = "Debes iniciar sesión para realizar esta acción";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/login');
-    exit();
+    setMensaje("Debe iniciar sesión para realizar esta acción.", "error");
+    redirigir('/login/');
+}
+$id_usuario_actualizar = (int)$_SESSION['id_usuario'];
+
+// 4. Verificar que la solicitud sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    setMensaje("Acceso no permitido.", "error");
+    redirigir('/perfil/');
 }
 
-// Obtener el ID de usuario de la sesión
-$id_usuario = $_SESSION['id_usuario'];
+// 5. Obtener y sanear datos del formulario
+$nombres_nuevos = trim($_POST['nombres'] ?? '');
+$email_nuevo = trim($_POST['email'] ?? ''); // Este es el "usuario" y "email"
 
-// Verificar que se enviaron los datos del formulario
-if (!isset($_POST['nombres']) || !isset($_POST['email'])) {
-    $_SESSION['mensaje'] = "Faltan datos requeridos";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/perfil');
-    exit();
+// Guardar datos en sesión para repoblar el formulario en caso de error
+$form_data_key = 'form_data_perfil_datos_' . $id_usuario_actualizar;
+$_SESSION[$form_data_key] = $_POST;
+
+// 6. Validaciones
+if (empty($nombres_nuevos) || empty($email_nuevo)) {
+    setMensaje("El nombre y el email/usuario son obligatorios.", "warning");
+    redirigir('/perfil/');
 }
 
-$nombres = trim($_POST['nombres']);
-$email = trim($_POST['email']);
-
-// Verificar que los campos no estén vacíos
-if (empty($nombres) || empty($email)) {
-    $_SESSION['mensaje'] = "Los campos nombre y email son obligatorios";
-    $_SESSION['icono'] = "error";
-    header('Location: '.$URL.'/perfil');
-    exit();
+if (!Validator::isValidEmail($email_nuevo)) {
+    setMensaje("El formato del email/usuario no es válido.", "error");
+    redirigir('/perfil/');
 }
 
+// 7. Lógica de actualización usando el Modelo
 try {
-    // Verificar si el email está en uso por otro usuario
-    $sql_check = "SELECT id_usuario FROM tb_usuarios WHERE email = :email AND id_usuario != :id_usuario";
-    $query_check = $pdo->prepare($sql_check);
-    $query_check->bindParam(':email', $email);
-    $query_check->bindParam(':id_usuario', $id_usuario);
-    $query_check->execute();
-    
-    if ($query_check->rowCount() > 0) {
-        $_SESSION['mensaje'] = "El email ya está en uso por otro usuario";
-        $_SESSION['icono'] = "error";
-        header('Location: '.$URL.'/perfil');
-        exit();
-    }
-    
-    // Actualizar los datos del usuario
-    $sql_update = "UPDATE tb_usuarios SET 
-                   nombres = :nombres, 
-                   email = :email,
-                   fyh_actualizacion = :fyh_actualizacion
-                   WHERE id_usuario = :id_usuario";
-                   
-    $query_update = $pdo->prepare($sql_update);
-    $query_update->bindParam(':nombres', $nombres);
-    $query_update->bindParam(':email', $email);
-    $query_update->bindParam(':fyh_actualizacion', $fechaHora);
-    $query_update->bindParam(':id_usuario', $id_usuario);
-    $query_update->execute();
-    
-    // Actualizar la sesión con los nuevos datos
-    $_SESSION['sesion_email'] = $email;
-    $_SESSION['nombres'] = $nombres;
-    
-    $_SESSION['mensaje'] = "Datos actualizados correctamente";
-    $_SESSION['icono'] = "success";
-    
-} catch (Exception $e) {
-    $_SESSION['mensaje'] = "Error al actualizar los datos";
-    $_SESSION['icono'] = "error";
-}
+    $usuarioModel = new UsuarioModel($pdo, $URL);
 
-header('Location: '.$URL.'/perfil');
-exit();
+    // Verificar si el nuevo email ya está en uso por OTRO usuario
+    if ($usuarioModel->emailExiste($email_nuevo, $id_usuario_actualizar)) {
+        setMensaje("El email/usuario '" . sanear($email_nuevo) . "' ya está en uso por otra cuenta.", "error");
+        redirigir('/perfil/');
+    }
+
+    // Obtener el rol actual del usuario (no se cambia desde el perfil)
+    $usuario_actual_data = $usuarioModel->getUsuarioById($id_usuario_actualizar);
+    if (!$usuario_actual_data) { // Muy improbable si está logueado
+        setMensaje("Error al obtener datos del usuario actual.", "error");
+        redirigir('/perfil/');
+    }
+    $id_rol_actual = $usuario_actual_data['id_rol'];
+
+    // Actualizar los datos del usuario (nombre, email, pero no el rol)
+    // $fechaHora viene de config.php
+    $actualizado = $usuarioModel->actualizarUsuario(
+        $id_usuario_actualizar,
+        $nombres_nuevos,
+        $email_nuevo,
+        $id_rol_actual, // Se mantiene el rol actual del usuario
+        $fechaHora
+    );
+
+    if ($actualizado) {
+        // Actualizar los datos en la sesión para que se reflejen inmediatamente
+        $_SESSION['nombres'] = $nombres_nuevos;
+        $_SESSION['sesion_email'] = $email_nuevo; // 'sesion_email' es usado por layout/sesion.php
+
+        unset($_SESSION[$form_data_key]); // Limpiar datos del formulario de la sesión en caso de éxito
+        setMensaje("Datos personales actualizados correctamente.", "success");
+        redirigir('/perfil/');
+    } else {
+        setMensaje("No se pudieron actualizar los datos personales. Inténtelo de nuevo.", "error");
+        redirigir('/perfil/');
+    }
+
+} catch (PDOException $e) {
+    error_log("Error de BD en actualizar_datos.php: " . $e->getMessage());
+    setMensaje("Error en el sistema al actualizar datos. Por favor, intente más tarde.", "error");
+    redirigir('/perfil/');
+} catch (Exception $e) {
+    error_log("Error general en actualizar_datos.php: " . $e->getMessage());
+    setMensaje("Ocurrió un error inesperado. Por favor, intente más tarde.", "error");
+    redirigir('/perfil/');
+}
 ?>

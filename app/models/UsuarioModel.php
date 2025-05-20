@@ -28,7 +28,8 @@ class UsuarioModel {
      * @return array|false Datos del usuario o false si no se encuentra.
      */
     public function getUsuarioById(int $id_usuario) {
-        $sql = "SELECT us.id_usuario, us.nombres, us.email, us.imagen_perfil, us.id_rol, rol.rol as nombre_rol, us.fyh_creacion, us.fyh_actualizacion
+        // MODIFICACIÓN: Añadir us.password_user al SELECT
+        $sql = "SELECT us.id_usuario, us.nombres, us.email, us.password_user, us.imagen_perfil, us.id_rol, rol.rol as nombre_rol, us.fyh_creacion, us.fyh_actualizacion
                 FROM tb_usuarios as us
                 INNER JOIN tb_roles as rol ON us.id_rol = rol.id_rol
                 WHERE us.id_usuario = :id_usuario";
