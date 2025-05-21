@@ -292,28 +292,14 @@ class ComprasModel {
         }
     }
 
-    public function getAllComprasByUsuarioId(int $id_usuario): array {
-        $sql = "SELECT
-                    c.id_compra,
-                    c.nro_comprobante_proveedor,
-                    p.nombre_proveedor,
-                    c.fecha_compra,
-                    u.nombres as nombre_usuario_registra,
-                    c.aplica_iva,
-                    c.porcentaje_iva,
-                    c.subtotal_neto,
-                    c.monto_iva,
-                    c.monto_total,
-                    c.estado,
-                    c.observaciones,
-                    c.fyh_creacion
-                FROM compras c
-                JOIN tb_proveedores p ON c.id_proveedor = p.id_proveedor
-                JOIN tb_usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c.id_usuario = :id_usuario_filter
-                ORDER BY c.fecha_compra DESC, c.id_compra DESC";
+    public function getProductosByUsuarioId(int $id_usuario): array {
+        $sql = "SELECT p.*, c.nombre_categoria as categoria 
+                FROM tb_almacen as p
+                INNER JOIN tb_categorias as c ON p.id_categoria = c.id_categoria
+                WHERE p.id_usuario = :id_usuario
+                ORDER BY p.nombre ASC";
         $query = $this->pdo->prepare($sql);
-        $query->bindParam(':id_usuario_filter', $id_usuario, PDO::PARAM_INT);
+        $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -341,19 +327,20 @@ class ComprasModel {
      * @param int $limite
      * @return array
      */
-    public function buscarProductosParaCompra(string $termino, int $id_usuario, int $limite = 10): array {
-        $sql = "SELECT id_producto, codigo, nombre, precio_compra, stock 
-                FROM tb_almacen 
-                WHERE id_usuario = :id_usuario 
-                AND (nombre LIKE :termino_nombre OR codigo LIKE :termino_codigo)
-                LIMIT :limite";
-        $query = $this->pdo->prepare($sql);
-        $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
-        $query->bindValue(':termino_nombre', "%$termino%", PDO::PARAM_STR);
-        $query->bindValue(':termino_codigo', "%$termino%", PDO::PARAM_STR);
-        $query->bindParam(':limite', $limite, PDO::PARAM_INT);
-        $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
-    }
+    // En app/models/ComprasModel.php
+public function buscarProductosParaCompra(string $termino, int $id_usuario, int $limite = 10): array {
+    $sql = "SELECT id_producto, codigo, nombre, precio_compra, stock, precio_venta  // <-- Asegúrate que precio_venta está aquí
+            FROM tb_almacen 
+            WHERE id_usuario = :id_usuario 
+            AND (nombre LIKE :termino_nombre OR codigo LIKE :termino_codigo)
+            LIMIT :limite";
+    $query = $this->pdo->prepare($sql);
+    $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+    $query->bindValue(':termino_nombre', "%$termino%", PDO::PARAM_STR);
+    $query->bindValue(':termino_codigo', "%$termino%", PDO::PARAM_STR);
+    $query->bindParam(':limite', $limite, PDO::PARAM_INT);
+    $query->execute();
+    return $query->fetchAll(PDO::FETCH_ASSOC);
+}
 }
 ?>

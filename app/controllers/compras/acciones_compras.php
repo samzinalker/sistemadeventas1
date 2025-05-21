@@ -174,38 +174,39 @@ try {
 
             // ... (otros cases como registrar_compra, buscar_productos_compra) ...
 
-        case 'listar_productos_almacen_para_modal':
-            // Esta acción es para poblar el modal de búsqueda de productos en almacén.
-            // Debería llamar a un método en AlmacenModel que devuelva los productos
-            // con id_producto, codigo, nombre, stock, precio_compra (del almacén) y precio_venta (del almacén).
-            if (!class_exists('AlmacenModel')) { // Asegurarse que AlmacenModel está disponible
-                require_once __DIR__ . '/../models/AlmacenModel.php';
-            }
-            $almacenModel = new AlmacenModel($pdo); // Asumiendo que $pdo está disponible
-            $productos_almacen = $almacenModel->getProductosByUsuarioId($id_usuario_sesion); // Usar un método existente o crear uno nuevo
+       // En app/controllers/compras/acciones_compras.php
 
-            // Asegurarse de que los datos devueltos incluyan precio_venta y precio_compra del almacén
-            // Si getProductosByUsuarioId no los devuelve, tendrás que modificar esa consulta en AlmacenModel
-            // o crear un método específico que sí los devuelva.
-            // Ejemplo de cómo se verían los datos esperados por el JS:
-            $response_data = [];
-            foreach($productos_almacen as $p) {
-               $response_data[] = [
-                   'id_producto' => $p['id_producto'],
-                   'codigo' => $p['codigo'],
-                   'nombre' => $p['nombre'],
-                   'stock' => $p['stock'],
-                   'precio_venta' => $p['precio_venta'], // ¡Importante!
-                   'precio_compra' => $p['precio_compra'] // Precio de compra base del almacén
-               ];
-            }
+// ... (otros cases como registrar_compra, buscar_productos_compra) ...
 
-            if ($productos_almacen) {
-                $response = ['status' => 'success', 'data' => $productos_almacen];
-            } else {
-                $response = ['status' => 'error', 'message' => 'No se pudieron cargar los productos del almacén.', 'data' => []];
-            }
-            break;
+case 'listar_productos_almacen_para_modal':
+    // Asegurarse que AlmacenModel está disponible
+    if (!class_exists('AlmacenModel')) { 
+        require_once __DIR__ . '/../../models/AlmacenModel.php'; // Ajusta la ruta si es necesario
+    }
+    $almacenModel = new AlmacenModel($pdo); // $pdo debe estar disponible desde config.php
+    
+    // $id_usuario_sesion debe estar disponible desde tu script de sesión
+    if (!isset($id_usuario_sesion)) {
+        $response = ['status' => 'error', 'message' => 'Sesión no válida.', 'data' => []];
+        echo json_encode($response);
+        exit();
+    }
+
+    $productos_almacen = $almacenModel->getProductosByUsuarioId($id_usuario_sesion);
+
+    if ($productos_almacen !== false) { // getProductosByUsuarioId devuelve un array, incluso vacío. false podría ser un error.
+        // Es importante que cada producto en $productos_almacen tenga los campos:
+        // id_producto, codigo, nombre, stock, precio_venta, precio_compra
+        $response = ['status' => 'success', 'data' => $productos_almacen];
+    } else {
+        // Esto podría indicar un error en la consulta del modelo, aunque es más probable que devuelva un array vacío.
+        $response = ['status' => 'error', 'message' => 'No se pudieron cargar los productos del almacén.', 'data' => []];
+    }
+    // No es necesario hacer un bucle para re-formatear aquí si getProductosByUsuarioId ya devuelve todos los campos necesarios.
+    break;
+
+// ... (otros cases y final del switch) ...
+// Al final del script del controlador, se hace: echo json_encode($response);
 
 // ... (otros cases y final del switch) ...
 
