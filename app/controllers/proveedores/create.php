@@ -59,6 +59,7 @@ if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMA
 // Aquí podrías añadir más validaciones: longitud de campos, etc.
 
 
+
 try {
     $proveedorModel = new ProveedorModel($pdo, $URL);
 
