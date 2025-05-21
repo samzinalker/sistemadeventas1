@@ -170,6 +170,49 @@ try {
                 $subtotal_neto_calculado += (float)$prod_detalle['cantidad'] * (float)$prod_detalle['precio_unitario'];
             }
 
+
+
+            // ... (otros cases como registrar_compra, buscar_productos_compra) ...
+
+        case 'listar_productos_almacen_para_modal':
+            // Esta acción es para poblar el modal de búsqueda de productos en almacén.
+            // Debería llamar a un método en AlmacenModel que devuelva los productos
+            // con id_producto, codigo, nombre, stock, precio_compra (del almacén) y precio_venta (del almacén).
+            if (!class_exists('AlmacenModel')) { // Asegurarse que AlmacenModel está disponible
+                require_once __DIR__ . '/../models/AlmacenModel.php';
+            }
+            $almacenModel = new AlmacenModel($pdo); // Asumiendo que $pdo está disponible
+            $productos_almacen = $almacenModel->getProductosByUsuarioId($id_usuario_sesion); // Usar un método existente o crear uno nuevo
+
+            // Asegurarse de que los datos devueltos incluyan precio_venta y precio_compra del almacén
+            // Si getProductosByUsuarioId no los devuelve, tendrás que modificar esa consulta en AlmacenModel
+            // o crear un método específico que sí los devuelva.
+            // Ejemplo de cómo se verían los datos esperados por el JS:
+            $response_data = [];
+            foreach($productos_almacen as $p) {
+               $response_data[] = [
+                   'id_producto' => $p['id_producto'],
+                   'codigo' => $p['codigo'],
+                   'nombre' => $p['nombre'],
+                   'stock' => $p['stock'],
+                   'precio_venta' => $p['precio_venta'], // ¡Importante!
+                   'precio_compra' => $p['precio_compra'] // Precio de compra base del almacén
+               ];
+            }
+
+            if ($productos_almacen) {
+                $response = ['status' => 'success', 'data' => $productos_almacen];
+            } else {
+                $response = ['status' => 'error', 'message' => 'No se pudieron cargar los productos del almacén.', 'data' => []];
+            }
+            break;
+
+// ... (otros cases y final del switch) ...
+
+
+
+
+
             $monto_iva_calculado = 0;
             if ($aplica_iva_compra && $porcentaje_iva_compra > 0) {
                 $monto_iva_calculado = $subtotal_neto_calculado * ($porcentaje_iva_compra / 100);

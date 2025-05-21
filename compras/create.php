@@ -35,7 +35,7 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
         max-height: 200px;
         overflow-y: auto;
         overflow-x: hidden;
-        z-index: 1051 !important; /* Mayor que el z-index del modal de Bootstrap si se usa dentro */
+        z-index: 1052 !important; /* Mayor que el z-index del modal de Bootstrap (1050) */
     }
     .ui-menu-item {
         padding: 5px;
@@ -44,7 +44,7 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
         background-color: #f0f0f0;
     }
     /* Ajuste para que el input de buscar producto no sea tan ancho y se alinee mejor */
-    #producto_busqueda { max-width: 400px; display: inline-block; margin-right: 10px; }
+    #producto_busqueda { max-width: 300px; display: inline-block; margin-right: 5px; }
     /* Ocultar flechas en input number para un look más limpio */
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
@@ -61,6 +61,8 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
         display: none; /* Oculto por defecto */ margin-left: 10px; vertical-align: middle;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Para que los botones en la tabla de detalle no se rompan en pantallas pequeñas */
+    #tabla_productos_compra .btn-group .btn { padding: .25rem .5rem; font-size: .8rem; }
 </style>
 
 <!-- Content Wrapper. Contains page content -->
@@ -160,24 +162,35 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
                 <div class="card card-outline card-success">
                     <div class="card-header"><h3 class="card-title">Detalle de Productos</h3></div>
                     <div class="card-body">
-                        <div class="form-inline mb-3">
-                            <label for="producto_busqueda" class="mr-2">Buscar Producto:</label>
-                            <input type="text" class="form-control" id="producto_busqueda" placeholder="Por código o nombre...">
-                            <div id="loader_busqueda_producto" class="loader"></div>
-                            <button type="button" class="btn btn-success btn-sm ml-3" id="btn_abrir_modal_nuevo_producto_almacen">
-                                <i class="fa fa-plus"></i> Nuevo Producto en Almacén
-                            </button>
+                        <div class="form-row align-items-center mb-3">
+                            <div class="col-auto">
+                                <label for="producto_busqueda" class="sr-only">Buscar Producto (Autocompletar):</label>
+                                <input type="text" class="form-control form-control-sm" id="producto_busqueda" placeholder="Autocompletar por código o nombre...">
+                            </div>
+                            <div class="col-auto">
+                                <div id="loader_busqueda_producto" class="loader"></div>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-info btn-sm" id="btn_abrir_modal_buscar_producto_almacen">
+                                    <i class="fas fa-search-plus"></i> Buscar en Almacén
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-success btn-sm" id="btn_abrir_modal_nuevo_producto_almacen">
+                                    <i class="fa fa-plus"></i> Nuevo Producto en Almacén
+                                </button>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table id="tabla_productos_compra" class="table table-bordered table-sm">
                                 <thead>
                                     <tr>
-                                        <th><center>#</center></th>
-                                        <th>Producto (Código)</th>
-                                        <th>Cantidad <span class="text-danger">*</span></th>
-                                        <th>Precio Compra Unit. <span class="text-danger">*</span></th>
-                                        <th>Subtotal</th>
-                                        <th><center>Acción</center></th>
+                                        <th style="width: 5%;"><center>#</center></th>
+                                        <th style="width: 35%;">Producto (Código)</th>
+                                        <th style="width: 15%;">Cantidad <span class="text-danger">*</span></th>
+                                        <th style="width: 20%;">Precio Compra Unit. <span class="text-danger">*</span></th>
+                                        <th style="width: 15%;">Subtotal</th>
+                                        <th style="width: 10%;"><center>Acción</center></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -208,6 +221,49 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
     <!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
+
+<!-- MODAL PARA BUSCAR PRODUCTOS EN ALMACÉN -->
+<div class="modal fade" id="modal-buscar-producto-almacen" tabindex="-1" role="dialog" aria-labelledby="modalBuscarProductoAlmacenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document"> <!-- modal-xl para más espacio -->
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalBuscarProductoAlmacenLabel">Buscar y Seleccionar Productos del Almacén</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="filtro_productos_almacen_modal" placeholder="Filtrar por código, nombre...">
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table id="tabla_productos_almacen_modal" class="table table-sm table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th width="5%"><center><input type="checkbox" id="seleccionar_todo_almacen_modal" title="Seleccionar/Deseleccionar Todos"></center></th>
+                                <th width="15%">Código</th>
+                                <th>Nombre del Producto</th>
+                                <th width="10%"><center>Stock</center></th>
+                                <th width="15%"><center>Precio Venta (Alm.)</center></th>
+                                <th width="15%"><center>Precio Compra (Alm.)</center></th>
+                                <th width="10%"><center>Acción</center></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los productos se cargarán aquí vía AJAX -->
+                            <tr><td colspan="7" class="text-center">Cargando productos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn_anadir_seleccionados_compra_modal">
+                    <i class="fas fa-plus-circle"></i> Añadir Seleccionados a la Compra
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- MODAL PARA CREAR NUEVO PRODUCTO EN ALMACÉN (DESDE COMPRAS) -->
 <div class="modal fade" id="modal-nuevo-producto-almacen" tabindex="-1" role="dialog" aria-labelledby="modalNuevoProductoAlmacenLabel" aria-hidden="true">
@@ -289,289 +345,305 @@ $categorias_select_datos_almacen = $categoriaModel->getCategoriasByUsuarioId($id
 <script>
 $(document).ready(function () {
     // --- CONFIGURACIÓN INICIAL Y CARGA DE IVA POR DEFECTO ---
-    // Resumen: Al cargar la página, se obtiene la configuración de IVA por defecto del servidor
-    // y se actualizan los campos correspondientes en el formulario.
     function cargarConfigIVADefecto() {
         $.ajax({
-            url: "../app/controllers/compras/acciones_compras.php",
-            type: "POST",
-            data: { accion: "get_config_iva_defecto" },
-            dataType: "json",
+            url: "../app/controllers/compras/acciones_compras.php", type: "POST",
+            data: { accion: "get_config_iva_defecto" }, dataType: "json",
             success: function(response) {
                 if (response.status === 'success') {
-                    $('#aplica_iva_compra').val(response.aplica_iva).trigger('change'); // Trigger change para mostrar/ocultar porcentaje
+                    $('#aplica_iva_compra').val(response.aplica_iva).trigger('change');
                     if (response.aplica_iva == '1') {
                         $('#porcentaje_iva_compra').val(parseFloat(response.porcentaje_iva).toFixed(2));
                     }
-                } else {
-                    mostrarAlerta('Error Config IVA', response.message || 'No se pudo cargar config de IVA.', 'error');
-                }
+                } else { mostrarAlerta('Error Config IVA', response.message || 'No se pudo cargar config de IVA.', 'error'); }
             },
-            error: function() {
-                mostrarAlerta('Error Conexión', 'No se pudo obtener la configuración de IVA por defecto.', 'error');
-            }
+            error: function() { mostrarAlerta('Error Conexión', 'No se pudo obtener la configuración de IVA por defecto.', 'error'); }
         });
     }
-    cargarConfigIVADefecto(); // Cargar al inicio
+    cargarConfigIVADefecto();
 
     // --- MANEJO DINÁMICO DEL FORMULARIO DE IVA ---
-    // Resumen: Controla la visibilidad del campo de porcentaje de IVA y el botón para guardar
-    // la configuración por defecto, basado en si se aplica IVA o no.
     $('#aplica_iva_compra').change(function() {
         if ($(this).val() == '1') {
-            $('#fila_porcentaje_iva').slideDown();
-            $('#btn_guardar_config_iva').fadeIn();
+            $('#fila_porcentaje_iva').slideDown(); $('#btn_guardar_config_iva').fadeIn();
         } else {
-            $('#fila_porcentaje_iva').slideUp();
-            $('#porcentaje_iva_compra').val('0.00'); // Resetear si no aplica
+            $('#fila_porcentaje_iva').slideUp(); $('#porcentaje_iva_compra').val('0.00');
             $('#btn_guardar_config_iva').fadeOut();
         }
-        calcularTotalesCompra(); // Recalcular totales cuando cambia el estado del IVA
+        calcularTotalesCompra();
     });
-
-    $('#porcentaje_iva_compra').on('input change', function() {
-        calcularTotalesCompra(); // Recalcular si el porcentaje cambia manualmente
-    });
+    $('#porcentaje_iva_compra').on('input change', calcularTotalesCompra);
 
     // --- GUARDAR CONFIGURACIÓN DE IVA POR DEFECTO ---
-    // Resumen: Envía la configuración actual de IVA al servidor para guardarla como
-    // la opción por defecto para futuras compras.
     $('#btn_guardar_config_iva').click(function() {
-        var aplica = $('#aplica_iva_compra').val();
-        var porcentaje = $('#porcentaje_iva_compra').val();
-        
         $.ajax({
-            url: "../app/controllers/compras/acciones_compras.php",
-            type: "POST",
-            data: { 
-                accion: "guardar_config_iva_defecto",
-                aplica_iva: aplica,
-                porcentaje_iva: porcentaje
-            },
+            url: "../app/controllers/compras/acciones_compras.php", type: "POST",
+            data: { accion: "guardar_config_iva_defecto", aplica_iva: $('#aplica_iva_compra').val(), porcentaje_iva: $('#porcentaje_iva_compra').val() },
             dataType: "json",
             success: function(response) {
-                if (response.status === 'success') {
-                    mostrarAlerta('Configuración Guardada', response.message, 'success');
-                } else {
-                    mostrarAlerta('Error', response.message || 'No se pudo guardar la configuración.', 'error');
-                }
+                if (response.status === 'success') { mostrarAlerta('Configuración Guardada', response.message, 'success'); }
+                else { mostrarAlerta('Error', response.message || 'No se pudo guardar la configuración.', 'error'); }
             },
-            error: function() {
-                mostrarAlerta('Error Conexión', 'No se pudo guardar la configuración de IVA.', 'error');
-            }
+            error: function() { mostrarAlerta('Error Conexión', 'No se pudo guardar la configuración de IVA.', 'error');}
         });
     });
 
     // --- AUTOCOMPLETAR PARA BÚSQUEDA DE PRODUCTOS ---
-    // Resumen: Utiliza jQuery UI Autocomplete para buscar productos. Cuando se selecciona un
-    // producto, se llama a la función para añadirlo a la tabla de detalles.
-    var cacheProductos = {}; // Caché simple para evitar múltiples llamadas AJAX para el mismo término
+    var cacheProductos = {}; 
     $("#producto_busqueda").autocomplete({
         source: function(request, response) {
             var term = request.term;
-            if (term in cacheProductos && term.length > 0) { // Check if term has length before accessing cache
-                response(cacheProductos[term]);
-                return;
-            }
-            if (term.length < 2) { // No buscar si el término es muy corto
-                response([]);
-                return;
-            }
-            $('#loader_busqueda_producto').show(); // Mostrar loader
+            if (term in cacheProductos && term.length > 0) { response(cacheProductos[term]); return; }
+            if (term.length < 2) { response([]); return; }
+            $('#loader_busqueda_producto').show(); 
             $.ajax({
-                url: "../app/controllers/compras/acciones_compras.php",
-                type: "GET", // Autocomplete suele usar GET
-                dataType: "json",
-                data: {
-                    accion: "buscar_productos_compra",
-                    term: term
-                },
+                url: "../app/controllers/compras/acciones_compras.php", type: "GET", dataType: "json",
+                data: { accion: "buscar_productos_compra", term: term },
                 success: function(data) {
-                    $('#loader_busqueda_producto').hide();
-                    cacheProductos[term] = data; // Guardar en caché
-                    response(data);
+                    $('#loader_busqueda_producto').hide(); cacheProductos[term] = data; response(data);
                 },
-                error: function(){
-                    $('#loader_busqueda_producto').hide();
-                    response([]); // Array vacío en caso de error
-                }
+                error: function(){ $('#loader_busqueda_producto').hide(); response([]); }
             });
         },
-        minLength: 2, // Empezar a buscar después de 2 caracteres
+        minLength: 2, 
         select: function(event, ui) {
-            event.preventDefault(); // Evitar que el valor del input se llene con 'value' del item
-            if (ui.item) {
-                agregarProductoATabla(ui.item);
-                $(this).val(''); // Limpiar el input de búsqueda después de seleccionar
-            }
+            event.preventDefault(); 
+            if (ui.item) { agregarProductoATablaConAdvertencia(ui.item); $(this).val(''); }
             return false;
         },
-        focus: function(event, ui) {
-            // Evitar que el input se llene con el 'value' al pasar el mouse o teclado
-            event.preventDefault(); 
-        }
+        focus: function(event, ui) { event.preventDefault(); }
     }).data("ui-autocomplete")._renderItem = function(ul, item) {
-        // Personalizar cómo se muestra cada item en la lista de autocompletar
         return $("<li>")
-            .append("<div><b>" + sanear(item.nombre) + "</b> (" + sanear(item.codigo) + ")<br><small>Precio Sugerido: " + parseFloat(item.precio_compra_sugerido || 0).toFixed(2) + " | Stock: " + item.stock_actual + "</small></div>")
+            .append("<div><b>" + sanear(item.nombre) + "</b> (" + sanear(item.codigo) + ")<br><small>P.Compra Sug: " + parseFloat(item.precio_compra || 0).toFixed(2) + " | P.Venta: " + parseFloat(item.precio_venta || 0).toFixed(2) + " | Stock: " + item.stock + "</small></div>")
             .appendTo(ul);
     };
 
-    // --- LÓGICA DE LA TABLA DE DETALLE DE PRODUCTOS ---
-    // Resumen: Funciones para añadir, eliminar y actualizar productos en la tabla de detalle.
-    // También incluye el recálculo de subtotales y totales generales de la compra.
-    var contador_productos_tabla = 0;
-
-    function agregarProductoATabla(producto) {
-        // Verificar si el producto ya está en la tabla
-        if ($('#tabla_productos_compra tbody tr[data-id-producto="' + producto.id_producto + '"]').length > 0) {
-            mostrarAlerta('Producto ya Añadido', 'El producto "' + sanear(producto.nombre) + '" ya está en la lista. Puede modificar su cantidad.', 'warning');
-            return;
-        }
-
-        contador_productos_tabla++;
-        var precioSugerido = parseFloat(producto.precio_compra_sugerido || producto.precio_compra || 0).toFixed(2); // Usar precio_compra si no hay sugerido
-
-        var nuevaFila = `
-            <tr data-id-producto="${producto.id_producto}">
-                <td class="text-center align-middle">${contador_productos_tabla}</td>
-                <td class="align-middle">
-                    ${sanear(producto.nombre)} (${sanear(producto.codigo)})
-                    <input type="hidden" name="detalle_id_producto[]" value="${producto.id_producto}">
-                </td>
-                <td><input type="number" class="form-control form-control-sm cantidad-producto" name="detalle_cantidad[]" value="1" min="0.01" step="0.01" required></td>
-                <td><input type="number" class="form-control form-control-sm precio-producto" name="detalle_precio[]" value="${precioSugerido}" min="0" step="0.01" required></td>
-                <td class="text-right align-middle subtotal-producto">${precioSugerido}</td>
-                <td class="text-center align-middle">
-                    <button type="button" class="btn btn-danger btn-sm btn-eliminar-producto-tabla" title="Eliminar producto">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        
-        $('#fila_vacia_productos').hide(); // Ocultar mensaje de tabla vacía
-        $('#tabla_productos_compra tbody').append(nuevaFila);
-        calcularTotalesCompra();
-    }
-
-    // Evento para eliminar producto de la tabla
-    $('#tabla_productos_compra').on('click', '.btn-eliminar-producto-tabla', function() {
-        $(this).closest('tr').remove();
-        // Si la tabla queda vacía, mostrar mensaje
-        if ($('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').length === 0) {
-            $('#fila_vacia_productos').show();
-        }
-        // Re-enumerar filas
-        renumerarFilasProductos();
-        calcularTotalesCompra();
+    // --- LÓGICA PARA EL MODAL DE BUSCAR PRODUCTOS EN ALMACÉN ---
+    var productos_almacen_data_modal = []; 
+    $('#btn_abrir_modal_buscar_producto_almacen').click(function() {
+        $('#filtro_productos_almacen_modal').val(''); 
+        cargarProductosAlmacenModal(); 
+        $('#modal-buscar-producto-almacen').modal('show');
     });
 
-    // Evento para recalcular subtotal cuando cambia cantidad o precio
-    $('#tabla_productos_compra').on('input change', '.cantidad-producto, .precio-producto', function() {
+    function cargarProductosAlmacenModal() {
+        var tbody = $('#tabla_productos_almacen_modal tbody');
+        tbody.html('<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando productos...</td></tr>');
+        $.ajax({
+            url: "../app/controllers/compras/acciones_compras.php", type: "POST", 
+            data: { accion: "listar_productos_almacen_para_modal" }, dataType: "json",
+            success: function(response) {
+                tbody.empty(); productos_almacen_data_modal = []; 
+                if (response.status === 'success' && response.data && response.data.length > 0) {
+                    productos_almacen_data_modal = response.data; 
+                    mostrarProductosEnTablaModal(productos_almacen_data_modal);
+                } else {
+                    tbody.html('<tr><td colspan="7" class="text-center">' + (response.message || 'No hay productos en el almacén.') + '</td></tr>');
+                }
+                $('#seleccionar_todo_almacen_modal').prop('checked', false);
+            },
+            error: function() { tbody.html('<tr><td colspan="7" class="text-center">Error de conexión al cargar productos.</td></tr>');}
+        });
+    }
+    
+    function mostrarProductosEnTablaModal(datos) {
+        var tbody = $('#tabla_productos_almacen_modal tbody');
+        tbody.empty();
+        if (datos.length === 0) {
+            tbody.html('<tr><td colspan="7" class="text-center">No se encontraron productos.</td></tr>'); return;
+        }
+        datos.forEach(function(prod) {
+            var filaHtml = `
+                <tr data-id-producto-modal="${prod.id_producto}">
+                    <td class="text-center"><input type="checkbox" class="seleccionar_producto_almacen_modal" value="${prod.id_producto}"></td>
+                    <td>${sanear(prod.codigo)}</td>
+                    <td>${sanear(prod.nombre)}</td>
+                    <td class="text-center">${prod.stock}</td>
+                    <td class="text-center">${parseFloat(prod.precio_venta || 0).toFixed(2)}</td>
+                    <td class="text-center">${parseFloat(prod.precio_compra || 0).toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-xs btn-outline-primary btn-anadir-prod-individual-modal" title="Añadir este producto"><i class="fas fa-plus"></i></button>
+                    </td></tr>`;
+            tbody.append(filaHtml);
+        });
+    }
+
+    $('#filtro_productos_almacen_modal').on('keyup', function() {
+        var valorFiltro = $(this).val().toLowerCase();
+        if (!productos_almacen_data_modal.length) return;
+        var datosFiltrados = productos_almacen_data_modal.filter(function(prod) {
+            return (prod.codigo && prod.codigo.toLowerCase().includes(valorFiltro)) ||
+                   (prod.nombre && prod.nombre.toLowerCase().includes(valorFiltro));
+        });
+        mostrarProductosEnTablaModal(datosFiltrados);
+    });
+    
+    $('#seleccionar_todo_almacen_modal').click(function() {
+        $('#tabla_productos_almacen_modal tbody .seleccionar_producto_almacen_modal').prop('checked', $(this).prop('checked'));
+    });
+
+    $('#tabla_productos_almacen_modal tbody').on('click', '.btn-anadir-prod-individual-modal', function() {
+        var idProducto = $(this).closest('tr').data('id-producto-modal');
+        var productoSeleccionado = productos_almacen_data_modal.find(p => p.id_producto == idProducto);
+        if (productoSeleccionado) { agregarProductoATablaConAdvertencia(productoSeleccionado); }
+    });
+
+    $('#btn_anadir_seleccionados_compra_modal').click(function() {
+        var algunoAnadido = false;
+        $('#tabla_productos_almacen_modal tbody .seleccionar_producto_almacen_modal:checked').each(function() {
+            var idProducto = $(this).val();
+            var productoSeleccionado = productos_almacen_data_modal.find(p => p.id_producto == idProducto);
+            if (productoSeleccionado) { agregarProductoATablaConAdvertencia(productoSeleccionado); algunoAnadido = true;}
+        });
+        if (algunoAnadido) { $('#modal-buscar-producto-almacen').modal('hide'); } 
+        else { mostrarAlerta('Sin Selección', 'No has seleccionado ningún producto para añadir.', 'info');}
+        $('#seleccionar_todo_almacen_modal').prop('checked', false);
+    });
+
+    // --- LÓGICA DE LA TABLA DE DETALLE DE PRODUCTOS (COMPRA) ---
+    var contador_productos_tabla = 0;
+    function agregarProductoATabla(producto, precioCompraInicial) {
+        contador_productos_tabla++;
+        var precioVentaAlmacen = parseFloat(producto.precio_venta || 0).toFixed(2);
+        var nuevaFila = `
+            <tr data-id-producto="${producto.id_producto}" data-precio-venta-almacen="${precioVentaAlmacen}">
+                <td class="text-center align-middle">${contador_productos_tabla}</td>
+                <td class="align-middle">${sanear(producto.nombre)} (${sanear(producto.codigo)})<input type="hidden" name="detalle_id_producto[]" value="${producto.id_producto}"></td>
+                <td><input type="number" class="form-control form-control-sm cantidad-producto" value="1" min="0.01" step="0.01" required></td>
+                <td><input type="number" class="form-control form-control-sm precio-compra-unitario-tabla" value="${precioCompraInicial}" min="0" step="0.01" required></td>
+                <td class="text-right align-middle subtotal-producto">${precioCompraInicial}</td>
+                <td class="text-center align-middle"><button type="button" class="btn btn-danger btn-sm btn-eliminar-producto-tabla" title="Eliminar"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        $('#fila_vacia_productos').hide();
+        $('#tabla_productos_compra tbody').append(nuevaFila);
+        $('#tabla_productos_compra tbody tr[data-id-producto="' + producto.id_producto + '"]').find('.precio-compra-unitario-tabla').trigger('change');
+        calcularTotalesCompra();
+    }
+    
+    function agregarProductoATablaConAdvertencia(productoOriginal) {
+        if ($('#tabla_productos_compra tbody tr[data-id-producto="' + productoOriginal.id_producto + '"]').length > 0) {
+            mostrarAlerta('Producto ya Añadido', `El producto "${sanear(productoOriginal.nombre)}" ya está en la lista.`, 'warning'); return;
+        }
+        var precioCompraSugerido = parseFloat(productoOriginal.precio_compra || 0).toFixed(2); 
+        var precioVentaAlmacen = parseFloat(productoOriginal.precio_venta || 0).toFixed(2);
+        var productoParaTabla = JSON.parse(JSON.stringify(productoOriginal)); 
+        productoParaTabla.precio_venta_almacen = precioVentaAlmacen; 
+
+        if (parseFloat(precioCompraSugerido) >= parseFloat(precioVentaAlmacen) && parseFloat(precioVentaAlmacen) > 0) {
+            Swal.fire({
+                title: 'Advertencia de Precio',
+                html: `El P.Compra sugerido para "${sanear(productoParaTabla.nombre)}" (<b>${precioCompraSugerido}</b>) es >= a su P.Venta en almacén (<b>${precioVentaAlmacen}</b>).<br>¿Añadir con este P.Compra?`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, añadir', cancelButtonText: 'No, corregir'
+            }).then((result) => {
+                if (result.isConfirmed) { agregarProductoATabla(productoParaTabla, precioCompraSugerido); }
+                else { mostrarAlerta('Acción Cancelada', 'Producto no añadido.', 'info');}
+            });
+        } else { agregarProductoATabla(productoParaTabla, precioCompraSugerido); }
+    }
+
+    $('#tabla_productos_compra').on('click', '.btn-eliminar-producto-tabla', function() {
+        $(this).closest('tr').remove();
+        if ($('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').length === 0) { $('#fila_vacia_productos').show(); }
+        renumerarFilasProductos(); calcularTotalesCompra();
+    });
+
+    $('#tabla_productos_compra').on('input change', '.cantidad-producto, .precio-compra-unitario-tabla', function(event) {
         var fila = $(this).closest('tr');
         var cantidad = parseFloat(fila.find('.cantidad-producto').val()) || 0;
-        var precio = parseFloat(fila.find('.precio-producto').val()) || 0;
-        var subtotal = cantidad * precio;
-        fila.find('.subtotal-producto').text(subtotal.toFixed(2));
+        var precioCompraUnitario = parseFloat(fila.find('.precio-compra-unitario-tabla').val()) || 0;
+        fila.find('.subtotal-producto').text((cantidad * precioCompraUnitario).toFixed(2));
+        
+        if (event.type === 'change' && $(this).hasClass('precio-compra-unitario-tabla')) {
+            var precioVentaAlmacen = parseFloat(fila.attr('data-precio-venta-almacen')) || 0;
+            var inputPrecioActual = $(this);
+            if (precioCompraUnitario >= precioVentaAlmacen && precioVentaAlmacen > 0) {
+                if (inputPrecioActual.data('advertencia-mostrada-por-valor') == precioCompraUnitario.toFixed(2)) {
+                    calcularTotalesCompra(); return;
+                }
+                inputPrecioActual.data('advertencia-mostrada-por-valor', precioCompraUnitario.toFixed(2));
+                Swal.fire({
+                    title: 'Advertencia de Precio',
+                    html: `El P.Compra ingresado (<b>${precioCompraUnitario.toFixed(2)}</b>) es >= al P.Venta del producto (<b>${precioVentaAlmacen.toFixed(2)}</b>).<br>¿Continuar con este P.Compra?`,
+                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, continuar', cancelButtonText: 'No, corregir'
+                }).then((result) => {
+                    if (!result.isConfirmed) { inputPrecioActual.focus(); }
+                    inputPrecioActual.removeData('advertencia-mostrada-por-valor'); calcularTotalesCompra(); 
+                });
+            } else { inputPrecioActual.removeData('advertencia-mostrada-por-valor'); }
+        }
         calcularTotalesCompra();
     });
 
     function renumerarFilasProductos() {
         contador_productos_tabla = 0;
         $('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').each(function() {
-            contador_productos_tabla++;
-            $(this).find('td:first-child').text(contador_productos_tabla);
+            contador_productos_tabla++; $(this).find('td:first-child').text(contador_productos_tabla);
         });
     }
     
     // --- CÁLCULO DE TOTALES DE LA COMPRA ---
-    // Resumen: Calcula el subtotal neto, el monto de IVA y el total general de la compra
-    // basado en los productos añadidos y la configuración de IVA.
     function calcularTotalesCompra() {
         var subtotalNeto = 0;
         $('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').each(function() {
-            var subtotalProducto = parseFloat($(this).find('.subtotal-producto').text()) || 0;
-            subtotalNeto += subtotalProducto;
+            subtotalNeto += parseFloat($(this).find('.subtotal-producto').text()) || 0;
         });
         $('#display_subtotal_neto').text(subtotalNeto.toFixed(2));
-
         var aplicaIVA = $('#aplica_iva_compra').val() == '1';
         var porcentajeIVA = aplicaIVA ? (parseFloat($('#porcentaje_iva_compra').val()) || 0) : 0;
-        var montoIVA = 0;
-
-        if (aplicaIVA && porcentajeIVA > 0) {
-            montoIVA = subtotalNeto * (porcentajeIVA / 100);
-        }
+        var montoIVA = (aplicaIVA && porcentajeIVA > 0) ? (subtotalNeto * (porcentajeIVA / 100)) : 0;
         $('#display_monto_iva').text(montoIVA.toFixed(2));
-
-        var montoTotal = subtotalNeto + montoIVA;
-        $('#display_monto_total').text(montoTotal.toFixed(2));
+        $('#display_monto_total').text((subtotalNeto + montoIVA).toFixed(2));
     }
 
     // --- ENVÍO DEL FORMULARIO PRINCIPAL PARA REGISTRAR LA COMPRA ---
-    // Resumen: Recopila todos los datos del formulario (maestro y detalle), los valida
-    // y los envía al servidor para registrar la compra.
     $('#form-registrar-compra').submit(function(e) {
         e.preventDefault();
         $('#error_general_compra').hide().text('');
         $('#btn_registrar_compra_final').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Registrando...');
 
-        // Validaciones básicas del formulario maestro
         if (!$('#id_proveedor').val() || !$('#fecha_compra').val()) {
-            $('#error_general_compra').text('Debe seleccionar un proveedor y una fecha de compra.').show();
-            $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra');
-            return;
+            $('#error_general_compra').text('Debe seleccionar un proveedor y una fecha.').show();
+            $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra'); return;
         }
         if ($('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').length === 0) {
-            $('#error_general_compra').text('Debe agregar al menos un producto a la compra.').show();
-            $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra');
-            return;
+            $('#error_general_compra').text('Debe agregar al menos un producto.').show();
+            $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra'); return;
         }
-
         var datosMaestro = {
-            accion: "registrar_compra",
-            id_proveedor: $('#id_proveedor').val(),
-            nro_comprobante_proveedor: $('#nro_comprobante_proveedor').val(),
-            fecha_compra: $('#fecha_compra').val(),
-            aplica_iva_compra: $('#aplica_iva_compra').val(),
-            porcentaje_iva_compra: $('#porcentaje_iva_compra').val(),
+            accion: "registrar_compra", id_proveedor: $('#id_proveedor').val(),
+            nro_comprobante_proveedor: $('#nro_comprobante_proveedor').val(), fecha_compra: $('#fecha_compra').val(),
+            aplica_iva_compra: $('#aplica_iva_compra').val(), porcentaje_iva_compra: $('#porcentaje_iva_compra').val(),
             observaciones_compra: $('#observaciones_compra').val()
         };
-
         var productosDetalleArray = [];
         $('#tabla_productos_compra tbody tr').not('#fila_vacia_productos').each(function() {
             var fila = $(this);
             productosDetalleArray.push({
                 id_producto: fila.data('id-producto'),
                 cantidad: fila.find('.cantidad-producto').val(),
-                precio_unitario: fila.find('.precio-producto').val()
+                precio_unitario: fila.find('.precio-compra-unitario-tabla').val()
             });
         });
         datosMaestro.productos_detalle = JSON.stringify(productosDetalleArray); 
-
         $.ajax({
-            url: "../app/controllers/compras/acciones_compras.php",
-            type: "POST",
-            data: datosMaestro,
-            dataType: "json",
+            url: "../app/controllers/compras/acciones_compras.php", type: "POST", data: datosMaestro, dataType: "json",
             success: function(response) {
                 if (response.status === 'success') {
-                    mostrarAlerta('¡Compra Registrada!', response.message + (response.id_compra ? ' (ID: '+response.id_compra+')' : ''), 'success', function() {
+                    mostrarAlerta('¡Compra Registrada!', response.message + (response.id_compra ? ` (ID: ${response.id_compra})` : ''), 'success', function() {
                         window.location.href = "<?php echo $URL; ?>/compras/"; 
                     });
                 } else {
-                    $('#error_general_compra').text(response.message || 'Error desconocido al registrar la compra.').show();
-                    mostrarAlerta('Error al Registrar', response.message || 'No se pudo registrar la compra.', 'error');
+                    $('#error_general_compra').text(response.message || 'Error desconocido.').show();
+                    mostrarAlerta('Error al Registrar', response.message || 'No se pudo registrar.', 'error');
                 }
             },
             error: function() {
-                $('#error_general_compra').text('Error de conexión con el servidor.').show();
-                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor para registrar la compra.', 'error');
+                $('#error_general_compra').text('Error de conexión.').show();
+                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
             },
-            complete: function() {
-                 $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra');
-            }
+            complete: function() { $('#btn_registrar_compra_final').prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Compra');}
         });
     });
     
@@ -580,91 +652,53 @@ $(document).ready(function () {
         $('#form-nuevo-producto-almacen-modal')[0].reset(); 
         $('#preview_imagen_prod_almacen_modal').hide().attr('src', '#');
         $('#error_message_prod_almacen_modal').hide().text('');
-        var today = new Date().toISOString().split('T')[0];
-        $('#fecha_ingreso_prod_almacen_modal').val(today);
+        $('#fecha_ingreso_prod_almacen_modal').val(new Date().toISOString().split('T')[0]);
         $('#modal-nuevo-producto-almacen').modal('show');
     });
-
     $('#imagen_prod_almacen_modal').change(function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) { $('#preview_imagen_prod_almacen_modal').attr('src', e.target.result).show(); }
-            reader.readAsDataURL(file);
-        } else { $('#preview_imagen_prod_almacen_modal').hide(); }
+        const file = this.files[0]; if (file) { const reader = new FileReader();
+        reader.onload = function(e) { $('#preview_imagen_prod_almacen_modal').attr('src', e.target.result).show(); }
+        reader.readAsDataURL(file); } else { $('#preview_imagen_prod_almacen_modal').hide(); }
     });
-    
     $('#modal-nuevo-producto-almacen').on('hidden.bs.modal', function () {
         $('#form-nuevo-producto-almacen-modal')[0].reset();
         $('#preview_imagen_prod_almacen_modal').hide().attr('src', '#');
         $('#error_message_prod_almacen_modal').hide().text('');
     });
-
     $('#form-nuevo-producto-almacen-modal').submit(function(e) {
-        e.preventDefault();
-        $('#error_message_prod_almacen_modal').hide().text('');
+        e.preventDefault(); $('#error_message_prod_almacen_modal').hide().text('');
         var formData = new FormData(this);
         $('#btn_guardar_nuevo_prod_almacen_modal').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-
         $.ajax({
-            url: "../app/controllers/almacen/create_producto.php", 
-            type: "POST",
-            data: formData,
-            contentType: false,
-            processData: false,
-            dataType: "json",
+            url: "../app/controllers/almacen/create_producto.php", type: "POST", data: formData,
+            contentType: false, processData: false, dataType: "json",
             success: function(response) {
                 if (response.status === 'success') {
                     $('#modal-nuevo-producto-almacen').modal('hide');
                     mostrarAlerta('Producto Guardado', response.message, 'success');
-                    
                     if (response.new_data && response.new_data.id_producto) {
-                        var productoParaTabla = {
-                            id_producto: response.new_data.id_producto,
-                            codigo: response.new_data.codigo,
-                            nombre: response.new_data.nombre,
-                            precio_compra_sugerido: response.new_data.precio_compra, 
-                            stock_actual: response.new_data.stock 
-                        };
-                        agregarProductoATabla(productoParaTabla);
-                    } else {
-                         mostrarAlerta('Producto Creado', 'El producto ha sido creado. Búscalo para añadirlo a la compra.', 'info');
-                    }
-                } else {
-                    $('#error_message_prod_almacen_modal').text(response.message || 'Error desconocido.').show();
-                }
+                        agregarProductoATablaConAdvertencia(response.new_data); // Usa la función con advertencia
+                    } else { mostrarAlerta('Producto Creado', 'El producto fue creado. Búscalo para añadirlo.', 'info');}
+                } else { $('#error_message_prod_almacen_modal').text(response.message || 'Error.').show(); }
             },
-            error: function() {
-                $('#error_message_prod_almacen_modal').text('Error de conexión con el servidor.').show();
-            },
-            complete: function() {
-                $('#btn_guardar_nuevo_prod_almacen_modal').prop('disabled', false).html('Guardar Producto');
-            }
+            error: function() { $('#error_message_prod_almacen_modal').text('Error de conexión.').show(); },
+            complete: function() { $('#btn_guardar_nuevo_prod_almacen_modal').prop('disabled', false).html('Guardar Producto');}
         });
     });
 
     // --- FUNCIÓN GENERAL PARA MOSTRAR ALERTAS ---
     function mostrarAlerta(title, text, icon, callback) {
         Swal.fire({
-            title: title, text: text, icon: icon,
-            timer: icon === 'success' ? 2500 : 4000,
-            showConfirmButton: icon !== 'success',
-            allowOutsideClick: false, allowEscapeKey: false
-        }).then((result) => {
-            if (callback && typeof callback === 'function') {
-                callback();
-            }
-        });
+            title: title, text: text, icon: icon, timer: icon === 'success' ? 2500 : 4000,
+            showConfirmButton: icon !== 'success', allowOutsideClick: false, allowEscapeKey: false
+        }).then((result) => { if (callback && typeof callback === 'function') { callback(); }});
     }
     
     // --- FUNCIÓN PARA SANEAR STRINGS EN JS (básica, para mostrar en UI) ---
     function sanear(str) {
         if (typeof str !== 'string') return '';
-        var map = {
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-        };
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
         return str.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
-
 });
 </script>
