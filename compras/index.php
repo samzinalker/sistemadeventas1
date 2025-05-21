@@ -1,34 +1,37 @@
 <?php
 include ('../app/config.php');
-include ('../layout/sesion.php');
-include ('../layout/parte1.php');
-include ('../app/controllers/compras/listado_de_compras.php');
+include ('../app/utils/funciones_globales.php');
+include ('../layout/sesion.php'); // Verifica sesión y roles si es necesario
+include ('../layout/parte1.php'); // Cabecera HTML, CSS, y menú
 
-// Incluir verificación explícita de usuario
-$id_usuario_actual = $_SESSION['id_usuario'];
+// Para el menú lateral activo (opcional, si tu layout/parte1.php lo usa)
+// $modulo_abierto = 'compras';
+// $pagina_activa = 'compras_listado';
 
-// Si no existe verificacion_usuario.php, está incluido en listado_de_compras.php
-// Esto garantiza que solo se muestren las compras del usuario actual
+// --- Obtener listado de compras (simplificado, el controlador AJAX hará el trabajo pesado) ---
+// En esta página principal, podríamos cargar las compras directamente o, para mantener la consistencia
+// con un enfoque AJAX, la tabla podría llenarse vía AJAX al cargar. Por ahora, la dejaremos
+// para que el controlador AJAX la pueble.
 ?>
 
 <!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0">
-                        Mis Compras
-                        <a href="create.php" class="btn btn-primary">
-                            <i class="fa fa-plus"></i> Registrar nueva compra
+                <h1 class="m-0">Listado de Compras
+                        <a href="create.php" class="btn btn-primary ml-2"> <!-- Añadido ml-2 para un pequeño margen -->
+                           <i class="fa fa-plus"></i> Registrar Nueva Compra
+                        </a>
+                        <a href="reporte_compras_pdf.php" class="btn btn-danger ml-2" target="_blank">
+                           <i class="fas fa-file-pdf"></i> Generar Reporte PDF
                         </a>
                     </h1>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                </div>
+            </div>
+        </div>
     </div>
-    <!-- /.content-header -->
 
     <!-- Main content -->
     <div class="content">
@@ -37,270 +40,28 @@ $id_usuario_actual = $_SESSION['id_usuario'];
                 <div class="col-md-12">
                     <div class="card card-outline card-primary">
                         <div class="card-header">
-                            <h3 class="card-title">Compras registradas</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
-                                </button>
-                            </div>
+                            <h3 class="card-title">Compras Registradas</h3>
                         </div>
-
-                        <div class="card-body" style="display: block;">
-                            <div class="table table-responsive">
-                                <table id="example1" class="table table-bordered table-striped table-sm">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="tabla_compras" class="table table-bordered table-striped table-sm">
                                     <thead>
                                     <tr>
-                                        <th><center>Nro</center></th>
-                                        <th><center>Nro de compra</center></th>
-                                        <th><center>Producto</center></th>
-                                        <th><center>Fecha</center></th>
-                                        <th><center>Proveedor</center></th>
-                                        <th><center>Comprobante</center></th>
-                                        <th><center>Precio</center></th>
-                                        <th><center>Cantidad</center></th>
-                                        <th><center>Total</center></th>
+                                        <th><center>ID</center></th>
+                                        <th>Nro. Comprobante Prov.</th>
+                                        <th>Proveedor</th>
+                                        <th>Fecha Compra</th>
+                                        <th>Usuario Registra</th>
+                                        <th>Subtotal Neto</th>
+                                        <th>IVA (%)</th>
+                                        <th>Monto IVA</th>
+                                        <th>Monto Total</th>
+                                        <th>Estado</th>
                                         <th><center>Acciones</center></th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <?php
-                                    $contador = 0;
-                                    foreach ($compras_datos as $compras_dato){
-                                        $id_compra = $compras_dato['id_compra']; 
-                                        $nro_compra = $compras_dato['nro_compra'];
-                                        $precio_compra = $compras_dato['precio_compra'];
-                                        
-                                        $cantidad = $compras_dato['cantidad'];
-                                        $total = floatval($precio_compra) * intval($cantidad);
-                                        $fecha_formateada = date('d/m/Y', strtotime($compras_dato['fecha_compra']));
-                                        ?>
-                                        <tr>
-                                            <td><center><?php echo $contador = $contador + 1;?></center></td>
-                                            <td><center><?php echo $compras_dato['nro_compra'];?></center></td>
-                                            <td>
-                                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
-                                                        data-target="#modal-producto<?php echo $id_compra;?>">
-                                                    <?php echo $compras_dato['nombre_producto'];?>
-                                                </button>
-                                                <!-- modal para visualizar datos de los productos -->
-                                                <div class="modal fade" id="modal-producto<?php echo $id_compra;?>">
-                                                    <div class="modal-dialog modal-lg">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header" style="background-color: #07b0d6;color: white">
-                                                                <h4 class="modal-title">Datos del producto</h4>
-                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                    <span aria-hidden="true">&times;</span>
-                                                                </button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <div class="row">
-                                                                    <div class="col-md-9">
-                                                                        <div class="row">
-                                                                            <div class="col-md-2">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Código</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['codigo'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-4">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Nombre del producto</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['nombre_producto'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-6">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Descripción</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['descripcion'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row">
-                                                                            <div class="col-md-3">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Stock</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['stock'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Stock mínimo</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['stock_minimo'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Stock máximo</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['stock_maximo'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Fecha de Ingreso</label>
-                                                                                    <input type="text" value="<?php echo date('d/m/Y', strtotime($compras_dato['fecha_ingreso']));?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row">
-                                                                            <div class="col-md-4">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Precio Compra</label>
-                                                                                    <input type="text" value="$<?php echo number_format($compras_dato['precio_compra_producto'],2);?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-4">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Precio Venta</label>
-                                                                                    <input type="text" value="$<?php echo number_format($compras_dato['precio_venta_producto'],2);?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-4">
-                                                                                <div class="form-group">
-                                                                                    <label for="">Categoría</label>
-                                                                                    <input type="text" value="<?php echo $compras_dato['nombre_categoria'];?>" class="form-control" disabled>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-md-3">
-                                                                        <div class="form-group">
-                                                                            <label for="">Imagen del producto</label>
-                                                                            <img src="<?php echo $URL."/almacen/img_productos/".$compras_dato['imagen'];?>" width="100%" alt="Imagen del producto">
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                                                            </div>
-                                                        </div>
-                                                        <!-- /.modal-content -->
-                                                    </div>
-                                                    <!-- /.modal-dialog -->
-                                                </div>
-                                                <!-- /.modal -->
-                                            </td>
-                                            <td><center><?php echo $fecha_formateada;?></center></td>
-                                            <td>
-                                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal"
-                                                        data-target="#modal-proveedor<?php echo $id_compra;?>">
-                                                    <?php echo $compras_dato['nombre_proveedor'];?>
-                                                </button>
-
-                                                <!-- modal para visualizar datos de los proveedores -->
-                                                <div class="modal fade" id="modal-proveedor<?php echo $id_compra;?>">
-                                                    <div class="modal-dialog">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header" style="background-color: #07b0d6;color: white">
-                                                                <h4 class="modal-title">Datos del proveedor</h4>
-                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                    <span aria-hidden="true">&times;</span>
-                                                                </button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Nombre</label>
-                                                                            <input type="text" value="<?php echo $compras_dato['nombre_proveedor'];?>" class="form-control" disabled>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Celular</label>
-                                                                            <div class="input-group">
-                                                                                <input type="text" value="<?php echo $compras_dato['celular_proveedor'];?>" class="form-control" disabled>
-                                                                                <div class="input-group-append">
-                                                                                    <a href="https://wa.me/591<?php echo $compras_dato['celular_proveedor'];?>" target="_blank" class="btn btn-success">
-                                                                                        <i class="fab fa-whatsapp"></i>
-                                                                                    </a>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Teléfono</label>
-                                                                            <input type="text" value="<?php echo $compras_dato['telefono_proveedor'];?>" class="form-control" disabled>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Empresa</label>
-                                                                            <input type="text" value="<?php echo $compras_dato['empresa'];?>" class="form-control" disabled>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Email</label>
-                                                                            <div class="input-group">
-                                                                                <input type="text" value="<?php echo $compras_dato['email_proveedor'];?>" class="form-control" disabled>
-                                                                                <div class="input-group-append">
-                                                                                    <a href="mailto:<?php echo $compras_dato['email_proveedor'];?>" class="btn btn-primary">
-                                                                                        <i class="far fa-envelope"></i>
-                                                                                    </a>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <label for="">Dirección</label>
-                                                                            <input type="text" value="<?php echo $compras_dato['direccion_proveedor'];?>" class="form-control" disabled>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                                                            </div>
-                                                        </div>
-                                                        <!-- /.modal-content -->
-                                                    </div>
-                                                    <!-- /.modal-dialog -->
-                                                </div>
-                                                <!-- /.modal -->
-                                            </td>
-                                            <td><center><?php echo $compras_dato['comprobante'];?></center></td>
-                                            <td><center>$<?php echo number_format(floatval($precio_compra), 2);?></center></td>
-                                            <td><center><?php echo $cantidad;?></center></td>
-                                            <td><center><strong>$<?php echo number_format($total, 2);?></strong></center></td>
-                                            <td>
-                                            <center>
-    <div class="btn-group">
-        <a href="show.php?id=<?php echo $id_compra; ?>" class="btn btn-info btn-sm">
-            <i class="fa fa-eye"></i>
-        </a>
-        <a href="update.php?id=<?php echo $id_compra; ?>" class="btn btn-success btn-sm">
-            <i class="fa fa-pencil-alt"></i>
-        </a>
-        <!-- Reemplaza el botón de borrar existente por este -->
-        <!-- Botón Borrar - Con implementación directa del evento onClick -->
-        <!-- Verifica que cada botón Borrar tenga estos atributos correctos -->
-        <button type="button" class="btn btn-danger btn-sm boton-eliminar" 
-                        data-id="<?php echo $id_compra; ?>" 
-                        data-nro="<?php echo $nro_compra; ?>">
-                    <i class="fa fa-trash"></i>
-                </button>
-
-<script>
-    // Asociar el evento al botón específico de esta compra
-    document.getElementById("btn_borrar_<?php echo $id_compra; ?>").addEventListener("click", function() {
-        eliminarCompra(<?php echo $id_compra; ?>, <?php echo $nro_compra; ?>);
-    });
-</script>
-    </div>
-</center>
-                                            </td>
-                                        </tr>
-                                        <?php
-                                    }
-                                    ?>
+                                        <!-- Los datos se cargarán vía AJAX -->
                                     </tbody>
                                 </table>
                             </div>
@@ -308,248 +69,335 @@ $id_usuario_actual = $_SESSION['id_usuario'];
                     </div>
                 </div>
             </div>
-            <!-- /.row -->
-        </div><!-- /.container-fluid -->
+        </div>
     </div>
-    <!-- /.content -->
+
+    <!-- MODAL PARA VER DETALLE DE COMPRA -->
+    <div class="modal fade" id="modal-ver-detalle-compra" tabindex="-1" role="dialog" aria-labelledby="modalVerDetalleCompraLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalVerDetalleCompraLabel">Detalle de Compra Nro: <span id="detalle_nro_compra_modal"></span></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div id="info_compra_maestro">
+                        <!-- Aquí se mostrarán datos del maestro de la compra -->
+                    </div>
+                    <hr>
+                    <h5>Productos:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_detalle_productos_compra">
+                                <!-- Detalles de productos se cargarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-info" id="btn_imprimir_compra_modal"><i class="fa fa-print"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 <!-- /.content-wrapper -->
-
-
-
-<!-- Spinner para indicar carga -->
-<div class="loading-overlay" id="loading-overlay" style="display: none;">
-    <div class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Cargando...</span>
-        </div>
-        <p class="mt-2 text-white">Procesando, por favor espere...</p>
-    </div>
-</div>
-
-<style>
-/* Estilos para el spinner de carga */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.spinner-container {
-    text-align: center;
-}
-
-.spinner-border {
-    width: 3rem;
-    height: 3rem;
-}
-
-/* Mejorar apariencia de botones */
-.boton-eliminar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: all 0.2s;
-}
-</style>
-
-<script>
-// Esta función se ejecutará cuando el documento esté listo
-$(document).ready(function() {
-    // Añadir evento click a todos los botones con clase boton-eliminar
-    $('.boton-eliminar').on('click', function() {
-        var idCompra = $(this).data('id');
-        var nroCompra = $(this).data('nro');
-        
-        console.log("Botón borrar presionado - ID: " + idCompra + ", NRO: " + nroCompra);
-        
-        // Confirmar antes de eliminar
-        Swal.fire({
-            title: '¿Está seguro?',
-            text: "¿Realmente desea eliminar la compra #" + nroCompra + "? Esta acción no se puede deshacer.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Mostrar spinner
-                $('#loading-overlay').show();
-                
-                // Realizar petición AJAX para eliminar
-                $.ajax({
-                    url: '../app/controllers/compras/borrar_compra_ajax.php',
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        id_compra: idCompra,
-                        nro_compra: nroCompra
-                    },
-                    success: function(response) {
-                        // Ocultar spinner
-                        $('#loading-overlay').hide();
-                        
-                        if (response.success) {
-                            // Mostrar mensaje de éxito y recargar página
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Compra eliminada',
-                                text: response.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            // Mostrar mensaje de error
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.message || 'No se pudo eliminar la compra'
-                            });
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        // Ocultar spinner
-                        $('#loading-overlay').hide();
-                        
-                        // Mostrar mensaje de error
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de conexión',
-                            text: 'No se pudo procesar su solicitud. Error: ' + error
-                        });
-                        console.error('Error AJAX:', error);
-                        console.error('Detalles:', xhr.responseText);
-                    }
-                });
-            }
-        });
-    });
-});
-</script>
-
-<style>
-/* Estilos para el spinner de carga */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.spinner-container {
-    text-align: center;
-}
-
-.spinner-border {
-    width: 3rem;
-    height: 3rem;
-}
-
-/* Mejorar apariencia de botones */
-.boton-eliminar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: all 0.2s;
-}
-</style>
-
 
 <?php include ('../layout/mensajes.php'); ?>
 <?php include ('../layout/parte2.php'); ?>
 
 <script>
-  <!-- Añade esto dentro de las etiquetas <script> existentes al final del archivo -->
-// Función para confirmar y eliminar compras
-// Función para eliminar compra directamente desde compras/index.php mediante AJAX
-function eliminarCompra(idCompra, nroCompra) {
-    console.log("Iniciando proceso de eliminación para compra #" + nroCompra);
-    
-    // Usar SweetAlert2 para confirmación
-    Swal.fire({
-        title: '¿Está seguro?',
-        text: "¿Realmente desea eliminar la compra #" + nroCompra + "? Esta acción no se puede deshacer.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            console.log("Confirmación recibida, procediendo a eliminar");
-            
-            // Mostrar el spinner de carga
-            document.getElementById('loading-overlay').style.display = 'flex';
-            
-            // Crear un objeto FormData para enviar los datos
-            var formData = new FormData();
-            formData.append('id_compra', idCompra);
-            formData.append('nro_compra', nroCompra);
-            
-            // Crear y configurar la solicitud fetch
-            fetch('../app/controllers/compras/borrar_compra_ajax.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Respuesta de red no fue ok');
+$(document).ready(function () {
+    var tablaCompras = $("#tabla_compras").DataTable({
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+            "url": "../app/controllers/compras/acciones_compras.php",
+            "type": "POST",
+            "data": { accion: "listar_compras" } // Acción para el controlador
+        },
+        "columns": [
+            { "data": "id_compra", "className": "text-center" },
+            { "data": "nro_comprobante_proveedor" },
+            { "data": "nombre_proveedor" }, // Asumiendo que el backend hace JOIN con tb_proveedores
+            { "data": "fecha_compra" },
+            { "data": "nombre_usuario_registra" }, // Asumiendo JOIN con tb_usuarios
+            { "data": "subtotal_neto", "className": "text-right", "render": $.fn.dataTable.render.number(',', '.', 2, '') },
+            { "data": "porcentaje_iva", "className": "text-center", "render": function(data) { return parseFloat(data).toFixed(2) + '%';} },
+            { "data": "monto_iva", "className": "text-right", "render": $.fn.dataTable.render.number(',', '.', 2, '') },
+            { "data": "monto_total", "className": "text-right", "render": $.fn.dataTable.render.number(',', '.', 2, '') },
+            { "data": "estado", "className": "text-center", "render": function(data){
+                let badgeClass = data === 'ANULADA' ? 'badge-danger' : 'badge-success';
+                return '<span class="badge '+badgeClass+'">'+data+'</span>';
+            }},
+            { "data": null, "className": "text-center", "orderable": false, "searchable": false, "render": function (data, type, row) {
+                var botones = '<div class="btn-group">';
+                botones += '<button type="button" class="btn btn-info btn-xs btn-ver-detalle" data-id="'+row.id_compra+'" title="Ver Detalle"><i class="fa fa-eye"></i></button>';
+                if (row.estado !== 'ANULADA') {
+                    botones += '<button type="button" class="btn btn-warning btn-xs btn-anular-compra" data-id="'+row.id_compra+'" title="Anular Compra"><i class="fa fa-ban"></i></button>';
                 }
-                return response.json();
-            })
-            .then(data => {
-                // Ocultar el spinner de carga
-                document.getElementById('loading-overlay').style.display = 'none';
-                
-                if (data.success) {
-                    // Mostrar mensaje de éxito
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Compra eliminada',
-                        text: data.message || 'Compra eliminada correctamente',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        // Recargar la página para actualizar la lista de compras
-                        window.location.reload();
-                    });
+                // Podrías añadir un botón de imprimir aquí también o usar el del modal
+                botones += '</div>';
+                return botones;
+            }}
+        ],
+        "pageLength": 10,
+        "language": { /* ... tu config de idioma DataTables ... */ 
+            "emptyTable": "No hay compras registradas",
+            "info": "Mostrando _START_ a _END_ de _TOTAL_ compras",
+            // ... más traducciones ...
+        },
+        "responsive": true, "lengthChange": true, "autoWidth": false,
+        "buttons": ["copy", "excel", "pdf", "print", "colvis"] // Configura los botones que necesites
+    }).buttons().container().appendTo('#tabla_compras_wrapper .col-md-6:eq(0)');
+
+    function mostrarAlerta(title, text, icon, callback) {
+        Swal.fire({
+            title: title, text: text, icon: icon,
+            timer: icon === 'success' ? 2500 : 4000,
+            showConfirmButton: icon !== 'success',
+            allowOutsideClick: false, allowEscapeKey: false
+        }).then((result) => {
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
+        });
+    }
+
+    // --- Lógica para VER DETALLE de Compra ---
+    $('#tabla_compras tbody').on('click', '.btn-ver-detalle', function () {
+        var id_compra = $(this).data('id');
+        $('#detalle_nro_compra_modal').text(id_compra); // O el nro de comprobante si lo prefieres
+        $('#info_compra_maestro').html('Cargando datos del maestro...');
+        $('#tabla_detalle_productos_compra').html('<tr><td colspan="4" class="text-center">Cargando productos...</td></tr>');
+
+        $.ajax({
+            url: "../app/controllers/compras/acciones_compras.php",
+            type: "POST",
+            data: { accion: "get_detalle_compra", id_compra: id_compra },
+            dataType: "json",
+            success: function(response) {
+                if (response.status === 'success' && response.data_maestro && response.data_detalle) {
+                    let maestro = response.data_maestro;
+                    let infoHtml = `
+                        <p><strong>Proveedor:</strong> ${maestro.nombre_proveedor || 'N/A'}</p>
+                        <p><strong>Nro. Comprobante Prov.:</strong> ${maestro.nro_comprobante_proveedor || 'N/A'}</p>
+                        <p><strong>Fecha Compra:</strong> ${maestro.fecha_compra}</p>
+                        <p><strong>Registrado por:</strong> ${maestro.nombre_usuario_registra || 'N/A'}</p>
+                        <p><strong>Observaciones:</strong> ${maestro.observaciones || 'Ninguna'}</p>
+                        <p><strong>Aplica IVA:</strong> ${maestro.aplica_iva == 1 ? 'Sí' : 'No'} | <strong>% IVA:</strong> ${parseFloat(maestro.porcentaje_iva).toFixed(2)}%</p>
+                        <p><strong>Subtotal Neto:</strong> ${parseFloat(maestro.subtotal_neto).toFixed(2)}</p>
+                        <p><strong>Monto IVA:</strong> ${parseFloat(maestro.monto_iva).toFixed(2)}</p>
+                        <p><strong>TOTAL COMPRA:</strong> ${parseFloat(maestro.monto_total).toFixed(2)}</p>
+                    `;
+                    $('#info_compra_maestro').html(infoHtml);
+
+                    let detalleHtml = '';
+                    if (response.data_detalle.length > 0) {
+                        response.data_detalle.forEach(function(item){
+                            detalleHtml += `
+                                <tr>
+                                    <td>${item.nombre_producto}</td>
+                                    <td class="text-center">${parseFloat(item.cantidad).toFixed(2)}</td>
+                                    <td class="text-right">${parseFloat(item.precio_compra_unitario).toFixed(2)}</td>
+                                    <td class="text-right">${parseFloat(item.subtotal).toFixed(2)}</td>
+                                </tr>`;
+                        });
+                    } else {
+                        detalleHtml = '<tr><td colspan="4" class="text-center">No hay productos en esta compra.</td></tr>';
+                    }
+                    $('#tabla_detalle_productos_compra').html(detalleHtml);
+                    $('#modal-ver-detalle-compra').modal('show');
                 } else {
-                    // Mostrar mensaje de error
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'No se pudo eliminar la compra'
-                    });
+                    mostrarAlerta('Error', response.message || 'No se pudo cargar el detalle.', 'error');
                 }
-            })
-            .catch(error => {
-                // Ocultar el spinner de carga
-                document.getElementById('loading-overlay').style.display = 'none';
-                
-                console.error('Error:', error);
-                // Mostrar mensaje de error
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de conexión',
-                    text: 'No se pudo procesar su solicitud. Por favor, inténtelo de nuevo.'
-                });
-            });
-        }
+            },
+            error: function() {
+                mostrarAlerta('Error de Conexión', 'No se pudo obtener el detalle de la compra.', 'error');
+            }
+        });
     });
-}
+
+    // --- Lógica para ANULAR Compra ---
+    $('#tabla_compras tbody').on('click', '.btn-anular-compra', function () {
+        var id_compra = $(this).data('id');
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: "Esta acción anulará la compra Nro. " + id_compra + " y revertirá el stock de los productos. ¡No podrá deshacer esto!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, ¡Anular Compra!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "../app/controllers/compras/acciones_compras.php",
+                    type: "POST",
+                    data: { accion: "anular_compra", id_compra: id_compra },
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            mostrarAlerta('¡Anulada!', response.message, 'success', function() {
+                                tablaCompras.ajax.reload(null, false); // Recargar DataTables sin resetear paginación
+                            });
+                        } else {
+                            mostrarAlerta('Error', response.message || 'No se pudo anular la compra.', 'error');
+                        }
+                    },
+                    error: function() {
+                        mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor para anular.', 'error');
+                    }
+                });
+            }
+        });
+    });
+    
+    // --- Lógica para IMPRIMIR Compra (desde el modal de detalle) ---
+    $('#btn_imprimir_compra_modal').click(function() {
+    // Aquí implementarías la lógica para imprimir.
+    // Podrías generar un PDF en el servidor o usar window.print() para una versión simple.
+    //Ejemplo simple:
+        var contenidoModal = $('#modal-ver-detalle-compra .modal-body').html();
+        var ventanaImpresion = window.open('', '_blank');
+     ventanaImpresion.document.write('<html><head><title>Detalle Compra</title>');
+     // Opcional: enlazar un CSS para impresión
+        ventanaImpresion.document.write('</head><body>' + contenidoModal + '</body></html>');
+        ventanaImpresion.document.close();
+        ventanaImpresion.print();
+        mostrarAlerta('Información', 'La funcionalidad de imprimir aún no está implementada completamente.', 'info');
+    });
+
+});
+
+
+
+
+    // --- LÓGICA PARA EL MODAL DE NUEVO PRODUCTO EN ALMACÉN ---
+    // Resumen: Controla la apertura del modal para crear un nuevo producto en almacén y
+    // el envío de su formulario. Si tiene éxito, añade el nuevo producto a la tabla de compra.
+
+    // Abrir el modal de nuevo producto en almacén
+    $('#btn_abrir_modal_nuevo_producto_almacen').click(function() {
+        $('#form-nuevo-producto-almacen-modal')[0].reset(); // Limpiar formulario
+        $('#preview_imagen_prod_almacen_modal').hide().attr('src', '#');
+        $('#error_message_prod_almacen_modal').hide().text('');
+        // Establecer fecha de ingreso por defecto (si no lo hace el HTML por defecto)
+        if (!$('#fecha_ingreso_prod_almacen_modal').val()) {
+            var today = new Date().toISOString().split('T')[0];
+            $('#fecha_ingreso_prod_almacen_modal').val(today);
+        }
+        // Aquí podrías cargar las categorías para el select si no están ya en el HTML
+        // o si necesitas recargarlas dinámicamente.
+        $('#modal-nuevo-producto-almacen').modal('show');
+    });
+
+    // Vista previa de imagen para el modal de nuevo producto almacén
+    $('#imagen_prod_almacen_modal').change(function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) { $('#preview_imagen_prod_almacen_modal').attr('src', e.target.result).show(); }
+            reader.readAsDataURL(file);
+        } else { $('#preview_imagen_prod_almacen_modal').hide(); }
+    });
+    
+    // Limpiar modal de nuevo producto almacén al cerrarse
+    $('#modal-nuevo-producto-almacen').on('hidden.bs.modal', function () {
+        $('#form-nuevo-producto-almacen-modal')[0].reset();
+        $('#preview_imagen_prod_almacen_modal').hide().attr('src', '#');
+        $('#error_message_prod_almacen_modal').hide().text('');
+    });
+
+    // Enviar formulario del modal de nuevo producto en almacén
+    $('#form-nuevo-producto-almacen-modal').submit(function(e) {
+        e.preventDefault();
+        $('#error_message_prod_almacen_modal').hide().text('');
+        var formData = new FormData(this);
+        // El controlador create_producto.php ya está preparado para recibir estos nombres de campo.
+
+        $('#btn_guardar_nuevo_prod_almacen_modal').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+        $.ajax({
+            url: "../app/controllers/almacen/create_producto.php", // Reutilizamos el controlador existente
+            type: "POST",
+            data: formData,
+            contentType: false,
+            processData: false,
+            dataType: "json",
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#modal-nuevo-producto-almacen').modal('hide');
+                    mostrarAlerta('Producto Guardado', response.message, 'success');
+                    
+                    // Ahora, necesitamos los datos del producto recién creado para añadirlo a la tabla de compras.
+                    // El controlador create_producto.php debería devolver estos datos.
+                    // Si no los devuelve, necesitaremos hacer otra llamada AJAX para obtenerlos por ID,
+                    // o modificar create_producto.php para que los devuelva.
+                    // Asumamos que response.new_product_data contiene lo necesario.
+                    // El controlador actual de almacen/create_producto.php no devuelve el producto creado,
+                    // solo un ID. Necesitaremos ajustarlo o hacer una llamada GET.
+                    // Por ahora, mostraremos un mensaje y el usuario lo buscará manualmente.
+                    
+                    if (response.new_data && response.new_data.id_producto) {
+                         // Formatear para que coincida con lo que espera agregarProductoATabla
+                        var productoParaTabla = {
+                            id_producto: response.new_data.id_producto,
+                            codigo: response.new_data.codigo,
+                            nombre: response.new_data.nombre,
+                            precio_compra_sugerido: response.new_data.precio_compra, // Asumiendo que este es el precio de compra
+                            stock_actual: response.new_data.stock 
+                        };
+                        agregarProductoATabla(productoParaTabla);
+                    } else if (response.id_producto_creado) { // Si solo devuelve el ID
+                        // Haríamos un get_producto para luego añadirlo
+                         mostrarAlerta('Producto Creado', 'Producto creado con ID: ' + response.id_producto_creado + '. Búscalo para añadirlo a la compra.', 'info');
+                         // Implementación de get y luego add:
+                         /*
+                         $.ajax({
+                            url: "../app/controllers/almacen/get_producto.php",
+                            type: "GET",
+                            data: { id_producto: response.id_producto_creado },
+                            dataType: "json",
+                            success: function(getResp) {
+                                if (getResp.status === 'success' && getResp.data) {
+                                    var productoParaTabla = {
+                                        id_producto: getResp.data.id_producto,
+                                        codigo: getResp.data.codigo,
+                                        nombre: getResp.data.nombre,
+                                        precio_compra_sugerido: getResp.data.precio_compra,
+                                        stock_actual: getResp.data.stock 
+                                    };
+                                    agregarProductoATabla(productoParaTabla);
+                                }
+                            }
+                         });
+                         */
+                    } else {
+                         mostrarAlerta('Producto Creado', 'El producto ha sido creado en el almacén. Ahora puedes buscarlo y añadirlo a la compra.', 'info');
+                    }
+
+                } else {
+                    $('#error_message_prod_almacen_modal').text(response.message || 'Error desconocido.').show();
+                }
+            },
+            error: function() {
+                $('#error_message_prod_almacen_modal').text('Error de conexión con el servidor.').show();
+            },
+            complete: function() {
+                $('#btn_guardar_nuevo_prod_almacen_modal').prop('disabled', false).html('Guardar Producto');
+            }
+        });
+    });
+</script>

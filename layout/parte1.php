@@ -201,29 +201,30 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
 
 
-                    <li class="nav-item ">
-                        <a href="#" class="nav-link active">
-                            <i class="nav-icon fas fa-cart-plus"></i>
-                            <p>
-                                Compras
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/compras" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Listado de compras</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?php echo $URL;?>/compras/create.php" class="nav-link">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Creación de compra</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                    
+                      <li class="nav-item "> <!-- Puedes añadir 'menu-open' si quieres que esté abierto por defecto -->
+                         <a href="#" class="nav-link active"> <!-- Puedes quitar 'active' si no es la página actual -->
+                             <i class="nav-icon fas fa-cart-plus"></i>
+                             <p>
+                                 Compras
+                                 <i class="right fas fa-angle-left"></i>
+                             </p>
+                         </a>
+                         <ul class="nav nav-treeview">
+                             <li class="nav-item">
+                                 <a href="<?php echo $URL;?>/compras/" class="nav-link"> <!-- Asegúrate que el index.php sea el default o añade /index.php -->
+                                     <i class="far fa-circle nav-icon"></i>
+                                     <p>Listado de compras</p>
+                                 </a>
+                             </li>
+                              <li class="nav-item">
+                                 <a href="<?php echo $URL;?>/compras/create.php" class="nav-link">
+                                     <i class="far fa-circle nav-icon"></i>
+                                     <p>Registrar Nueva Compra</p>
+                                 </a>
+                             </li>
+                         </ul>
+                      </li>
 
 
 
