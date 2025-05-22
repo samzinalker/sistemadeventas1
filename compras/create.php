@@ -1,11 +1,20 @@
 <?php
-// 1. Configuración y Sesión (antes de cualquier HTML)
+// 1. Configuración (antes de cualquier sesión o HTML)
 require_once __DIR__ . '/../app/config.php'; // Define $URL, $pdo, $fechaHora
 
+// 2. Iniciar Sesión y Cargar Datos de Sesión del Usuario
+// Es crucial que layout/sesion.php se incluya aquí para que $nombres_sesion y otras
+// variables de sesión estén disponibles para layout/parte1.php y el resto de la página.
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/../layout/sesion.php'; // <<<----- AÑADIR ESTA LÍNEA
+
+// Verificar si después de layout/sesion.php, el usuario sigue logueado.
+// layout/sesion.php ya redirige si no hay sesión, pero una doble verificación no daña.
 if (!isset($_SESSION['id_usuario'])) {
+    // Este header podría ser redundante si layout/sesion.php ya lo hizo,
+    // pero es una salvaguarda.
     header('Location: ' . rtrim($URL, '/') . '/login.php');
     exit;
 }
