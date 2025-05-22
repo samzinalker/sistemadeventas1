@@ -1,84 +1,31 @@
 <?php
 // 1. Configuración (antes de cualquier sesión o HTML)
-require_once __DIR__ . '/../app/config.php'; // Define $URL, $pdo, $fechaHora
+require_once __DIR__ . '/../app/config.php'; // Define $URL, $pdo, $fechaHora, session_start()
 
 // 2. Iniciar Sesión y Cargar Datos de Sesión del Usuario
-// Es crucial que layout/sesion.php se incluya aquí para que $nombres_sesion y otras
-// variables de sesión estén disponibles para layout/parte1.php y el resto de la página.
-if (session_status() == PHP_SESSION_NONE) {
+if (session_status() == PHP_SESSION_NONE) { // Doble check por si config.php no lo hizo
     session_start();
 }
-require_once __DIR__ . '/../layout/sesion.php'; // <<<----- AÑADIR ESTA LÍNEA
+require_once __DIR__ . '/../layout/sesion.php'; // Carga datos del usuario en $_SESSION y define $nombres_sesion
 
-// Verificar si después de layout/sesion.php, el usuario sigue logueado.
-// layout/sesion.php ya redirige si no hay sesión, pero una doble verificación no daña.
+// Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
-    // Este header podría ser redundante si layout/sesion.php ya lo hizo,
-    // pero es una salvaguarda.
-    header('Location: ' . rtrim($URL, '/') . '/login.php');
+    header('Location: ' . rtrim($URL, '/') . '/login.php?error=access_denied');
     exit;
 }
 $id_usuario_actual = (int)$_SESSION['id_usuario'];
-// $nombres_sesion es establecido por layout/parte1.php (vía layout/sesion.php)
 
 $pageTitle = "Registrar Nueva Compra";
-$modulo_abierto = "compras"; 
-$pagina_activa = "compras_create"; 
+$modulo_abierto = "compras";
+$pagina_activa = "compras_crear";
 
-// --- Obtener datos necesarios ---
-$stmt_proveedores = $pdo->prepare("SELECT id_proveedor, nombre_proveedor, empresa FROM tb_proveedores WHERE id_usuario = :id_usuario ORDER BY nombre_proveedor ASC");
-$stmt_proveedores->bindParam(':id_usuario', $id_usuario_actual, PDO::PARAM_INT);
-$stmt_proveedores->execute();
-$proveedores_list = $stmt_proveedores->fetchAll(PDO::FETCH_ASSOC);
+// Obtener proveedores para el select
+$stmt_proveedores = $pdo->query("SELECT id_proveedor, nombre_proveedor, empresa FROM tb_proveedores ORDER BY nombre_proveedor ASC");
+$proveedores = $stmt_proveedores->fetchAll(PDO::FETCH_ASSOC);
 
-$stmt_productos_almacen = $pdo->prepare("SELECT id_producto, codigo, nombre, precio_compra, stock FROM tb_almacen WHERE id_usuario = :id_usuario ORDER BY nombre ASC");
-$stmt_productos_almacen->bindParam(':id_usuario', $id_usuario_actual, PDO::PARAM_INT);
-$stmt_productos_almacen->execute();
-$productos_almacen_list = $stmt_productos_almacen->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt_categorias = $pdo->prepare("SELECT id_categoria, nombre_categoria FROM tb_categorias WHERE id_usuario = :id_usuario ORDER BY nombre_categoria ASC");
-$stmt_categorias->bindParam(':id_usuario', $id_usuario_actual, PDO::PARAM_INT);
-$stmt_categorias->execute();
-$categorias_list = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
-
-// 5. Generar Número de Compra Secuencial POR USUARIO
-// Cada usuario tiene su propia secuencia de nro_compra.
-$stmt_max_nro_usuario = $pdo->prepare("SELECT MAX(nro_compra) as max_nro FROM tb_compras WHERE id_usuario = :id_usuario");
-$stmt_max_nro_usuario->bindParam(':id_usuario', $id_usuario_actual, PDO::PARAM_INT);
-$stmt_max_nro_usuario->execute();
-$max_nro_actual_usuario = $stmt_max_nro_usuario->fetchColumn();
-$nro_compra_sugerido = ($max_nro_actual_usuario) ? $max_nro_actual_usuario + 1 : 1;
-
-// Consideraciones Adicionales para nro_compra (Secuencial por Usuario):
-//
-// 1. Aislamiento de Datos: Este enfoque asegura que el `nro_compra` es secuencial DENTRO del contexto de cada usuario.
-//    El Usuario A tendrá compras 1, 2, 3... y el Usuario B también tendrá 1, 2, 3...
-//    Esto es lógico si cada usuario gestiona un "negocio" o "instancia" separada dentro del sistema.
-//    La unicidad global de una compra se sigue garantizando por `id_compra` (PK de `tb_compras` que es por ítem)
-//    o por la combinación `(nro_compra, id_usuario)` si se define un índice UNIQUE sobre estos dos campos
-//    en `tb_compras` para agrupar los ítems de una compra específica de un usuario.
-//
-// 2. Concurrencia: Si un MISMO usuario intenta crear dos compras nuevas exactamente al mismo tiempo (ej. abriendo dos pestañas),
-//    ambas podrían obtener el mismo `$nro_compra_sugerido`.
-//    Para manejar esto:
-//    a) Se puede añadir un índice UNIQUE en `tb_compras` sobre `(nro_compra, id_usuario)`.
-//       Luego, en `acciones_compras.php`, al intentar insertar, la base de datos rechazaría la segunda inserción
-//       si el par `(nro_compra, id_usuario)` ya existe. Se debería capturar esta excepción y pedir al usuario
-//       que reintente (lo que implicaría regenerar el `nro_compra` en `create.php` o en `acciones_compras.php`).
-//    b) `acciones_compras.php` podría re-calcular el `nro_compra` justo antes de la inserción dentro de la transacción,
-//       bloqueando potencialmente las filas relevantes para ese usuario para asegurar la secuencialidad. Esto es más complejo.
-//    Para la mayoría de los casos donde un solo usuario no suele hacer compras simultáneas extremas, el enfoque actual
-//    con un posible índice UNIQUE es una buena primera aproximación.
-//
-// 3. Formato: Si se deseara un formato como "C-[ID_USUARIO]-00001", se podría construir:
-//    $nro_compra_formateado = "C-" . $id_usuario_actual . "-" . str_pad($nro_compra_sugerido, 5, "0", STR_PAD_LEFT);
-//    En este caso, el campo `nro_compra` en la BD debería ser VARCHAR. Actualmente es INT.
-//    Si `nro_compra` se mantiene como INT, el formato se aplicaría solo para visualización.
-//
-// 4. `acciones_compras.php`: Este script es el que finalmente inserta el `nro_compra` en `tb_compras`.
-//    El `nro_compra` generado aquí en `create.php` se envía con el formulario. `acciones_compras.php` lo usa.
-//    Si se implementa la re-verificación por concurrencia (punto 2b), `acciones_compras.php`
-//    tendría que hacer esa lógica. Por ahora, se asume que el número sugerido es el que se intentará usar.
+// Repoblar formulario si hay datos guardados en sesión (ej. por error en controller)
+// $form_data = $_SESSION['compra_form_data'] ?? [];
+// unset($_SESSION['compra_form_data']); // Limpiar después de usar
 
 // --- Inicio de la Plantilla AdminLTE ---
 require_once __DIR__ . '/../layout/parte1.php';
@@ -92,16 +39,16 @@ require_once __DIR__ . '/../layout/parte1.php';
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1 class="m-0"><?php echo htmlspecialchars($pageTitle); ?></h1>
-                </div><!-- /.col -->
+                </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="<?php echo $URL; ?>/index.php">Inicio</a></li>
-                        <li class="breadcrumb-item"><a href="<?php echo $URL; ?>/compras/index.php">Compras</a></li>
+                        <li class="breadcrumb-item"><a href="<?php echo $URL; ?>/">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="<?php echo $URL; ?>/compras/">Listado de Compras</a></li>
                         <li class="breadcrumb-item active"><?php echo htmlspecialchars($pageTitle); ?></li>
                     </ol>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                </div>
+            </div>
+        </div>
     </div>
     <!-- /.content-header -->
 
@@ -109,129 +56,91 @@ require_once __DIR__ . '/../layout/parte1.php';
     <section class="content">
         <div class="container-fluid">
 
-            <?php if (isset($_GET['error'])): ?>
-            <div class="alert alert-danger alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                <h5><i class="icon fas fa-ban"></i> Error!</h5>
-                <?php echo htmlspecialchars(urldecode($_GET['error'])); ?>
-            </div>
-            <?php endif; ?>
-            <?php if (isset($_GET['success_producto'])): ?>
-            <div class="alert alert-success alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                <h5><i class="icon fas fa-check"></i> Éxito!</h5>
-                <?php echo htmlspecialchars(urldecode($_GET['success_producto'])); ?>
-            </div>
-            <?php endif; ?>
+            <?php include __DIR__ . '/../layout/mensajes.php'; // Para mostrar $_GET['error'], $_GET['success'], $_GET['info'] ?>
             
-            <?php include __DIR__ . '/../layout/mensajes.php'; ?>
-
-
-            <form id="form_nueva_compra" action="acciones_compras.php" method="POST">
-                <input type="hidden" name="accion" value="registrar_compra">
-
-                <!-- Datos Generales de la Compra -->
-                <div class="card card-primary card-outline mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Datos Generales de la Compra</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="nro_compra">Número de Compra (Usuario <?php echo $id_usuario_actual; ?>):</label>
-                                    <input type="text" class="form-control form-control-sm" id="nro_compra" name="nro_compra" value="<?php echo $nro_compra_sugerido; ?>" required readonly>
-                                    <small class="form-text text-muted">Secuencia para este usuario.</small>
-                                </div>
+            <form action="controller_compras.php" method="POST" id="form_nueva_compra">
+                <div class="row">
+                    <!-- Columna Izquierda: Datos Generales de la Compra -->
+                    <div class="col-md-4">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-shopping-cart"></i> Datos de la Compra</h3>
                             </div>
-                            <div class="col-md-3">
+                            <div class="card-body">
                                 <div class="form-group">
-                                    <label for="fecha_compra">Fecha de Compra:</label>
-                                    <input type="date" class="form-control form-control-sm" id="fecha_compra" name="fecha_compra" value="<?php echo date('Y-m-d'); ?>" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="comprobante">Comprobante (Factura N°):</label>
-                                    <input type="text" class="form-control form-control-sm" id="comprobante" name="comprobante" placeholder="Ej: F001-12345" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="id_proveedor">Proveedor:</label>
-                                    <select class="form-control form-control-sm select2bs4" id="id_proveedor" name="id_proveedor" style="width: 100%;" required>
-                                        <option value="">-- Seleccione Proveedor --</option>
-                                        <?php foreach ($proveedores_list as $proveedor): ?>
+                                    <label for="id_proveedor">Proveedor <span class="text-danger">*</span></label>
+                                    <select name="id_proveedor" id="id_proveedor" class="form-control select2" required>
+                                        <option value="">-- Seleccione un Proveedor --</option>
+                                        <?php foreach ($proveedores as $proveedor): ?>
                                             <option value="<?php echo htmlspecialchars($proveedor['id_proveedor']); ?>">
-                                                <?php echo htmlspecialchars($proveedor['nombre_proveedor']) . ($proveedor['empresa'] ? ' ('.htmlspecialchars($proveedor['empresa']).')' : ''); ?>
+                                                <?php echo htmlspecialchars($proveedor['nombre_proveedor'] . ($proveedor['empresa'] ? ' ('.$proveedor['empresa'].')' : '')); ?>
                                             </option>
                                         <?php endforeach; ?>
-                                        <?php if (count($proveedores_list) === 0): ?>
-                                            <option value="" disabled>No hay proveedores. <a href="<?php echo $URL; ?>/proveedores/create.php">Agregar</a></option>
-                                        <?php endif; ?>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Productos de la Compra -->
-                <div class="card card-info card-outline mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-boxes"></i> Ítems de la Compra</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="producto_buscar_almacen">Buscar Producto en Almacén:</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        </div>
-                                        <input type="text" id="producto_buscar_almacen" class="form-control form-control-sm" placeholder="Buscar por código o nombre...">
-                                    </div>
-                                    <div id="sugerencias_productos_almacen" class="list-group mt-1" style="position: absolute; z-index: 1000; width: calc(100% - 40px);"></div>
+                                    <label for="comprobante">Nro. Comprobante <span class="text-danger">*</span></label>
+                                    <input type="text" name="comprobante" id="comprobante" class="form-control" required placeholder="Ej: Factura F-001-123, Boleta B-001-456">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fecha_compra">Fecha de Compra <span class="text-danger">*</span></label>
+                                    <input type="text" name="fecha_compra" id="fecha_compra" class="form-control" required autocomplete="off" placeholder="DD/MM/YYYY" value="<?php echo date('d/m/Y'); ?>">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Usuario Registra:</label>
+                                    <input type="text" class="form-control" value="<?php echo htmlspecialchars($nombres_sesion . ' ' . $apellidos_sesion); ?>" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-6 align-self-center text-right">
-                                <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modalCrearProductoAlmacen">
-                                    <i class="fas fa-plus-circle"></i> Crear Nuevo Producto en Almacén
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered table-hover" id="tabla_items_compra_full">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th style="width: 10%;">Código</th>
-                                        <th style="width: 30%;">Producto (Almacén)</th>
-                                        <th style="width: 15%;">Cantidad</th>
-                                        <th style="width: 20%;">Precio Compra (Unit.)</th>
-                                        <th style="width: 15%;">Subtotal</th>
-                                        <th style="width: 10%;">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabla_items_compra_body">
-                                    <tr id="fila_sin_items">
-                                        <td colspan="6" class="text-center">Aún no se han agregado productos.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
-                    <div class="card-footer text-right" style="background-color: #f0f0f0; border-top: 2px solid #007bff;">
-                        <h3 class="mb-0">Total Compra: <span id="total_compra_display" class="total-compra-display text-primary font-weight-bold">0.00</span></h3>
-                        <input type="hidden" name="total_compra_valor_final" id="total_compra_valor_final" value="0.00">
+
+                    <!-- Columna Derecha: Detalle de Productos -->
+                    <div class="col-md-8">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-boxes"></i> Productos a Comprar</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <button type="button" class="btn btn-primary mb-3" data-toggle="modal" data-target="#modalBuscarProducto">
+                                        <i class="fas fa-search"></i> Buscar y Añadir Producto del Almacén
+                                    </button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="tabla_productos_compra" class="table table-bordered table-hover table-sm">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="width: 40%;">Producto</th>
+                                                <th style="width: 15%;" class="text-center">Cantidad</th>
+                                                <th style="width: 20%;" class="text-center">Precio Compra (Bs.)</th>
+                                                <th style="width: 20%;" class="text-right">Subtotal (Bs.)</th>
+                                                <th style="width: 5%;">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Los productos seleccionados se añadirán aquí por JavaScript -->
+                                            <tr id="fila_sin_productos">
+                                                <td colspan="5" class="text-center text-muted">Aún no se han añadido productos.</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="3" class="text-right"><strong>TOTAL COMPRA:</strong></td>
+                                                <td class="text-right"><strong id="total_compra_display">0.00</strong></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="row mb-4">
+                <div class="row mt-3">
                     <div class="col-md-12 text-center">
-                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Registrar Compra</button>
-                        <a href="index.php" class="btn btn-secondary btn-lg"><i class="fas fa-times-circle"></i> Cancelar</a>
+                        <a href="<?php echo $URL; ?>/compras/" class="btn btn-secondary mr-2"><i class="fas fa-times-circle"></i> Cancelar</a>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Compra</button>
                     </div>
                 </div>
             </form>
@@ -242,344 +151,242 @@ require_once __DIR__ . '/../layout/parte1.php';
 </div>
 <!-- /.content-wrapper -->
 
-<!-- Modal para Crear Nuevo Producto en Almacén -->
-<div class="modal fade" id="modalCrearProductoAlmacen" tabindex="-1" role="dialog" aria-labelledby="modalCrearProductoAlmacenLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal para Buscar Producto en Almacén -->
+<div class="modal fade" id="modalBuscarProducto" tabindex="-1" role="dialog" aria-labelledby="modalBuscarProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <form id="form_crear_producto_almacen_modal">
-                <input type="hidden" name="accion" value="crear_producto_almacen_rapido">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title" id="modalCrearProductoAlmacenLabel"><i class="fas fa-cube"></i> Crear Nuevo Producto en Almacén</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="producto_modal_codigo">Código:</label>
-                                <input type="text" class="form-control form-control-sm" id="producto_modal_codigo" name="producto_codigo" placeholder="Ej: P001 (Opcional)">
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label for="producto_modal_nombre">Nombre Producto: <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" id="producto_modal_nombre" name="producto_nombre" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="producto_modal_descripcion">Descripción (Opcional):</label>
-                        <textarea class="form-control form-control-sm" id="producto_modal_descripcion" name="producto_descripcion" rows="2"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="producto_modal_id_categoria">Categoría: <span class="text-danger">*</span></label>
-                                <select class="form-control form-control-sm select2bs4" id="producto_modal_id_categoria" name="producto_id_categoria" style="width: 100%;" required>
-                                    <option value="">-- Seleccione Categoría --</option>
-                                    <?php foreach ($categorias_list as $categoria): ?>
-                                        <option value="<?php echo htmlspecialchars($categoria['id_categoria']); ?>"><?php echo htmlspecialchars($categoria['nombre_categoria']); ?></option>
-                                    <?php endforeach; ?>
-                                     <?php if (count($categorias_list) === 0): ?>
-                                        <option value="" disabled>No hay categorías. <a href="<?php echo $URL; ?>/categorias/">Agregar</a></option>
-                                    <?php endif; ?>
-                                </select>
-                            </div>
-                        </div>
-                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="producto_modal_fecha_ingreso">Fecha Ingreso: <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm" id="producto_modal_fecha_ingreso" name="producto_fecha_ingreso" value="<?php echo date('Y-m-d'); ?>" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="producto_modal_precio_compra">Precio Compra (Actual): <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" class="form-control form-control-sm" id="producto_modal_precio_compra" name="producto_precio_compra" required min="0" value="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="producto_modal_precio_venta">Precio Venta: <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" class="form-control form-control-sm" id="producto_modal_precio_venta" name="producto_precio_venta" required min="0" value="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="producto_modal_stock_inicial">Stock Inicial:</label>
-                                <input type="number" class="form-control form-control-sm" id="producto_modal_stock_inicial" name="producto_stock_inicial" value="0" readonly title="El stock se actualizará con la cantidad de la compra.">
-                            </div>
-                        </div>
-                    </div>
-                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="producto_modal_stock_minimo">Stock Mínimo (Opcional):</label>
-                                <input type="number" class="form-control form-control-sm" id="producto_modal_stock_minimo" name="producto_stock_minimo" min="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="producto_modal_stock_maximo">Stock Máximo (Opcional):</label>
-                                <input type="number" class="form-control form-control-sm" id="producto_modal_stock_maximo" name="producto_stock_maximo" min="0">
-                            </div>
-                        </div>
-                    </div>
-                    <small class="form-text text-muted"><span class="text-danger">*</span> Campos obligatorios.</small>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar Producto en Almacén</button>
-                </div>
-            </form>
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBuscarProductoLabel">Buscar Producto en Almacén</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table id="tabla_productos_almacen_modal" class="table table-bordered table-striped table-hover table-sm" style="width:100%;">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>Categoría</th>
+                            <th>Producto</th>
+                            <th class="text-center">Stock Actual</th>
+                            <th class="text-center">Precio Compra Sug. (Bs.)</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán aquí por DataTables/AJAX -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
 
+
 <?php
+// --- Fin de la Plantilla AdminLTE ---
 require_once __DIR__ . '/../layout/parte2.php';
 ?>
 
+<!-- Estilos Adicionales -->
+<link rel="stylesheet" href="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/select2/css/select2.min.css">
+<link rel="stylesheet" href="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+<link rel="stylesheet" href="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+<link rel="stylesheet" href="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+
+
+<!-- Scripts Adicionales -->
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/select2/js/select2.full.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables/jquery.dataTables.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/moment/moment.min.js"></script>
+<script src="<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+
+
 <script>
-    $(document).ready(function() {
-        // Inicializar Select2
-        if ($.fn.select2) {
-            $('.select2bs4').select2({
-                theme: 'bootstrap4',
-            });
-            // Para el select dentro del modal, si se reinicializa o tiene problemas de foco:
-             $('#modalCrearProductoAlmacen').on('shown.bs.modal', function () {
-                // Asegurarse de que el ID del select sea el correcto
-                $('#producto_modal_id_categoria').select2({ 
-                    theme: 'bootstrap4',
-                    dropdownParent: $('#modalCrearProductoAlmacen .modal-body') // Contenedor correcto
-                });
-            });
-        }
-
-        let productosAlmacenData = <?php echo json_encode($productos_almacen_list); ?>;
-        let itemsCompraList = []; 
-        let itemCounterSuffix = 0; 
-
-        $('#producto_buscar_almacen').on('input', function() { 
-            let searchTerm = $(this).val().toLowerCase();
-            let sugerenciasDiv = $('#sugerencias_productos_almacen');
-            sugerenciasDiv.empty().hide();
-
-            if (searchTerm.length < 2) return;
-
-            let filtrados = productosAlmacenData.filter(function(producto) {
-                return producto.nombre.toLowerCase().includes(searchTerm) || producto.codigo.toLowerCase().includes(searchTerm);
-            });
-
-            if (filtrados.length > 0) {
-                filtrados.slice(0, 10).forEach(function(producto) { 
-                    sugerenciasDiv.append(
-                        `<a href="#" class="list-group-item list-group-item-action list-group-item-sm seleccionar-producto-sugerencia-almacen" 
-                            data-id="${producto.id_producto}" 
-                            data-nombre="${escapeHtml(producto.nombre)}" 
-                            data-codigo="${escapeHtml(producto.codigo)}" 
-                            data-precio_compra="${parseFloat(producto.precio_compra || 0).toFixed(2)}"
-                            data-stock="${producto.stock}">
-                            <strong>${escapeHtml(producto.codigo)}</strong> - ${escapeHtml(producto.nombre)} 
-                            <span class="badge badge-info float-right">Stock: ${producto.stock}</span>
-                            <span class="badge badge-secondary float-right mr-1">Precio: ${parseFloat(producto.precio_compra || 0).toFixed(2)}</span>
-                        </a>`
-                    );
-                });
-                sugerenciasDiv.show();
-            } else {
-                sugerenciasDiv.append('<span class="list-group-item list-group-item-sm text-muted">No se encontraron productos.</span>').show();
-            }
-        });
-
-        $(document).on('click', '.seleccionar-producto-sugerencia-almacen', function(e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            const nombre = $(this).data('nombre');
-            const codigo = $(this).data('codigo');
-            const precio_compra = parseFloat($(this).data('precio_compra'));
-            
-            agregarItemCompraATabla(id, codigo, nombre, 1, precio_compra);
-            
-            $('#producto_buscar_almacen').val('');
-            $('#sugerencias_productos_almacen').empty().hide();
-        });
-
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#producto_buscar_almacen, #sugerencias_productos_almacen').length) {
-                $('#sugerencias_productos_almacen').empty().hide();
-            }
-        });
-
-        $('#form_crear_producto_almacen_modal').on('submit', function(e) {
-            e.preventDefault();
-            let form = $(this);
-            let formData = form.serialize(); 
-
-            form.find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-
-            $.ajax({
-                url: '<?php echo $URL; ?>/almacen/acciones_almacen.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status === 'success' && response.producto) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Producto Creado',
-                            text: response.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-
-                        $('#modalCrearProductoAlmacen').modal('hide');
-                        // form[0].reset(); // Se resetea en hidden.bs.modal
-                        
-                        productosAlmacenData.push(response.producto);
-
-                        agregarItemCompraATabla(
-                            response.producto.id_producto, 
-                            response.producto.codigo, 
-                            response.producto.nombre, 
-                            1, 
-                            parseFloat(response.producto.precio_compra)
-                        );
-                    } else {
-                         Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: response.message || 'No se pudo crear el producto.'
-                        });
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                     Swal.fire({
-                        icon: 'error',
-                        title: 'Error de Conexión',
-                        text: 'No se pudo comunicar con el servidor: ' + textStatus
-                    });
-                },
-                complete: function() {
-                    form.find('button[type="submit"]').prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Producto en Almacén');
-                }
-            });
-        });
-        
-        function agregarItemCompraATabla(id_producto_almacen, codigo_producto, nombre_producto, cantidad, precio_compra) {
-            let productoExistente = itemsCompraList.find(item => parseInt(item.id_producto_almacen) === parseInt(id_producto_almacen));
-            if (productoExistente) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Producto ya en lista',
-                    text: 'Este producto ya ha sido agregado.',
-                    timer: 2500,
-                    showConfirmButton: false
-                });
-                return;
-            }
-
-            $('#fila_sin_items').hide();
-            itemCounterSuffix++; 
-            
-            let subtotal = parseFloat(cantidad) * parseFloat(precio_compra);
-
-            let filaHtml = `
-                <tr id="item_row_${itemCounterSuffix}">
-                    <td>
-                        ${escapeHtml(codigo_producto)}
-                        <input type="hidden" name="items[${itemCounterSuffix}][id_producto_almacen]" value="${id_producto_almacen}">
-                    </td>
-                    <td>${escapeHtml(nombre_producto)}</td>
-                    <td><input type="number" class="form-control form-control-sm cantidad-item" name="items[${itemCounterSuffix}][cantidad]" value="${cantidad}" min="1" required data-item-suffix="${itemCounterSuffix}"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm precio-item" name="items[${itemCounterSuffix}][precio_compra]" value="${parseFloat(precio_compra).toFixed(2)}" min="0" required data-item-suffix="${itemCounterSuffix}"></td>
-                    <td class="subtotal-item align-middle text-right">${subtotal.toFixed(2)}</td>
-                    <td class="text-center align-middle">
-                        <button type="button" class="btn btn-danger btn-xs eliminar-item-compra" data-item-suffix="${itemCounterSuffix}" title="Eliminar ítem">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            $('#tabla_items_compra_body').append(filaHtml);
-            
-            itemsCompraList.push({ 
-                item_suffix: itemCounterSuffix, 
-                id_producto_almacen: parseInt(id_producto_almacen), 
-                cantidad: parseFloat(cantidad), 
-                precio_compra: parseFloat(precio_compra)
-            });
-            calcularTotalCompraFinal();
-        }
-
-        $('#tabla_items_compra_body').on('change keyup', '.cantidad-item, .precio-item', function() {
-            let suffix = $(this).data('item-suffix');
-            // Asegurarse de que los selectores de cantidad y precio sean correctos para los inputs dentro de la fila
-            let cantidad = parseFloat($('#item_row_' + suffix + ' .cantidad-item').val()) || 0;
-            let precio = parseFloat($('#item_row_' + suffix + ' .precio-item').val()) || 0;
-            let subtotal = cantidad * precio;
-            $('#item_row_' + suffix + ' .subtotal-item').text(subtotal.toFixed(2));
-            
-            let itemEnArray = itemsCompraList.find(item => item.item_suffix === suffix);
-            if(itemEnArray){
-                itemEnArray.cantidad = cantidad;
-                itemEnArray.precio_compra = precio;
-            }
-            calcularTotalCompraFinal();
-        });
-
-        $('#tabla_items_compra_body').on('click', '.eliminar-item-compra', function() {
-            let suffix = $(this).data('item-suffix');
-            $('#item_row_' + suffix).remove();
-            itemsCompraList = itemsCompraList.filter(item => item.item_suffix !== suffix);
-            if (itemsCompraList.length === 0) {
-                $('#fila_sin_items').show();
-            }
-            calcularTotalCompraFinal();
-        });
-
-        function calcularTotalCompraFinal() {
-            let totalGeneral = 0;
-            itemsCompraList.forEach(function(item) {
-                totalGeneral += item.cantidad * item.precio_compra;
-            });
-            $('#total_compra_display').text(totalGeneral.toFixed(2));
-            $('#total_compra_valor_final').val(totalGeneral.toFixed(2));
-        }
-
-        $('#form_nueva_compra').on('submit', function(e){
-            if(itemsCompraList.length === 0){
-                 Swal.fire('Atención', 'Debe agregar al menos un producto a la compra.', 'warning');
-                e.preventDefault(); return false;
-            }
-            let totalFinal = parseFloat($('#total_compra_valor_final').val());
-            if(totalFinal <= 0){
-                Swal.fire('Atención', 'El total de la compra debe ser mayor a cero.', 'warning');
-                e.preventDefault(); return false;
-            }
-        });
-
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== 'string') return '';
-            return unsafe
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
-        }
-        
-        $('#modalCrearProductoAlmacen').on('hidden.bs.modal', function () {
-            $(this).find('form')[0].reset();
-            // Asegurarse de que el ID del select sea el correcto para resetearlo
-            $('#producto_modal_id_categoria').val(null).trigger('change'); 
-        });
+$(document).ready(function() {
+    // Inicializar Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
     });
+
+    // Inicializar DatePicker para fecha_compra
+    $('#fecha_compra').datetimepicker({
+        format: 'DD/MM/YYYY',
+        locale: 'es',
+        icons: {
+            time: 'far fa-clock',
+            date: 'far fa-calendar-alt',
+            up: 'fas fa-chevron-up',
+            down: 'fas fa-chevron-down',
+            previous: 'fas fa-chevron-left',
+            next: 'fas fa-chevron-right',
+            today: 'far fa-calendar-check',
+            clear: 'far fa-trash-alt',
+            close: 'fas fa-times'
+        },
+        buttons: {
+            showToday: true,
+            showClear: false,
+            showClose: true
+        }
+    });
+
+    // DataTables para la tabla de productos en el modal
+    var tablaProductosAlmacen = $('#tabla_productos_almacen_modal').DataTable({
+        "processing": true,
+        "serverSide": false, // Poner true si ajax_get_productos_almacen.php implementa server-side
+        "ajax": {
+            "url": "<?php echo $URL; ?>/compras/ajax_get_productos_almacen.php",
+            "type": "GET", // o POST si tu script PHP lo espera así
+            "dataType": "json",
+            "dataSrc": "data" // Asegúrate que tu JSON tenga una raíz "data"
+        },
+        "columns": [
+            { "data": "id_producto", "visible": false }, // Oculto pero disponible
+            { "data": "codigo" },
+            { "data": "nombre_categoria" },
+            { "data": "nombre_producto" },
+            { "data": "stock", "className": "text-center" },
+            { 
+                "data": "precio_compra_sugerido",
+                "className": "text-center",
+                "render": function(data, type, row) {
+                    return parseFloat(data || 0).toFixed(2);
+                }
+            },
+            { 
+                "data": null,
+                "className": "text-center",
+                "render": function(data, type, row) {
+                    return `<button type="button" class="btn btn-success btn-sm btn-seleccionar-producto" 
+                                    data-id="${row.id_producto}" 
+                                    data-nombre="${row.nombre_producto}" 
+                                    data-codigo="${row.codigo}"
+                                    data-precio="${parseFloat(row.precio_compra_sugerido || 0).toFixed(2)}">
+                                <i class="fas fa-plus-circle"></i> Añadir
+                            </button>`;
+                },
+                "orderable": false
+            }
+        ],
+        "responsive": true,
+        "lengthChange": true,
+        "autoWidth": false,
+        "pageLength": 5, // Mostrar 5 productos por página en el modal
+        "lengthMenu": [ [5, 10, 25, -1], [5, 10, 25, "Todos"] ],
+        "language": { "url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-bs4/Spanish.json" }
+    });
+
+    var indiceProductoCompra = 0; // Para los names de los inputs array
+
+    // Manejar clic en "Añadir" producto desde el modal
+    $('#tabla_productos_almacen_modal tbody').on('click', '.btn-seleccionar-producto', function() {
+        var idProducto = $(this).data('id');
+        var nombreProducto = $(this).data('nombre');
+        var codigoProducto = $(this).data('codigo');
+        var precioSugerido = parseFloat($(this).data('precio')).toFixed(2);
+
+        // Verificar si el producto ya está en la tabla de compra
+        var productoExistente = false;
+        $('#tabla_productos_compra tbody tr').not('#fila_sin_productos').each(function() {
+            if ($(this).find('input[name$="[id_producto]"]').val() == idProducto) {
+                productoExistente = true;
+                // Opcional: Incrementar cantidad o mostrar alerta
+                var cantidadInput = $(this).find('input[name$="[cantidad]"]');
+                cantidadInput.val(parseInt(cantidadInput.val()) + 1).trigger('input');
+                // alert('El producto ya está en la lista. Se incrementó la cantidad.');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Producto ya en lista. Cantidad incrementada.',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                return false; // Salir del bucle .each
+            }
+        });
+
+        if (!productoExistente) {
+            indiceProductoCompra++;
+            var nuevaFilaHtml = `
+                <tr data-id-producto="${idProducto}">
+                    <td>
+                        <input type="hidden" name="productos[${indiceProductoCompra}][id_producto]" value="${idProducto}">
+                        <strong>${nombreProducto}</strong> <small class="text-muted">(${codigoProducto})</small>
+                    </td>
+                    <td><input type="number" name="productos[${indiceProductoCompra}][cantidad]" class="form-control form-control-sm cantidad-producto text-center" value="1" min="1" step="any" required></td>
+                    <td><input type="number" name="productos[${indiceProductoCompra}][precio_compra]" class="form-control form-control-sm precio-compra-producto text-right" value="${precioSugerido}" min="0" step="0.01" required></td>
+                    <td class="subtotal-producto text-right">0.00</td>
+                    <td class="text-center"><button type="button" class="btn btn-danger btn-sm btn-remover-producto"><i class="fas fa-trash-alt"></i></button></td>
+                </tr>`;
+            
+            $('#fila_sin_productos').hide(); // Ocultar mensaje si es la primera fila
+            $('#tabla_productos_compra tbody').append(nuevaFilaHtml);
+            actualizarSubtotalFila($('#tabla_productos_compra tbody tr[data-id-producto="'+idProducto+'"]'));
+        }
+        
+        $('#modalBuscarProducto').modal('hide'); // Ocultar modal
+        actualizarTotalGeneral();
+    });
+
+    // Función para actualizar subtotal de una fila
+    function actualizarSubtotalFila(fila) {
+        var cantidad = parseFloat(fila.find('.cantidad-producto').val()) || 0;
+        var precio = parseFloat(fila.find('.precio-compra-producto').val()) || 0;
+        var subtotal = cantidad * precio;
+        fila.find('.subtotal-producto').text(subtotal.toFixed(2));
+    }
+
+    // Actualizar subtotal y total general cuando cambie cantidad o precio en la tabla de compra
+    $('#tabla_productos_compra tbody').on('input', '.cantidad-producto, .precio-compra-producto', function() {
+        var fila = $(this).closest('tr');
+        actualizarSubtotalFila(fila);
+        actualizarTotalGeneral();
+    });
+
+    // Remover producto de la tabla de compra
+    $('#tabla_productos_compra tbody').on('click', '.btn-remover-producto', function() {
+        $(this).closest('tr').remove();
+        if ($('#tabla_productos_compra tbody tr').not('#fila_sin_productos').length === 0) {
+            $('#fila_sin_productos').show();
+        }
+        actualizarTotalGeneral();
+    });
+
+    // Función para recalcular el total general de la compra
+    function actualizarTotalGeneral() {
+        var totalGeneral = 0;
+        $('#tabla_productos_compra tbody tr').not('#fila_sin_productos').each(function() {
+            var subtotalTexto = $(this).find('.subtotal-producto').text();
+            totalGeneral += parseFloat(subtotalTexto) || 0;
+        });
+        $('#total_compra_display').text(totalGeneral.toFixed(2));
+    }
+
+    // Validación del formulario antes de enviar
+    $('#form_nueva_compra').on('submit', function(e) {
+        if ($('#tabla_productos_compra tbody tr').not('#fila_sin_productos').length === 0) {
+            e.preventDefault(); // Detener envío
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Validación',
+                text: 'Debe añadir al menos un producto a la compra.',
+            });
+            return false;
+        }
+        // Otras validaciones si son necesarias
+    });
+
+});
 </script>
 </body>
 </html>

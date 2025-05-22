@@ -17,28 +17,26 @@ $id_usuario_actual = (int)$_SESSION['id_usuario'];
 // $nombres_sesion está disponible gracias a layout/sesion.php
 
 $pageTitle = "Listado de Compras";
-$modulo_abierto = "compras"; // Para el menú activo en AdminLTE (según tu layout/parte1.php)
-$pagina_activa = "compras_listado"; // Un nombre único para esta página específica si necesitas diferenciarla en el sidebar
+$modulo_abierto = "compras"; 
+$pagina_activa = "compras_listado"; 
 
 // 3. Lógica para obtener las compras del usuario actual
-// Cada "compra" es un conjunto de filas en tb_compras con el mismo nro_compra.
-// Se agrupan para mostrar un resumen por cada transacción de compra.
 $stmt_compras_agrupadas = $pdo->prepare("
     SELECT 
         c.nro_compra, 
         c.fecha_compra, 
         prov.nombre_proveedor,
         prov.empresa as empresa_proveedor,
-        usr.nombres as nombre_usuario_registro, -- Quién registró la compra (será el usuario actual en "mis compras")
+        usr.nombres as nombre_usuario_registro, /* Quién registró la compra */
         c.comprobante,
-        SUM(c.cantidad * c.precio_compra) as total_compra_calculado, -- El precio_compra en tb_compras es VARCHAR, necesita CAST
+        SUM(c.cantidad * CAST(c.precio_compra AS DECIMAL(10,2))) as total_compra_calculado, /* Cast si precio_compra es VARCHAR */
         GROUP_CONCAT(DISTINCT alm.nombre ORDER BY alm.nombre SEPARATOR ', ') as productos_resumen,
         MAX(c.fyh_creacion) as fyh_creacion_compra 
     FROM tb_compras as c
     INNER JOIN tb_proveedores as prov ON c.id_proveedor = prov.id_proveedor
     INNER JOIN tb_usuarios as usr ON c.id_usuario = usr.id_usuario
     INNER JOIN tb_almacen as alm ON c.id_producto = alm.id_producto
-    WHERE c.id_usuario = :id_usuario_actual -- MUY IMPORTANTE: Filtrar por el usuario actual
+    WHERE c.id_usuario = :id_usuario_actual /* MUY IMPORTANTE: Filtrar por el usuario actual */
     GROUP BY c.nro_compra, c.fecha_compra, prov.nombre_proveedor, prov.empresa, usr.nombres, c.comprobante
     ORDER BY c.fecha_compra DESC, MAX(c.fyh_creacion) DESC
 ");
@@ -47,7 +45,7 @@ $stmt_compras_agrupadas->execute();
 $compras_listado = $stmt_compras_agrupadas->fetchAll(PDO::FETCH_ASSOC);
 
 // --- Inicio de la Plantilla AdminLTE ---
-require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav>, <aside>
+require_once __DIR__ . '/../layout/parte1.php'; 
 ?>
 
 <!-- Content Wrapper. Contiene el contenido de la página -->
@@ -79,13 +77,19 @@ require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav
 
             <?php if (isset($_GET['status']) && $_GET['status'] === 'compra_registrada'): ?>
                 <script>
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: 'Compra registrada correctamente.',
-                        timer: 2500,
-                        showConfirmButton: false
-                    });
+                    // Asegurarse que Swal esté definido antes de usarlo
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Éxito!',
+                            text: 'Compra registrada correctamente.',
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        // Fallback si Swal no está listo (aunque debería por layout/parte1.php)
+                        alert('Compra registrada correctamente.');
+                    }
                 </script>
             <?php endif; ?>
             
@@ -94,7 +98,7 @@ require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav
                     <a href="create.php" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Registrar Nueva Compra
                     </a>
-                    <a href="reporte_compras.php" class="btn btn-info" target="_blank"> <!-- Asumiendo un script para reportes -->
+                    <a href="reporte_compras.php" class="btn btn-info" target="_blank"> 
                         <i class="fas fa-file-pdf"></i> Generar Reporte PDF
                     </a>
                 </div>
@@ -117,7 +121,6 @@ require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav
                                     <th style="width: 15%;">Comprobante</th>
                                     <th>Productos (Resumen)</th>
                                     <th style="width: 10%;" class="text-right">Total</th>
-                                    <!-- <th style="width: 10%;">Registrado por</th> -->
                                     <th style="width: 10%;" class="text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -139,18 +142,14 @@ require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav
                                             <td><small><?php echo htmlspecialchars($compra['productos_resumen']); ?></small></td>
                                             <td class="text-right">
                                                 <?php 
-                                                // Asegurarse de que el total se formatea correctamente
                                                 $total_compra = (float) $compra['total_compra_calculado'];
                                                 echo htmlspecialchars(number_format($total_compra, 2, '.', ',')); 
                                                 ?>
                                             </td>
-                                            <!-- La columna "Registrado por" es redundante aquí ya que son las compras del usuario actual -->
-                                            <!-- <td><?php echo htmlspecialchars($compra['nombre_usuario_registro']); ?></td> -->
                                             <td class="text-center">
-                                                <a href="show.php?nro_compra=<?php echo htmlspecialchars($compra['nro_compra']); ?>" class="btn btn-info btn-xs" title="Ver Detalles">
+                                                <a href="show.php?nro_compra=<?php echo htmlspecialchars($compra['nro_compra']); ?>&id_usuario=<?php echo $id_usuario_actual; /* Pasar id_usuario para show.php */?>" class="btn btn-info btn-xs" title="Ver Detalles">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <!-- Podrías añadir más acciones como "Anular" o "Imprimir Comprobante Específico" -->
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -175,23 +174,23 @@ require_once __DIR__ . '/../layout/parte1.php'; // Contiene <html>, <head>, <nav
 
 <?php
 // --- Fin de la Plantilla AdminLTE ---
-require_once __DIR__ . '/../layout/parte2.php'; // Contiene el footer y los scripts JS base de AdminLTE
+require_once __DIR__ . '/../layout/parte2.php'; 
 ?>
 
-<!-- Script específico para DataTables (Opcional, pero recomendado para tablas con muchos datos) -->
-<!-- Los JS de DataTables ya están incluidos en tu layout/parte1.php y layout/parte2.php -->
 <script>
 $(document).ready(function() {
-    $('#tabla_compras').DataTable({
-        "responsive": true,
-        "lengthChange": false,
-        "autoWidth": false,
-        "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"],
-        "language": {
-            "url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-bs4/Spanish.json" // Ajusta la ruta si es necesario
-        },
-        "order": [[ 2, "desc" ]] // Ordenar por fecha descendente por defecto
-    }).buttons().container().appendTo('#tabla_compras_wrapper .col-md-6:eq(0)');
+    if ($.fn.DataTable) { // Verificar que DataTables esté cargado
+        $('#tabla_compras').DataTable({
+            "responsive": true,
+            "lengthChange": false,
+            "autoWidth": false,
+            "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"],
+            "language": {
+                "url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-bs4/Spanish.json" 
+            },
+            "order": [[ 2, "desc" ]] 
+        }).buttons().container().appendTo('#tabla_compras_wrapper .col-md-6:eq(0)');
+    }
 });
 </script>
 
