@@ -1,134 +1,147 @@
 <?php
-// Configuración, sesión y modelos necesarios
-require_once __DIR__ . '/../app/config.php'; // $pdo, $URL, $fechaHora
-require_once __DIR__ . '/../app/models/AlmacenModel.php';
-// require_once __DIR__ . '/../app/utils/Validator.php'; // Si necesitas validaciones más complejas
+// --- Resumen del Archivo ---
+// Nombre: almacen/acciones_almacen.php
+// Función: Maneja acciones CRUD para productos del almacén, especialmente la creación rápida.
+//          Es invocado vía AJAX desde compras/create.php (modal de creación rápida).
+// Método HTTP esperado: POST
+// Parámetros POST esperados para 'crear_producto_almacen_rapido':
+//   - accion: 'crear_producto_almacen_rapido'
+//   - id_usuario_creador: ID del usuario
+//   - producto_codigo: Código del producto (generado por controller_generar_siguiente_codigo.php)
+//   - producto_nombre: Nombre
+//   - producto_descripcion: Descripción (opcional)
+//   - producto_id_categoria: ID de la categoría
+//   - producto_precio_compra: Precio de compra
+//   - producto_precio_venta: Precio de venta
+//   - producto_iva_predeterminado: IVA predeterminado del producto (NUEVO)
+//   - producto_stock_minimo: Stock mínimo (opcional)
+//   - producto_stock_maximo: Stock máximo (opcional)
+//   - producto_fecha_ingreso: Fecha de ingreso
+// Respuesta: JSON
+//   - Éxito: {"status": "success", "message": "...", "producto": { ...datos del producto... }}
+//   - Error: {"status": "error", "message": "..."}
 
-// Iniciar sesión si aún no está iniciada
-if (session_status() == PHP_SESSION_NONE) {
+require_once __DIR__ . '/../app/config.php';
+require_once __DIR__ . '/../app/models/AlmacenModel.php';
+
+header('Content-Type: application/json');
+$response = ['status' => 'error', 'message' => 'Acción no reconocida o datos incompletos.'];
+
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Respuesta por defecto
-$response = ['status' => 'error', 'message' => 'Acción no válida o error desconocido.'];
-
-// Verificar que el usuario esté logueado
 if (!isset($_SESSION['id_usuario'])) {
-    $response['message'] = 'Sesión expirada. Por favor, inicie sesión de nuevo.';
-    header('Content-Type: application/json');
+    $response['message'] = 'Sesión no iniciada.';
     echo json_encode($response);
     exit;
 }
-$id_usuario_actual = (int)$_SESSION['id_usuario'];
+$id_usuario_actual = $_SESSION['id_usuario'];
 
-// Procesar solo si es una petición POST y la acción es la correcta
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'crear_producto_almacen_rapido') {
-    
-    // Validar que el id_usuario_creador del formulario coincida con el de la sesión
-    $id_usuario_form = filter_input(INPUT_POST, 'id_usuario_creador', FILTER_VALIDATE_INT);
-    if ($id_usuario_form !== $id_usuario_actual) {
-        $response['message'] = 'Error de validación de usuario.';
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        exit;
-    }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+    $almacenModel = new AlmacenModel($pdo);
+    $accion = $_POST['accion'];
 
-    // Recuperar y sanitizar datos del POST
-    $producto_codigo = filter_input(INPUT_POST, 'producto_codigo', FILTER_SANITIZE_STRING);
-    $producto_nombre = filter_input(INPUT_POST, 'producto_nombre', FILTER_SANITIZE_STRING);
-    $producto_descripcion = filter_input(INPUT_POST, 'producto_descripcion', FILTER_SANITIZE_STRING);
-    $producto_id_categoria = filter_input(INPUT_POST, 'producto_id_categoria', FILTER_VALIDATE_INT);
-    $producto_fecha_ingreso = filter_input(INPUT_POST, 'producto_fecha_ingreso', FILTER_SANITIZE_STRING); // Validar formato YYYY-MM-DD después
-    $producto_precio_compra = filter_input(INPUT_POST, 'producto_precio_compra', FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-    $producto_precio_venta = filter_input(INPUT_POST, 'producto_precio_venta', FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-    $producto_stock_minimo = filter_input(INPUT_POST, 'producto_stock_minimo', FILTER_VALIDATE_INT);
-    $producto_stock_maximo = filter_input(INPUT_POST, 'producto_stock_maximo', FILTER_VALIDATE_INT);
-    // $producto_stock_inicial = 0; // El stock se manejará con la compra en sí
-
-    // Validaciones básicas
-    if (empty($producto_nombre) || !$producto_id_categoria || $producto_precio_compra === false || $producto_precio_compra < 0 || $producto_precio_venta === false || $producto_precio_venta < 0) {
-        $response['message'] = 'Faltan datos requeridos o tienen formato incorrecto (Nombre, Categoría, Precios).';
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        exit;
-    }
-    if (!preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $producto_fecha_ingreso)) {
-        $response['message'] = 'Formato de fecha de ingreso inválido.';
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        exit;
-    }
-
-
-    try {
-        $almacenModel = new AlmacenModel($pdo);
-
-        // Generar código si no se proporcionó
-        if (empty($producto_codigo)) {
-            $producto_codigo = $almacenModel->generarCodigoProducto($id_usuario_actual);
-        } else {
-            // Opcional: Validar si el código manual ya existe para este usuario
-            // $stmt_check_code = $pdo->prepare("SELECT COUNT(*) FROM tb_almacen WHERE codigo = :codigo AND id_usuario = :id_usuario");
-            // $stmt_check_code->bindParam(':codigo', $producto_codigo);
-            // $stmt_check_code->bindParam(':id_usuario', $id_usuario_actual);
-            // $stmt_check_code->execute();
-            // if ($stmt_check_code->fetchColumn() > 0) {
-            //    $response['message'] = "El código de producto '{$producto_codigo}' ya existe para usted. Déjelo en blanco para autogenerar o ingrese uno diferente.";
-            //    header('Content-Type: application/json');
-            //    echo json_encode($response);
-            //    exit;
-            // }
+    if ($accion === 'crear_producto_almacen_rapido') {
+        // Validar que el id_usuario_creador coincida con la sesión
+        $id_usuario_creador_post = filter_input(INPUT_POST, 'id_usuario_creador', FILTER_VALIDATE_INT);
+        if ($id_usuario_creador_post !== $id_usuario_actual) {
+            $response['message'] = 'Error de validación de usuario.';
+            echo json_encode($response);
+            exit;
         }
+
+        // Recoger y sanitizar datos
+        $producto_codigo = filter_input(INPUT_POST, 'producto_codigo', FILTER_SANITIZE_STRING);
+        $producto_nombre = filter_input(INPUT_POST, 'producto_nombre', FILTER_SANITIZE_STRING);
+        $producto_descripcion = filter_input(INPUT_POST, 'producto_descripcion', FILTER_SANITIZE_STRING);
+        $producto_id_categoria = filter_input(INPUT_POST, 'producto_id_categoria', FILTER_VALIDATE_INT);
+        
+        // Para campos decimales/flotantes, validar y convertir
+        $producto_precio_compra_str = filter_input(INPUT_POST, 'producto_precio_compra', FILTER_SANITIZE_STRING);
+        $producto_precio_venta_str = filter_input(INPUT_POST, 'producto_precio_venta', FILTER_SANITIZE_STRING);
+        $producto_iva_predeterminado_str = filter_input(INPUT_POST, 'producto_iva_predeterminado', FILTER_SANITIZE_STRING);
+
+        $producto_precio_compra = filter_var($producto_precio_compra_str, FILTER_VALIDATE_FLOAT);
+        $producto_precio_venta = filter_var($producto_precio_venta_str, FILTER_VALIDATE_FLOAT);
+        $producto_iva_predeterminado = filter_var($producto_iva_predeterminado_str, FILTER_VALIDATE_FLOAT);
+
+
+        $producto_stock_minimo = filter_input(INPUT_POST, 'producto_stock_minimo', FILTER_VALIDATE_INT, ['options' => ['default' => null]]);
+        $producto_stock_maximo = filter_input(INPUT_POST, 'producto_stock_maximo', FILTER_VALIDATE_INT, ['options' => ['default' => null]]);
+        $producto_fecha_ingreso = filter_input(INPUT_POST, 'producto_fecha_ingreso', FILTER_SANITIZE_STRING); // Validar formato fecha si es necesario
+
+        // Validaciones básicas
+        if (empty($producto_codigo) || empty($producto_nombre) || $producto_id_categoria === false ||
+            $producto_precio_compra === false || $producto_precio_venta === false ||
+            $producto_iva_predeterminado === false || // IVA es requerido
+            empty($producto_fecha_ingreso)) {
+            
+            $missing_fields = [];
+            if (empty($producto_codigo)) $missing_fields[] = 'Código';
+            if (empty($producto_nombre)) $missing_fields[] = 'Nombre';
+            if ($producto_id_categoria === false) $missing_fields[] = 'Categoría';
+            if ($producto_precio_compra === false) $missing_fields[] = 'Precio Compra';
+            if ($producto_precio_venta === false) $missing_fields[] = 'Precio Venta';
+            if ($producto_iva_predeterminado === false) $missing_fields[] = 'IVA Predeterminado';
+            if (empty($producto_fecha_ingreso)) $missing_fields[] = 'Fecha Ingreso';
+
+            $response['message'] = 'Faltan datos requeridos o son inválidos: ' . implode(', ', $missing_fields);
+            // Para depuración más detallada:
+            // $response['debug_iva_str'] = $producto_iva_predeterminado_str;
+            // $response['debug_iva_float'] = $producto_iva_predeterminado;
+            echo json_encode($response);
+            exit;
+        }
+        
+        // El stock inicial al crear un producto desde aquí suele ser 0, ya que se añade con una compra.
+        $stock_inicial = 0; 
 
         $datos_nuevo_producto = [
             'codigo' => $producto_codigo,
             'nombre' => $producto_nombre,
             'descripcion' => $producto_descripcion ?: null,
-            'stock' => 0, // Stock inicial es 0, se actualizará con la compra
-            'stock_minimo' => $producto_stock_minimo ?: null,
-            'stock_maximo' => $producto_stock_maximo ?: null,
+            'stock' => $stock_inicial, 
+            'stock_minimo' => $producto_stock_minimo,
+            'stock_maximo' => $producto_stock_maximo,
             'precio_compra' => $producto_precio_compra,
             'precio_venta' => $producto_precio_venta,
+            'iva_predeterminado' => $producto_iva_predeterminado, // NUEVO CAMPO
             'fecha_ingreso' => $producto_fecha_ingreso,
-            'imagen' => null, // La subida de imágenes no se maneja en este "quick add"
+            'imagen' => null, // La creación rápida no maneja imagen
             'id_usuario' => $id_usuario_actual,
             'id_categoria' => $producto_id_categoria,
-            'fyh_creacion' => $fechaHora, // De config.php
-            'fyh_actualizacion' => $fechaHora // De config.php
+            'fyh_creacion' => $fechaHora, // $fechaHora viene de config.php
+            'fyh_actualizacion' => $fechaHora
         ];
 
-        $nuevo_producto_id = $almacenModel->crearProducto($datos_nuevo_producto);
-
-        if ($nuevo_producto_id) {
-            $response['status'] = 'success';
-            $response['message'] = 'Producto "' . htmlspecialchars($producto_nombre) . '" creado exitosamente en el almacén.';
-            // Devolver los datos clave del producto para usar en el JS de compras/create.php
-            $response['producto'] = [
-                'id_producto' => (int)$nuevo_producto_id, // Asegurar que sea entero
-                'codigo' => $producto_codigo,
-                'nombre' => $producto_nombre,
-                'precio_compra' => $producto_precio_compra,
-                'stock' => 0 // El stock actual antes de la compra
-                // Podrías añadir más campos si el JS los necesita
-            ];
-        } else {
-            $response['message'] = 'Error al guardar el producto en la base de datos.';
-            // Podrías loggear el error real del modelo aquí si lo capturas
+        try {
+            $id_nuevo_producto = $almacenModel->crearProducto($datos_nuevo_producto);
+            if ($id_nuevo_producto) {
+                $producto_creado = $almacenModel->getProductoByIdAndUsuarioId(intval($id_nuevo_producto), $id_usuario_actual);
+                if ($producto_creado) {
+                    // Asegurar que el producto devuelto incluya el iva_predeterminado
+                    // getProductoByIdAndUsuarioId ya lo hace si la columna existe y tiene valor.
+                    $response['status'] = 'success';
+                    $response['message'] = 'Producto "' . htmlspecialchars($producto_creado['nombre']) . '" creado exitosamente.';
+                    // Devolver el objeto producto completo, incluyendo el iva_predeterminado que ahora está en la tabla
+                    $response['producto'] = $producto_creado; 
+                } else {
+                     $response['message'] = 'Producto creado, pero no se pudo recuperar para la respuesta.';
+                }
+            } else {
+                $response['message'] = 'Error al guardar el producto en la base de datos.';
+            }
+        } catch (PDOException $e) {
+            error_log("Error PDO en acciones_almacen.php (crear producto): " . $e->getMessage());
+            $response['message'] = 'Error de base de datos al crear el producto.';
+        } catch (Exception $e) {
+            error_log("Error general en acciones_almacen.php (crear producto): " . $e->getMessage());
+            $response['message'] = 'Error inesperado del servidor al crear el producto.';
         }
-
-    } catch (PDOException $e) {
-        // Loggear el error: error_log("Error PDO en almacen/acciones_almacen.php: " . $e->getMessage());
-        $response['message'] = 'Error de base de datos al crear el producto.';
-    } catch (Exception $e) {
-        // Loggear el error: error_log("Error general en almacen/acciones_almacen.php: " . $e->getMessage());
-        $response['message'] = 'Ocurrió un error inesperado: ' . $e->getMessage();
     }
-
-} else {
-    $response['message'] = 'Acceso no válido.';
+    // Aquí podrían ir otras acciones como 'actualizar_producto_rapido', 'eliminar_producto_rapido'
 }
 
-header('Content-Type: application/json');
 echo json_encode($response);
-exit;
 ?>

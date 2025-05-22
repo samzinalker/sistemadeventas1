@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 17-05-2025 a las 13:59:56
+-- Tiempo de generación: 23-05-2025 a las 01:18:24
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.0.30
 
@@ -37,6 +37,7 @@ CREATE TABLE `tb_almacen` (
   `stock_maximo` int(11) DEFAULT NULL,
   `precio_compra` decimal(10,2) DEFAULT NULL,
   `precio_venta` decimal(10,2) DEFAULT NULL,
+  `iva_predeterminado` decimal(5,2) DEFAULT 0.00 COMMENT 'IVA predeterminado',
   `fecha_ingreso` date NOT NULL,
   `imagen` text DEFAULT NULL,
   `id_usuario` int(11) NOT NULL,
@@ -49,9 +50,11 @@ CREATE TABLE `tb_almacen` (
 -- Volcado de datos para la tabla `tb_almacen`
 --
 
-INSERT INTO `tb_almacen` (`id_producto`, `codigo`, `nombre`, `descripcion`, `stock`, `stock_minimo`, `stock_maximo`, `precio_compra`, `precio_venta`, `fecha_ingreso`, `imagen`, `id_usuario`, `id_categoria`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(1, 'P-00001', 'pepsi', '1 litro', 109, 11, 120, 0.50, 1.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-05-17 06:09:54'),
-(5, 'P-00002', 'logo', 'tiendita', 8, 5, 30, 0.75, 1.90, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '2025-05-17 06:10:04');
+INSERT INTO `tb_almacen` (`id_producto`, `codigo`, `nombre`, `descripcion`, `stock`, `stock_minimo`, `stock_maximo`, `precio_compra`, `precio_venta`, `iva_predeterminado`, `fecha_ingreso`, `imagen`, `id_usuario`, `id_categoria`, `fyh_creacion`, `fyh_actualizacion`) VALUES
+(1, 'P-00001', 'pepsi', '1 litro', 109, 11, 120, 0.50, 1.00, 0.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-05-17 06:09:54'),
+(5, 'P-00002', 'logo', 'tiendita', 8, 5, 30, 0.75, 1.90, 0.00, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '2025-05-17 06:10:04'),
+(12, 'P-00003', 'fsafsaasfsaf', 'fasasfasfsaf', 12, 10, 222, 12.00, 22.00, 0.00, '2025-05-22', 'default_product.png', 1, 14, '2025-05-22 17:49:35', '2025-05-22 17:49:35'),
+(13, 'P-00004', 'fsafas', 'fsafsaf', 12, 1, 1212, 12.00, 112.00, 0.00, '2025-05-22', 'default_product.png', 1, 13, '2025-05-22 17:57:23', '2025-05-22 17:57:23');
 
 -- --------------------------------------------------------
 
@@ -219,7 +222,7 @@ CREATE TABLE `tb_usuarios` (
 --
 
 INSERT INTO `tb_usuarios` (`id_usuario`, `nombres`, `email`, `imagen_perfil`, `password_user`, `token`, `id_rol`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(1, 'marcelo mamani', 'marcelo@gmail.com', '2025-05-11-14-59-30_682101a228f7c.PNG', '$2y$10$75JF2CgxfIl0D2FvA2n7Ce0lJogqlHHmV9I38Z2SHytN7iElNtSxm', '', 1, '2025-04-14 21:07:42', '2025-05-17 05:06:06'),
+(1, 'marcelo mamani', 'marcelo@gmail.com', '2025-05-11-14-59-30_682101a228f7c.PNG', '$2y$10$75JF2CgxfIl0D2FvA2n7Ce0lJogqlHHmV9I38Z2SHytN7iElNtSxm', '', 1, '2025-04-14 21:07:42', '2025-05-22 04:14:29'),
 (10, 'administrador', 'admin@gmail.com', 'user_default.png', '$2y$10$LOP8dOv1tmWBnuZOrxmnw.TK6358ZDbFSgo6FwjuOtm.JVYxd8YGG', '', 1, '2025-05-03 06:55:54', '0000-00-00 00:00:00'),
 (12, 'venderw', 'vender@gmail.com', 'user_default.png', '$2y$10$EBfd4aY2yFbbWpkPSAC1XO4PKFeWTK9r9WKa/WB5iRTD5fRGlRNJi', '', 7, '2025-05-04 06:19:20', '2025-05-11 14:41:07'),
 (13, 'xd 22', '1@gmail.com', 'user_default.png', '$2y$10$uzWGvuEd0xTk3.jnYza22.FMIzgIxgsPYuGzl7oHngZDxtE6mrr4S', '', 1, '2025-05-08 21:57:46', '2025-05-11 15:04:05'),
@@ -326,7 +329,7 @@ ALTER TABLE `tb_ventas`
 -- AUTO_INCREMENT de la tabla `tb_almacen`
 --
 ALTER TABLE `tb_almacen`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_carrito`

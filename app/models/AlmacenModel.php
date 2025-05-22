@@ -45,18 +45,24 @@ class AlmacenModel {
      */
     public function crearProducto(array $datos): ?string {
         $sql = "INSERT INTO tb_almacen (codigo, nombre, descripcion, stock, stock_minimo, stock_maximo, 
-                                      precio_compra, precio_venta, fecha_ingreso, imagen, 
+                                      precio_compra, precio_venta, iva_predeterminado, fecha_ingreso, imagen, 
                                       id_usuario, id_categoria, fyh_creacion, fyh_actualizacion)
                 VALUES (:codigo, :nombre, :descripcion, :stock, :stock_minimo, :stock_maximo, 
-                        :precio_compra, :precio_venta, :fecha_ingreso, :imagen, 
+                        :precio_compra, :precio_venta, :iva_predeterminado, :fecha_ingreso, :imagen, 
                         :id_usuario, :id_categoria, :fyh_creacion, :fyh_actualizacion)";
         
         $query = $this->pdo->prepare($sql);
         // Bind todos los parámetros desde el array $datos
         foreach ($datos as $key => $value) {
             $paramType = PDO::PARAM_STR;
+            // Ajustar tipos para enteros y ahora para el nuevo campo decimal 'iva_predeterminado'
             if (is_int($value) || $key === 'id_usuario' || $key === 'id_categoria' || $key === 'stock' || $key === 'stock_minimo' || $key === 'stock_maximo') {
                 $paramType = PDO::PARAM_INT;
+            } elseif (is_float($value) || $key === 'precio_compra' || $key === 'precio_venta' || $key === 'iva_predeterminado') {
+                // PDO no tiene un tipo específico para DECIMAL, PARAM_STR suele funcionar bien.
+                // Asegúrate de que el valor sea un string formateado correctamente para decimal o un float.
+                // Si $value es un float, PDO lo manejará. Si es un string, debe ser '12.34'.
+                $paramType = PDO::PARAM_STR; 
             }
             $query->bindValue(":$key", $value, $paramType);
         }
@@ -64,6 +70,8 @@ class AlmacenModel {
         if ($query->execute()) {
             return $this->pdo->lastInsertId();
         }
+        // Loguear error si es necesario
+        // error_log("Error al crear producto: " . print_r($query->errorInfo(), true));
         return null;
     }
 
@@ -78,19 +86,14 @@ class AlmacenModel {
                 INNER JOIN tb_categorias as c ON p.id_categoria = c.id_categoria
                 WHERE p.id_usuario = :id_usuario
                 ORDER BY p.nombre ASC";
+        // p.* ya incluirá la nueva columna iva_predeterminado
         $query = $this->pdo->prepare($sql);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
-
+    
     /**
-     * Obtiene un producto específico por su ID y el ID del usuario propietario.
-     * @param int $id_producto
-     * @param int $id_usuario
-     * @return array|false
-     */
-     /**
      * Obtiene un producto específico por su ID y el ID del usuario propietario.
      * Se une con la tabla de categorías para obtener el nombre de la categoría.
      * @param int $id_producto
@@ -102,6 +105,7 @@ class AlmacenModel {
                 FROM tb_almacen as p
                 INNER JOIN tb_categorias as c ON p.id_categoria = c.id_categoria
                 WHERE p.id_producto = :id_producto AND p.id_usuario = :id_usuario";
+        // p.* ya incluirá la nueva columna iva_predeterminado
         $query = $this->pdo->prepare($sql);
         $query->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
@@ -124,8 +128,13 @@ class AlmacenModel {
 
         // Construcción dinámica de la consulta para actualizar solo los campos proporcionados
         $set_parts = [];
+        // Asegurarse de que iva_predeterminado se pueda actualizar
+        $campos_permitidos_actualizar = array_keys($producto_actual); // Todos los campos de la tabla son potencialmente actualizables
+                                                                // excepto quizás id_producto, id_usuario, fyh_creacion
+
         foreach (array_keys($datos) as $key) {
-            if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && array_key_exists($key, $producto_actual)) { // Evitar actualizar PK o campos no existentes
+            // Permitir actualizar iva_predeterminado
+            if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && in_array($key, $campos_permitidos_actualizar)) {
                  $set_parts[] = "$key = :$key";
             }
         }
@@ -144,8 +153,13 @@ class AlmacenModel {
         $query = $this->pdo->prepare($sql);
         
         foreach ($datos as $key => $value) {
-            if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && array_key_exists($key, $producto_actual)) {
-                 $paramType = (is_int($value) || $key === 'id_categoria' || $key === 'stock' || $key === 'stock_minimo' || $key === 'stock_maximo') ? PDO::PARAM_INT : PDO::PARAM_STR;
+            if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && in_array($key, $campos_permitidos_actualizar)) {
+                 $paramType = PDO::PARAM_STR;
+                 if (is_int($value) || $key === 'id_categoria' || $key === 'stock' || $key === 'stock_minimo' || $key === 'stock_maximo') {
+                     $paramType = PDO::PARAM_INT;
+                 } elseif (is_float($value) || $key === 'precio_compra' || $key === 'precio_venta' || $key === 'iva_predeterminado') {
+                     $paramType = PDO::PARAM_STR;
+                 }
                  $query->bindValue(":$key", $value, $paramType);
             }
         }
