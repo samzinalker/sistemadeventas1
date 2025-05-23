@@ -7,6 +7,9 @@ class AlmacenModel {
         $this->pdo = $pdo;
     }
 
+    // ... (métodos existentes: generarCodigoProducto, crearProducto, getProductosByUsuarioId, etc.) ...
+    // COPIAR Y PEGAR LOS MÉTODOS EXISTENTES AQUÍ PARA MANTENER EL ARCHIVO COMPLETO
+
     /**
      * Genera un nuevo código de producto único para un usuario.
      * Formato: P-XXXXX (donde XXXXX es un número secuencial para ese usuario)
@@ -55,13 +58,9 @@ class AlmacenModel {
         // Bind todos los parámetros desde el array $datos
         foreach ($datos as $key => $value) {
             $paramType = PDO::PARAM_STR;
-            // Ajustar tipos para enteros y ahora para el nuevo campo decimal 'iva_predeterminado'
             if (is_int($value) || $key === 'id_usuario' || $key === 'id_categoria' || $key === 'stock' || $key === 'stock_minimo' || $key === 'stock_maximo') {
                 $paramType = PDO::PARAM_INT;
             } elseif (is_float($value) || $key === 'precio_compra' || $key === 'precio_venta' || $key === 'iva_predeterminado') {
-                // PDO no tiene un tipo específico para DECIMAL, PARAM_STR suele funcionar bien.
-                // Asegúrate de que el valor sea un string formateado correctamente para decimal o un float.
-                // Si $value es un float, PDO lo manejará. Si es un string, debe ser '12.34'.
                 $paramType = PDO::PARAM_STR; 
             }
             $query->bindValue(":$key", $value, $paramType);
@@ -70,8 +69,6 @@ class AlmacenModel {
         if ($query->execute()) {
             return $this->pdo->lastInsertId();
         }
-        // Loguear error si es necesario
-        // error_log("Error al crear producto: " . print_r($query->errorInfo(), true));
         return null;
     }
 
@@ -86,72 +83,44 @@ class AlmacenModel {
                 INNER JOIN tb_categorias as c ON p.id_categoria = c.id_categoria
                 WHERE p.id_usuario = :id_usuario
                 ORDER BY p.nombre ASC";
-        // p.* ya incluirá la nueva columna iva_predeterminado
         $query = $this->pdo->prepare($sql);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    /**
-     * Obtiene un producto específico por su ID y el ID del usuario propietario.
-     * Se une con la tabla de categorías para obtener el nombre de la categoría.
-     * @param int $id_producto
-     * @param int $id_usuario
-     * @return array|false Los datos del producto o false si no se encuentra o no pertenece al usuario.
-     */
     public function getProductoByIdAndUsuarioId(int $id_producto, int $id_usuario) {
         $sql = "SELECT p.*, c.nombre_categoria as categoria
                 FROM tb_almacen as p
                 INNER JOIN tb_categorias as c ON p.id_categoria = c.id_categoria
                 WHERE p.id_producto = :id_producto AND p.id_usuario = :id_usuario";
-        // p.* ya incluirá la nueva columna iva_predeterminado
         $query = $this->pdo->prepare($sql);
         $query->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $query->execute();
-        return $query->fetch(PDO::FETCH_ASSOC); // Devuelve una sola fila o false
+        return $query->fetch(PDO::FETCH_ASSOC); 
     }
     
-    /**
-     * Actualiza un producto existente de un usuario.
-     * @param int $id_producto
-     * @param int $id_usuario
-     * @param array $datos
-     * @return bool
-     */
     public function actualizarProducto(int $id_producto, int $id_usuario, array $datos): bool {
         $producto_actual = $this->getProductoByIdAndUsuarioId($id_producto, $id_usuario);
         if (!$producto_actual) {
             return false; 
         }
-
-        // Construcción dinámica de la consulta para actualizar solo los campos proporcionados
         $set_parts = [];
-        // Asegurarse de que iva_predeterminado se pueda actualizar
-        $campos_permitidos_actualizar = array_keys($producto_actual); // Todos los campos de la tabla son potencialmente actualizables
-                                                                // excepto quizás id_producto, id_usuario, fyh_creacion
-
+        $campos_permitidos_actualizar = array_keys($producto_actual); 
         foreach (array_keys($datos) as $key) {
-            // Permitir actualizar iva_predeterminado
             if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && in_array($key, $campos_permitidos_actualizar)) {
                  $set_parts[] = "$key = :$key";
             }
         }
-         // Manejo especial para la imagen si se incluye en $datos
         if (!empty($datos['imagen'])) {
             $set_parts[] = "imagen = :imagen";
         }
         $set_parts[] = "fyh_actualizacion = :fyh_actualizacion";
-
-
-        if (empty($set_parts)) return false; // Nada que actualizar
-
+        if (empty($set_parts)) return false; 
         $sql = "UPDATE tb_almacen SET " . implode(', ', $set_parts) . 
                " WHERE id_producto = :id_producto_cond AND id_usuario = :id_usuario_cond";
-        
         $query = $this->pdo->prepare($sql);
-        
         foreach ($datos as $key => $value) {
             if ($key !== 'fyh_actualizacion' && $key !== 'imagen' && in_array($key, $campos_permitidos_actualizar)) {
                  $paramType = PDO::PARAM_STR;
@@ -169,15 +138,52 @@ class AlmacenModel {
         $query->bindValue(':fyh_actualizacion', $datos['fyh_actualizacion'], PDO::PARAM_STR);
         $query->bindValue(':id_producto_cond', $id_producto, PDO::PARAM_INT);
         $query->bindValue(':id_usuario_cond', $id_usuario, PDO::PARAM_INT);
-        
         return $query->execute();
     }
 
     /**
-     * Verifica si un producto está en uso (tb_carrito o tb_compras).
-     * @param int $id_producto
-     * @return bool
+     * Ajusta el stock de un producto específico.
+     * Si la cantidad es positiva, incrementa el stock. Si es negativa, lo decrementa.
+     * @param int $id_producto ID del producto.
+     * @param float $cantidad_ajuste La cantidad a sumar/restar (puede ser decimal si el stock fuera decimal).
+     * @param int $id_usuario_producto ID del usuario propietario del producto (para seguridad).
+     * @return bool True si la actualización fue exitosa, false en caso contrario.
+     * @throws Exception Si el producto no se encuentra o no pertenece al usuario.
      */
+    public function ajustarStockProducto(int $id_producto, float $cantidad_ajuste, int $id_usuario_producto): bool {
+        // Primero, verificar que el producto exista y pertenezca al usuario.
+        $producto = $this->getProductoByIdAndUsuarioId($id_producto, $id_usuario_producto);
+        if (!$producto) {
+            // Lanzar una excepción es una buena práctica aquí para que la transacción en ComprasModel haga rollback.
+            throw new Exception("Producto con ID $id_producto no encontrado o no pertenece al usuario $id_usuario_producto.");
+        }
+
+        // Dado que tb_almacen.stock es INT, convertimos la cantidad de ajuste a entero.
+        // Decide tu política de redondeo aquí si $cantidad_ajuste es decimal.
+        // Por simplicidad, usaremos intval(), que trunca.
+        $cantidad_ajuste_entero = intval($cantidad_ajuste);
+
+        // Si $cantidad_ajuste_entero es 0 después de intval() y $cantidad_ajuste original no era 0,
+        // podrías querer manejarlo de forma diferente (ej. no hacer nada o registrar un aviso).
+        // Por ahora, si resulta en 0, no se hará cambio de stock si el original no era 0.
+        // if ($cantidad_ajuste_entero == 0 && $cantidad_ajuste != 0) {
+        //     // Opcional: log o manejo especial
+        // }
+
+
+        $sql = "UPDATE tb_almacen SET stock = stock + :cantidad_ajuste, fyh_actualizacion = :fyh_actualizacion
+                WHERE id_producto = :id_producto AND id_usuario = :id_usuario_producto";
+        
+        $query = $this->pdo->prepare($sql);
+        $query->bindValue(':cantidad_ajuste', $cantidad_ajuste_entero, PDO::PARAM_INT); // Sumar la cantidad entera
+        $query->bindValue(':fyh_actualizacion', date('Y-m-d H:i:s'), PDO::PARAM_STR);
+        $query->bindValue(':id_producto', $id_producto, PDO::PARAM_INT);
+        $query->bindValue(':id_usuario_producto', $id_usuario_producto, PDO::PARAM_INT);
+        
+        return $query->execute();
+    }
+
+
     public function productoEnUso(int $id_producto): bool {
         $sql_carrito = "SELECT COUNT(*) FROM tb_carrito WHERE id_producto = :id_producto";
         $query_carrito = $this->pdo->prepare($sql_carrito);
@@ -185,34 +191,39 @@ class AlmacenModel {
         $query_carrito->execute();
         if ($query_carrito->fetchColumn() > 0) return true;
 
-        $sql_compras = "SELECT COUNT(*) FROM tb_compras WHERE id_producto = :id_producto";
-        $query_compras = $this->pdo->prepare($sql_compras);
-        $query_compras->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
-        $query_compras->execute();
-        if ($query_compras->fetchColumn() > 0) return true;
+        // Asumiendo que la tabla tb_compras ya NO tiene id_producto directamente,
+        // sino que se relaciona a través de tb_detalle_compras.
+        // Si tb_compras aún tiene id_producto, la siguiente línea es correcta.
+        // Si ya se migró a tb_detalle_compras, esta verificación debe cambiar.
+        // BASADO EN EL SQL DEL PROMPT, tb_compras AÚN TIENE id_producto.
+        $sql_compras_directa = "SELECT COUNT(*) FROM tb_compras WHERE id_producto = :id_producto_directo";
+        $query_compras_directa = $this->pdo->prepare($sql_compras_directa);
+        $query_compras_directa->bindParam(':id_producto_directo', $id_producto, PDO::PARAM_INT);
+        $query_compras_directa->execute();
+        if ($query_compras_directa->fetchColumn() > 0) return true;
+        
+        // Si ya tienes tb_detalle_compras, la verificación sería:
+        
+        $sql_detalle_compras = "SELECT COUNT(*) FROM tb_detalle_compras WHERE id_producto = :id_producto_detalle";
+        $query_detalle_compras = $this->pdo->prepare($sql_detalle_compras);
+        $query_detalle_compras->bindParam(':id_producto_detalle', $id_producto, PDO::PARAM_INT);
+        $query_detalle_compras->execute();
+        if ($query_detalle_compras->fetchColumn() > 0) return true;
+        
         
         return false;
     }
 
-    /**
-     * Elimina un producto de un usuario.
-     * @param int $id_producto
-     * @param int $id_usuario
-     * @return string|false Nombre de la imagen eliminada o false en error/no permiso/en uso.
-     */
     public function eliminarProducto(int $id_producto, int $id_usuario): ?string {
         $producto_actual = $this->getProductoByIdAndUsuarioId($id_producto, $id_usuario);
-        if (!$producto_actual) return null; // No encontrado o no pertenece al usuario
-        
-        if ($this->productoEnUso($id_producto)) return null; // Producto en uso
-
+        if (!$producto_actual) return null; 
+        if ($this->productoEnUso($id_producto)) return null; 
         $sql = "DELETE FROM tb_almacen WHERE id_producto = :id_producto AND id_usuario = :id_usuario";
         $query = $this->pdo->prepare($sql);
         $query->bindParam(':id_producto', $id_producto, PDO::PARAM_INT);
         $query->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
-        
         if ($query->execute() && $query->rowCount() > 0) {
-            return $producto_actual['imagen']; // Devuelve el nombre de la imagen para borrarla del servidor
+            return $producto_actual['imagen']; 
         }
         return null;
     }
