@@ -56,7 +56,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="proveedor">Proveedor</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor" readonly required>
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor o cree uno nuevo" readonly>
                                                 <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
@@ -101,7 +101,7 @@ include '../layout/mensajes.php';
                                                 <input type="text" class="form-control" id="temp_nombre_producto" placeholder="Buscar producto..." readonly>
                                                 <input type="hidden" id="temp_id_producto">
                                                 <input type="hidden" id="temp_codigo_producto">
-                                                <input type="hidden" id="temp_iva_predeterminado_producto">
+                                                <input type="hidden" id="temp_iva_predeterminado_producto"> <!-- Para referencia del IVA que se usó -->
                                                 <input type="hidden" id="temp_precio_compra_sugerido_producto">
                                                 <input type="hidden" id="temp_stock_actual_producto">
                                                 <div class="input-group-append">
@@ -499,9 +499,9 @@ $(document).ready(function() {
             console.log("DataTables ya está inicializada. Recargando datos.");
             try {
                 // Antes de recargar, puedes verificar la instancia si quieres depurar
-                console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
+                // console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
                  if (tablaProductosAlmacen && tablaProductosAlmacen.settings) {
-                    console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
+                    // console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
                  }
                 tablaProductosAlmacen.ajax.reload(null, false); // El 'null, false' evita resetear la paginación
             } catch (e) {
@@ -530,15 +530,15 @@ $(document).ready(function() {
                     "type": "POST",
                     "data": function (d) {
                         d.id_usuario = idUsuarioActual;
-                        console.log("Enviando datos AJAX para DataTables:", d);
+                        // console.log("Enviando datos AJAX para DataTables:", d); // Descomentar para depurar si es necesario
                     },
                     "error": function(jqXHR, textStatus, errorThrown) {
                         console.error("Error en AJAX de DataTables:", textStatus, errorThrown);
                         if (jqXHR.responseText) {
                             console.error("Respuesta del servidor (primeros 500 chars):", jqXHR.responseText.substring(0, 500));
-                            alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n\nRespuesta Parcial: " + jqXHR.responseText.substring(0, 200));
-                        } else {
-                            alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n(No hubo respuesta del servidor)");
+                            // No mostrar alert() al usuario final por errores de AJAX de DataTables por defecto,
+                            // ya que DataTables tiene su propio manejo visual (aunque básico).
+                            // Considerar mostrar un mensaje más amigable si es un error recurrente o crítico.
                         }
                     }
                 },
@@ -568,7 +568,7 @@ $(document).ready(function() {
             console.log("DataTables inicializada exitosamente.");
         } catch (e) {
             console.error("Error CRÍTICO durante la inicialización de DataTables:", e);
-            alert("Error crítico al inicializar la tabla de productos. Verifique la consola.");
+            // Considerar un mensaje más amigable o un log a servidor si es un error crítico.
         }
     }
 
@@ -580,7 +580,14 @@ $(document).ready(function() {
             return;
         }
         var fila = $(this).closest('tr');
-        var datosFila = tablaProductosAlmacen.row(fila).data();
+        // Manejo para filas responsive colapsadas
+        var datosFila;
+        if (tablaProductosAlmacen.row(fila).child.isShown()) { // Si la fila "child" (responsive) está mostrándose
+            datosFila = tablaProductosAlmacen.row(fila.prev('tr.dt-hasChild')).data(); // Obtener datos de la fila "parent"
+        } else {
+            datosFila = tablaProductosAlmacen.row(fila).data(); // Obtener datos de la fila actual
+        }
+
 
         if (!datosFila) {
             console.error("No se pudieron obtener los datos de la fila para el producto seleccionado.");
@@ -589,12 +596,11 @@ $(document).ready(function() {
         }
 
             console.log("--- Evento: Click en .seleccionar-producto-para-compra (Datos de Fila) ---");
-        
-            console.log("Datos de la Fila:", datosFila); // Log para ver todo el objeto de la fila
+            console.log("Datos de la Fila Completa:", datosFila); 
             console.log("ID del producto seleccionado:", datosFila.id_producto);
-
             console.log("Nombre del producto:", datosFila.nombre);
-            console.log("IVA (original del producto):", datosFila.iva_porcentaje_producto);
+            console.log("IVA predeterminado (tb_almacen):", datosFila.iva_porcentaje_producto);
+            console.log("IVA última compra (subconsulta):", datosFila.iva_ultima_compra);
 
 
             var idProducto = datosFila.id_producto;
@@ -621,34 +627,42 @@ $(document).ready(function() {
         $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
         $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
 
-        let ivaProducto = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
-        $('#temp_iva_predeterminado_producto').val(ivaProducto);
-        $('#temp_porcentaje_iva').val(ivaProducto);
+        // ***** INICIO DE LA MODIFICACIÓN PARA IVA DINÁMICO *****
+        let ivaAplicar;
+        // Verificar si iva_ultima_compra existe, no es null y es un número válido
+        if (datosFila.hasOwnProperty('iva_ultima_compra') && datosFila.iva_ultima_compra !== null && !isNaN(parseFloat(datosFila.iva_ultima_compra))) {
+            ivaAplicar = parseFloat(datosFila.iva_ultima_compra).toFixed(2);
+            console.log("Aplicando IVA de última compra:", ivaAplicar + "%");
+        } else {
+            // Fallback al IVA predeterminado del producto si no hay última compra o es inválido
+            ivaAplicar = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
+            console.log("Aplicando IVA predeterminado del producto (tb_almacen):", ivaAplicar + "%");
+        }
         
-        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Predet: ${ivaProducto}%`).show();
+        $('#temp_iva_predeterminado_producto').val(ivaAplicar); // Campo oculto para referencia del IVA que se usó
+        $('#temp_porcentaje_iva').val(ivaAplicar); // Campo visible para el IVA del ítem actual
+        // ***** FIN DE LA MODIFICACIÓN PARA IVA DINÁMICO *****
+        
+        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar}%`).show();
         $('#temp_cantidad').val(1).focus(); 
         
         $('#modalBuscarProducto').modal('hide');
     });
-
-   
-
-
    
     // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
     $('#btnAnadirProductoALista').on('click', function() {
-                console.log("--- Evento: Click en .seleccionar-producto-para-compra ---");
-                 console.log("ID del producto seleccionado:", $(this).data('id'));
-                console.log("Nombre del producto:", $(this).data('nombre'));
-                console.log("Data-IVA (original del producto):", $(this).data('iva'));
-
+        // Corrección de logs para este botón
+        console.log("--- Evento: Click en #btnAnadirProductoALista ---");
+        console.log("ID del producto desde #temp_id_producto:", $('#temp_id_producto').val());
+        console.log("Nombre del producto desde #temp_nombre_producto:", $('#temp_nombre_producto').val());
+        console.log("IVA desde #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
 
         var idProducto = $('#temp_id_producto').val();
         var codigoProducto = $('#temp_codigo_producto').val();
         var nombreProducto = $('#temp_nombre_producto').val();
         var cantidad = parseFloat($('#temp_cantidad').val()) || 0;
         var precioCompra = parseFloat($('#temp_precio_compra').val()) || 0;
-        var porcentajeIva = parseFloat($('#temp_porcentaje_iva').val()) || 0;
+        var porcentajeIva = parseFloat($('#temp_porcentaje_iva').val()) || 0; // Este es el IVA que se decidió (última compra o predeterminado)
 
         if (!idProducto) {
             Swal.fire('Atención', 'Debe seleccionar un producto.', 'warning'); return;
@@ -656,14 +670,13 @@ $(document).ready(function() {
         if (cantidad <= 0) {
             Swal.fire('Atención', 'La cantidad debe ser mayor a cero.', 'warning'); $('#temp_cantidad').focus(); return;
         }
-        if (precioCompra < 0) { // Permitir 0 por si es un item de regalo, aunque para compras no es común
+        if (precioCompra < 0) { 
             Swal.fire('Atención', 'El precio de compra no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return;
         }
          if (porcentajeIva < 0) {
             Swal.fire('Atención', 'El porcentaje de IVA no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return;
         }
 
-        // Verificar si el producto ya está en la lista (por si acaso, aunque ya se verifica al seleccionar)
         var yaEnLista = false;
         $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
             if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
@@ -699,16 +712,16 @@ $(document).ready(function() {
             </tr>
         `;
         
-        $('#filaNoItems').hide(); // Ocultar fila de "No hay productos"
+        $('#filaNoItems').hide(); 
         $('#tablaItemsCompra tbody').append(nuevaFila);
         recalcularTotalesGenerales();
 
-        // Limpiar campos temporales
         $('#temp_id_producto, #temp_codigo_producto, #temp_nombre_producto, #temp_iva_predeterminado_producto, #temp_precio_compra_sugerido_producto, #temp_stock_actual_producto').val('');
         $('#temp_cantidad').val(1);
-        $('#temp_precio_compra, #temp_porcentaje_iva').val(0);
+        $('#temp_precio_compra').val(''); // Limpiar precio de compra
+        $('#temp_porcentaje_iva').val(0); // Resetear IVA a 0 para el siguiente
         $('#temp_producto_info').hide().empty();
-        $('#temp_nombre_producto').focus(); // Foco en buscar producto para el siguiente
+        $('#temp_nombre_producto').focus(); 
     });
 
     // --- RECALCULAR TOTALES DE UN ITEM SI SE MODIFICA EN LA TABLA ---
@@ -735,9 +748,8 @@ $(document).ready(function() {
         recalcularTotalesGenerales();
         if ($('#tablaItemsCompra tbody tr').not('#filaNoItems').length === 0) {
             $('#filaNoItems').show();
-            contadorItemsCompra = 0; // Reiniciar contador si la tabla está vacía
+            contadorItemsCompra = 0; 
         } else {
-            // Re-numerar items si es necesario
             var count = 1;
             $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function(){
                 $(this).find('td:first').text(count++);
@@ -821,13 +833,13 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.status === 'success') {
                     Swal.fire('¡Éxito!', response.message || 'Proveedor creado.', 'success');
-                    if(response.data && response.data.id_proveedor) { // Asumiendo que create.php devuelve 'data' con el proveedor
+                    if(response.data && response.data.id_proveedor) { 
                          $('#id_proveedor_compra').val(response.data.id_proveedor);
                         $('#nombre_proveedor_compra_display').val(response.data.nombre_proveedor);
                         $('#info_empresa_proveedor').text(response.data.empresa || 'N/A');
                         $('#info_celular_proveedor').text(response.data.celular || 'N/A');
                         $('#detalle_proveedor_seleccionado').show();
-                    } else if (response.creadoId) { // Fallback si devuelve creadoId directamente
+                    } else if (response.creadoId) { 
                          $('#id_proveedor_compra').val(response.creadoId);
                          $('#nombre_proveedor_compra_display').val( $('#nuevo_proveedor_nombre').val());
                          $('#info_empresa_proveedor').text( $('#nuevo_proveedor_empresa').val() || 'N/A');
@@ -849,7 +861,7 @@ $(document).ready(function() {
     
     // --- INICIALIZACIÓN Y VALIDACIÓN DEL FORMULARIO PRINCIPAL ---
     generarNroCompraReferencia();
-    recalcularTotalesGenerales(); // Para que los totales muestren 0.00 al inicio
+    recalcularTotalesGenerales(); 
 
     $('#formNuevaCompra').on('submit', function(e){
         if (!$('#id_proveedor_compra').val()) { 
@@ -861,7 +873,6 @@ $(document).ready(function() {
         if (!$('#nro_compra_referencia').val() || $('#nro_compra_referencia').val() === 'Generando...' || $('#nro_compra_referencia').val().startsWith('Error')) {
             e.preventDefault(); Swal.fire('Atención', 'Espere a que se genere el Número de Compra o verifique si hay errores.', 'warning'); return false;
         }
-        // Validaciones adicionales por cada item si es necesario (ej. cantidad > 0)
         var itemsValidos = true;
         $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
             var cantidad = parseFloat($(this).find('.item-cantidad').val()) || 0;
@@ -869,17 +880,13 @@ $(document).ready(function() {
                 itemsValidos = false;
                 Swal.fire('Atención', 'Todas las cantidades de los productos deben ser mayores a cero.', 'warning');
                 $(this).find('.item-cantidad').focus();
-                return false; // Salir del bucle
+                return false; 
             }
         });
         if(!itemsValidos) {
             e.preventDefault();
             return false;
         }
-
-        // Aquí, antes de enviar, el formulario serializará automáticamente los campos
-        // item_id_producto[], item_cantidad[], item_precio_unitario[], item_porcentaje_iva[]
-        // que el controlador PHP recibirá como arrays.
     });
 });
 </script>
