@@ -51,11 +51,11 @@ include '../layout/mensajes.php';
                             <!-- <input type="hidden" id="nro_compra_secuencial_hidden" name="nro_compra_secuencial"> -->
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-7">
+                                    <div class="col-md-6"> <!-- Ajustado de col-md-7 -->
                                         <div class="form-group">
                                             <label for="producto">Producto</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_producto_compra" name="nombre_producto_compra_display" placeholder="Seleccione un producto de su alma[...]
+                                                <input type="text" class="form-control" id="nombre_producto_compra" name="nombre_producto_compra_display" placeholder="Seleccione un producto de su almacén" readonly>
                                                 <input type="hidden" id="id_producto_compra" name="id_producto_compra" required>
                                                 <input type="hidden" id="iva_original_producto" name="iva_original_producto"> 
                                                 <div class="input-group-append">
@@ -67,17 +67,17 @@ include '../layout/mensajes.php';
                                         </div>
                                         <div id="detalle_producto_seleccionado" class="alert alert-light mt-2" style="display:none;">
                                             <h6>Producto Seleccionado:</h6>
-                                            <small><strong>Código:</strong> <span id="info_codigo_producto"></span> | <strong>Stock Actual:</strong> <span id="info_stock_producto"></span> | <strong>P[...]
+                                            <small><strong>Código:</strong> <span id="info_codigo_producto"></span> | <strong>Stock Actual:</strong> <span id="info_stock_producto"></span> | <strong>Precio Compra Ref.:</strong> $<span id="info_precio_compra_producto"></span></small><br>
                                             <small><strong>IVA Predeterminado Producto:</strong> <span id="info_iva_producto">0</span>%</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-2"> 
                                         <div class="form-group">
                                             <label for="cantidad_compra">Cantidad</label>
                                             <input type="number" class="form-control" id="cantidad_compra" name="cantidad_compra" min="1" value="1" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4"> <!-- Ajustado de col-md-3 -->
                                         <div class="form-group">
                                             <label for="precio_compra_unidad_compra">Precio de Compra (Unidad)</label>
                                             <div class="input-group">
@@ -97,7 +97,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="proveedor">Proveedor</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor de su l[...]
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor de su lista" readonly>
                                                 <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
@@ -140,7 +140,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="porcentaje_iva_compra">IVA Aplicado a esta Compra (%)</label>
                                             <input type="number" step="0.01" class="form-control" id="porcentaje_iva_compra" name="porcentaje_iva_compra_transaccion" value="0" min="0">
-                                            <small>El IVA predeterminado de este producto es <span id="iva_predeterminado_producto_info">0</span>%. Si lo cambia aquí, se usará para esta compra y pod[...]
+                                            <small>El IVA predeterminado de este producto es <span id="iva_predeterminado_producto_info">0</span>%. Si lo cambia aquí, se usará para esta compra y podrá actualizar el producto si lo desea.</small>
                                         </div>
                                     </div>
                                     <div class="col-md-9 text-right">
@@ -182,10 +182,10 @@ include '../layout/mensajes.php';
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="productoTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="buscar-producto-tab" data-toggle="tab" href="#buscarProductoPane" role="tab" aria-controls="buscarProductoPane" aria-selected="true">Buscar Produ[...]
+                        <a class="nav-link active" id="buscar-producto-tab" data-toggle="tab" href="#buscarProductoPane" role="tab" aria-controls="buscarProductoPane" aria-selected="true">Buscar Producto</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="crear-producto-tab" data-toggle="tab" href="#crearProductoPane" role="tab" aria-controls="crearProductoPane" aria-selected="false">Crear Nuevo Producto [...]
+                        <a class="nav-link" id="crear-producto-tab" data-toggle="tab" href="#crearProductoPane" role="tab" aria-controls="crearProductoPane" aria-selected="false">Crear Nuevo Producto</a>
                     </li>
                 </ul>
                 <div class="tab-content" id="productoTabsContent">
@@ -288,10 +288,10 @@ include '../layout/mensajes.php';
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="proveedorTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="buscar-proveedor-tab" data-toggle="tab" href="#buscarProveedorPane" role="tab" aria-controls="buscarProveedorPane" aria-selected="true">Buscar Pr[...]
+                        <a class="nav-link active" id="buscar-proveedor-tab" data-toggle="tab" href="#buscarProveedorPane" role="tab" aria-controls="buscarProveedorPane" aria-selected="true">Buscar Proveedor</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="crear-proveedor-tab" data-toggle="tab" href="#crearProveedorPane" role="tab" aria-controls="crearProveedorPane" aria-selected="false">Crear Nuevo Provee[...]
+                        <a class="nav-link" id="crear-proveedor-tab" data-toggle="tab" href="#crearProveedorPane" role="tab" aria-controls="crearProveedorPane" aria-selected="false">Crear Nuevo Proveedor</a>
                     </li>
                 </ul>
                 <div class="tab-content" id="proveedorTabsContent">
@@ -656,10 +656,12 @@ $(document).ready(function() {
                     var empresaNuevoProv = $('#nuevo_proveedor_empresa').val() || 'N/A';
                     var celularNuevoProv = $('#nuevo_proveedor_celular').val() || 'N/A';
 
-                    if(response.creadoId){ 
+                    if(response.creadoId){ // Asegúrate que el controlador create.php devuelva 'creadoId' o el id del proveedor
                          $('#id_proveedor_compra').val(response.creadoId);
                     } else {
-                         $('#id_proveedor_compra').val('');
+                        // Fallback o manejar el caso donde el ID no es devuelto explícitamente
+                        // Podrías intentar obtener el último ID o simplemente dejarlo para que el usuario lo seleccione de la tabla
+                         $('#id_proveedor_compra').val(''); // O no hacer nada si el usuario debe re-seleccionar
                     }
                     $('#nombre_proveedor_compra').val(nombreNuevoProv);
                     
