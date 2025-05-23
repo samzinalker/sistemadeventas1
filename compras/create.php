@@ -481,67 +481,118 @@ $(document).ready(function() {
         });
     }
 
-    $('#modalBuscarProducto').on('shown.bs.modal', function () {
+  
     // ... (código de inicialización de DataTables) ...
     $('#modalBuscarProducto').on('shown.bs.modal', function () {
-    console.log("Modal #modalBuscarProducto mostrado. Intentando inicializar DataTables.");
-    if ($.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
-        console.log("DataTables ya está inicializada. Destruyendo para reinicializar.");
-        $('#tablaProductosAlmacen').DataTable().destroy();
-        $('#tablaProductosAlmacen tbody').empty(); // Limpiar el cuerpo de la tabla
-    }
+        console.log("Modal #modalBuscarProducto mostrado.");
 
-    try {
-        tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": {
-                "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
-                "type": "POST",
-                "data": function (d) {
-                    d.id_usuario = idUsuarioActual;
-                    console.log("Enviando datos AJAX para DataTables:", d);
+        // Primero, llama a las funciones que deben ejecutarse cuando se muestra el modal
+        cargarCategoriasUsuario(); 
+        if ($('#crear-producto-tab').hasClass('active')) { 
+            generarSiguienteCodigoProducto();
+            // Considera si esta línea de IVA debe estar aquí o solo cuando se crea un producto
+             $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0); 
+        }
+
+        console.log("Intentando inicializar o recargar DataTables para #tablaProductosAlmacen.");
+        if ($.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
+            console.log("DataTables ya está inicializada. Recargando datos.");
+            try {
+                // Antes de recargar, puedes verificar la instancia si quieres depurar
+                /console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
+                 if (tablaProductosAlmacen && tablaProductosAlmacen.settings) {
+                    console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
+                 }
+                tablaProductosAlmacen.ajax.reload(null, false); // El 'null, false' evita resetear la paginación
+            } catch (e) {
+                console.error("Error al intentar recargar DataTables:", e);
+                // Si la recarga falla, podría ser mejor destruir y reinicializar
+                console.log("Intentando destruir y reinicializar DataTables debido a error en recarga.");
+                $('#tablaProductosAlmacen').DataTable().destroy();
+                $('#tablaProductosAlmacen tbody').empty(); // Limpiar tbody antes de reinicializar
+                inicializarTablaProductos(); // Llama a la función de inicialización
+            }
+        } else {
+            console.log("DataTables no está inicializada. Inicializando ahora.");
+            inicializarTablaProductos(); // Llama a la función de inicialización
+        }
+    });
+
+
+    function inicializarTablaProductos() {
+        console.log("Función inicializarTablaProductos llamada.");
+        try {
+            tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
+                    "type": "POST",
+                    "data": function (d) {
+                        d.id_usuario = idUsuarioActual;
+                        console.log("Enviando datos AJAX para DataTables:", d);
+                    },
+                    "error": function(jqXHR, textStatus, errorThrown) {
+                        console.error("Error en AJAX de DataTables:", textStatus, errorThrown);
+                        if (jqXHR.responseText) {
+                            console.error("Respuesta del servidor (primeros 500 chars):", jqXHR.responseText.substring(0, 500));
+                            alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n\nRespuesta Parcial: " + jqXHR.responseText.substring(0, 200));
+                        } else {
+                            alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n(No hubo respuesta del servidor)");
+                        }
+                    }
                 },
-                "error": function(jqXHR, textStatus, errorThrown) {
-                    console.error("Error en AJAX de DataTables:", textStatus, errorThrown);
-                    console.error("Respuesta del servidor (si existe):", jqXHR.responseText);
-                    alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n\nRespuesta: " + jqXHR.responseText.substring(0, 500));
-                }
-            },
-            "columns": [ // Asegúrate que el número de <th> en tu HTML coincida con esto
-                { "data": "id_producto" },
-                { "data": "codigo" },
-                { "data": "nombre" },
-                { "data": "stock" },
-                { "data": "precio_compra" }, // Simplificado sin render por ahora
-                { "data": "iva_porcentaje_producto" }, // Simplificado sin render por ahora
-                { "data": "nombre_categoria" },
-                { "data": null, "defaultContent": "<button class='btn btn-sm btn-success seleccionar-producto-para-compra'>Sel.</button>" }
-            ],
-            "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"}
-        });
-        console.log("DataTables inicializada (o reinicializada).");
-    } catch (e) {
-        console.error("Error durante la inicialización de DataTables:", e);
-        alert("Error crítico al inicializar la tabla de productos.");
+                "columns": [
+                    { "data": "id_producto" },
+                    { "data": "codigo" },
+                    { "data": "nombre" },
+                    { "data": "stock" },
+                    { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
+                    { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0).toFixed(2) + '%';} }, 
+                    { "data": "nombre_categoria" },
+                    { 
+                        "data": null, 
+                        "title": "Acción", 
+                        "orderable": false, 
+                        "searchable": false,
+                        "defaultContent": "<button type='button' class='btn btn-sm btn-success seleccionar-producto-para-compra'><i class='fas fa-check-circle'></i> Sel.</button>" 
+                    }
+                ],
+                "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
+                "responsive": true, 
+                "lengthChange": true, 
+                "autoWidth": false, 
+                "pageLength": 5, 
+                "lengthMenu": [5, 10, 25, 50]
+            });
+            console.log("DataTables inicializada exitosamente.");
+        } catch (e) {
+            console.error("Error CRÍTICO durante la inicialización de DataTables:", e);
+            alert("Error crítico al inicializar la tabla de productos. Verifique la consola.");
+        }
     }
-});
 
         // Mover el manejador de clic FUERA de la inicialización, adjuntándolo a la tabla
         // para que funcione con las filas creadas por DataTables.
         $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
-            var fila = $(this).closest('tr'); // Obtener la fila TR más cercana
-            var datosFila = tablaProductosAlmacen.row(fila).data(); // Obtener los datos de la fila desde DataTables
+        if (!tablaProductosAlmacen) {
+            console.error("La instancia de tablaProductosAlmacen no está disponible.");
+            return;
+        }
+        var fila = $(this).closest('tr');
+        var datosFila = tablaProductosAlmacen.row(fila).data();
 
-            if (!datosFila) {
-                console.error("No se pudieron obtener los datos de la fila para el producto seleccionado.");
-                Swal.fire('Error', 'No se pudieron obtener los datos del producto. Intente de nuevo.', 'error');
-                return;
-            }
+        if (!datosFila) {
+            console.error("No se pudieron obtener los datos de la fila para el producto seleccionado.");
+            Swal.fire('Error', 'No se pudieron obtener los datos del producto. Intente de nuevo.', 'error');
+            return;
+        }
 
             console.log("--- Evento: Click en .seleccionar-producto-para-compra (Datos de Fila) ---");
+        
             console.log("Datos de la Fila:", datosFila); // Log para ver todo el objeto de la fila
             console.log("ID del producto seleccionado:", datosFila.id_producto);
+
             console.log("Nombre del producto:", datosFila.nombre);
             console.log("IVA (original del producto):", datosFila.iva_porcentaje_producto);
 
@@ -561,28 +612,24 @@ $(document).ready(function() {
                 return;
             }
 
-            $('#temp_id_producto').val(idProducto);
-            $('#temp_nombre_producto').val(datosFila.nombre);
-            $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
-            $('#temp_stock_actual_producto').val(datosFila.stock || 0);
-            
-            let precioCompraSugerido = parseFloat(datosFila.precio_compra || 0).toFixed(2);
-            $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
-            $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
+            $('#temp_id_producto').val(datosFila.id_producto);
+        $('#temp_nombre_producto').val(datosFila.nombre);
+        $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
+        $('#temp_stock_actual_producto').val(datosFila.stock || 0);
+        
+        let precioCompraSugerido = parseFloat(datosFila.precio_compra || 0).toFixed(2);
+        $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
+        $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
 
-            // Usar iva_porcentaje_producto directamente del objeto datosFila
-            let ivaProducto = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
-            $('#temp_iva_predeterminado_producto').val(ivaProducto);
-            $('#temp_porcentaje_iva').val(ivaProducto);
-            
-            console.log("Valor asignado a #temp_iva_predeterminado_producto:", $('#temp_iva_predeterminado_producto').val());
-            console.log("Valor asignado a #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
-
-            $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Predet: ${ivaProducto}%`).show();
-            $('#temp_cantidad').val(1).focus(); 
-            
-            $('#modalBuscarProducto').modal('hide');
-        });
+        let ivaProducto = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
+        $('#temp_iva_predeterminado_producto').val(ivaProducto);
+        $('#temp_porcentaje_iva').val(ivaProducto);
+        
+        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Predet: ${ivaProducto}%`).show();
+        $('#temp_cantidad').val(1).focus(); 
+        
+        $('#modalBuscarProducto').modal('hide');
+    });
 
     } else {
         console.log("Intentando recargar DataTables. Instancia:", tablaProductosAlmacen);
