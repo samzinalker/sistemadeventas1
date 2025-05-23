@@ -549,74 +549,78 @@ $(document).ready(function() {
     });
 
     // --- LÓGICA PARA PROVEEDORES (sin cambios) ---
-    $('#modalBuscarProveedor').on('shown.bs.modal', function () {
-        if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
-            tablaProveedores = $('#tablaProveedores').DataTable({
-                "processing": true, "serverSide": true,
-                "ajax": {
-                    "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php",
-                    "type": "POST",
-                     "data": function (d) { d.id_usuario = idUsuarioActual; }
-                },
-                "columns": [
-                    { "data": "id_proveedor" }, { "data": "nombre_proveedor" },
-                    { "data": "empresa" }, { "data": "celular" }, { "data": "email" },
-                    {
-                        "data": null,
-                        "render": function (data, type, row) {
-                            return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" 
-                                data-id="${row.id_proveedor}" data-nombre="${row.nombre_proveedor}"
-                                data-empresa="${row.empresa || 'N/A'}" data-celular="${row.celular || 'N/A'}">
-                                <i class="fas fa-check-circle"></i>
-                                </button>`;
-                        }
-                    }
-                ],
-                "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
-                "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
-            });
-        } else {
-            tablaProveedores.ajax.reload();
-        }
-    });
+    $(document).ready(function() {
+    var tablaProveedores = $('#tablaProveedores').DataTable({
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+            "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", // Asegúrate que esta ruta sea correcta
+            "type": "POST"
+            
+        },
+        "columns": [
+            // Columna 0: Asumiendo que quieres mostrar el ID del proveedor
+            { "data": "id_proveedor", "title": "ID" }, // "title" es opcional, lo pone en el <th> si no existe
 
-    $('#tablaProveedores tbody').on('click', '.seleccionar-proveedor', function () {
-        $('#id_proveedor_compra').val($(this).data('id'));
-        $('#nombre_proveedor_compra').val($(this).data('nombre'));
-        $('#info_empresa_proveedor').text($(this).data('empresa'));
-        $('#info_celular_proveedor').text($(this).data('celular'));
-        $('#detalle_proveedor_seleccionado').fadeIn();
-        $('#modalBuscarProveedor').modal('hide');
-    });
+            // Columna 1: Nombre del proveedor
+            { "data": "nombre_proveedor", "title": "Nombre" },
 
-    $('#formNuevoProveedor').on('submit', function(e) {
-        e.preventDefault();
-        var formData = new FormData(this); 
-        $.ajax({
-            url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php', 
-            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
-            success: function(response) {
-                if(response.status === 'success') { 
-                    Swal.fire('¡Éxito!', response.message || 'Proveedor creado.', 'success');
-                    if(response.data && response.data.id_proveedor) { 
-                         $('#id_proveedor_compra').val(response.data.id_proveedor);
-                        $('#nombre_proveedor_compra').val(response.data.nombre_proveedor);
-                        $('#info_empresa_proveedor').text(response.data.empresa || 'N/A');
-                        $('#info_celular_proveedor').text(response.data.celular || 'N/A');
-                        $('#detalle_proveedor_seleccionado').fadeIn();
-                    }
-                    $('#modalBuscarProveedor').modal('hide');
-                    $('#formNuevoProveedor')[0].reset();
-                    if(tablaProveedores) tablaProveedores.ajax.reload();
-                } else {
-                    Swal.fire('Error', response.message || 'No se pudo crear.', 'error');
+            // Columna 2: Celular
+            { "data": "celular", "title": "Celular" },
+
+            // Columna 3: Teléfono
+            { "data": "telefono", "title": "Teléfono" },
+
+            // Columna 4: Empresa
+            { "data": "empresa", "title": "Empresa" },
+
+            // Columna 5: Email
+            { "data": "email", "title": "Email" },
+
+            // Columna 6: Dirección
+            { "data": "direccion", "title": "Dirección" },
+            
+            // Columna 7: Acciones (ejemplo si quieres un botón para seleccionar)
+            // Para esto, necesitarías que el servidor envíe una propiedad "acciones"
+            // o puedes renderizarla en el cliente usando "render".
+            {
+                "data": null, // No se enlaza directamente a una propiedad de datos para el contenido principal
+                "title": "Acciones",
+                "orderable": false,
+                "searchable": false,
+                "render": function (data, type, row, meta) {
+                    // 'row' es el objeto completo de datos para esta fila
+                    // (ej. row.id_proveedor, row.nombre_proveedor)
+                    return '<button class="btn btn-xs btn-success btn-seleccionar-proveedor" data-id="'+row.id_proveedor+'" data-nombre="'+row.nombre_proveedor+'">Seleccionar</button>';
                 }
-            },
-            error: function() { 
-                Swal.fire('Error de Conexión', 'No se pudo conectar.', 'error');
             }
-        });
+        ],
+        "language": {
+            "url": "<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"
+        },
+        "responsive": true, 
+        "lengthChange": true, 
+        "autoWidth": false,
+        // "buttons": ["copy", "excel", "pdf", "print", "colvis"] // Descomenta si los usas
+    });//.buttons().container().appendTo('#tablaProveedores_wrapper .col-md-6:eq(0)'); // Descomenta si los usas
+
+    // Ejemplo de cómo manejar el clic del botón "Seleccionar"
+    $('#tablaProveedores tbody').on('click', '.btn-seleccionar-proveedor', function () {
+        var idProveedor = $(this).data('id');
+        var nombreProveedor = $(this).data('nombre');
+        
+        // Aquí va tu lógica para usar el proveedor seleccionado
+        // Por ejemplo, llenar campos en el formulario de compras:
+        $('#id_proveedor_compra').val(idProveedor); // Asume que tienes un input con este ID
+        $('#nombre_proveedor_compra_display').val(nombreProveedor); // Asume que tienes un input para mostrar el nombre
+        
+        // Cerrar el modal
+        $('#modal-buscar-crear-proveedor').modal('hide'); // Asegúrate que el ID de tu modal sea correcto
+
+        // Puedes mostrar una alerta si quieres
+        Swal.fire('Proveedor Seleccionado', nombreProveedor, 'success');
     });
+});
 
     // --- CÁLCULO TOTAL COMPRA CON IVA ---
     function calcularTotalCompra() {
