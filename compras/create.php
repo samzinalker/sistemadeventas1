@@ -121,7 +121,7 @@ include '../layout/mensajes.php';
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="nro_compra_referencia">Nro. Compra (Referencia Interna)</label>
-                                            <input type="text" class="form-control" id="nro_compra_referencia" name="nro_compra_referencia" required>
+                                            <input type="text" class="form-control" id="nro_compra_referencia" name="nro_compra_referencia" required readonly>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -543,6 +543,7 @@ $(document).ready(function() {
         });
     });
 
+    
     // --- LÓGICA PARA PROVEEDORES ---
     $('#modalBuscarProveedor').on('shown.bs.modal', function () {
         if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
