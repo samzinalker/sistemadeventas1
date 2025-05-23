@@ -1,9 +1,9 @@
--- phpMyAdmin SQL Dump
+wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww-- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 23-05-2025 a las 03:45:44
+-- Tiempo de generación: 23-05-2025 a las 05:15:08
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -51,7 +51,7 @@ CREATE TABLE `tb_almacen` (
 --
 
 INSERT INTO `tb_almacen` (`id_producto`, `codigo`, `nombre`, `descripcion`, `stock`, `stock_minimo`, `stock_maximo`, `precio_compra`, `precio_venta`, `iva_predeterminado`, `fecha_ingreso`, `imagen`, `id_usuario`, `id_categoria`, `fyh_creacion`, `fyh_actualizacion`) VALUES
-(1, 'P-00001', 'pepsi', '1 litro', 109, 11, 120, 0.50, 1.00, 0.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-05-17 06:09:54'),
+(1, 'P-00001', 'pepsi', '1 litro', 113, 11, 120, 0.50, 1.00, 0.00, '2025-04-19', '2025-04-22-02-46-39__pepsi.png', 1, 12, '2025-04-22 14:46:39', '2025-05-22 22:10:54'),
 (5, 'P-00002', 'logo', 'tiendita', 8, 5, 30, 0.75, 1.90, 0.00, '2025-04-23', '2025-04-23-05-32-58__logo1.jpg', 1, 13, '2025-04-23 17:32:58', '2025-05-17 06:10:04'),
 (12, 'P-00003', 'fsafsaasfsaf', 'fasasfasfsaf', 12, 10, 222, 12.00, 22.00, 0.00, '2025-05-22', 'default_product.png', 1, 14, '2025-05-22 17:49:35', '2025-05-22 17:49:35'),
 (13, 'P-00004', 'fsafas', 'fsafsaf', 12, 1, 1212, 12.00, 112.00, 0.00, '2025-05-22', 'default_product.png', 1, 13, '2025-05-22 17:57:23', '2025-05-22 17:57:23');
@@ -135,18 +135,56 @@ INSERT INTO `tb_clientes` (`id_cliente`, `nombre_cliente`, `nit_ci_cliente`, `ce
 
 CREATE TABLE `tb_compras` (
   `id_compra` int(11) NOT NULL,
-  `id_producto` int(11) NOT NULL,
-  `nro_compra` int(11) NOT NULL,
+  `nro_compra` int(11) NOT NULL COMMENT 'Número secuencial interno de la compra para el usuario',
   `codigo_compra_referencia` varchar(50) DEFAULT NULL COMMENT 'Código de referencia interno formateado, ej: C-00001',
   `fecha_compra` date NOT NULL,
   `id_proveedor` int(11) NOT NULL,
-  `comprobante` varchar(255) NOT NULL,
+  `comprobante` varchar(255) DEFAULT NULL COMMENT 'Nro de Factura/Boleta del proveedor',
   `id_usuario` int(11) NOT NULL,
-  `precio_compra` varchar(50) NOT NULL,
-  `cantidad` int(11) NOT NULL,
+  `subtotal_general` decimal(10,2) DEFAULT 0.00 COMMENT 'Subtotal general de la compra (suma de subtotales de todos los items)',
+  `monto_iva_general` decimal(10,2) DEFAULT 0.00 COMMENT 'Monto total del IVA de la compra (suma de IVA de todos los items)',
+  `total_general` decimal(10,2) DEFAULT 0.00 COMMENT 'Total final de la compra (subtotal_general + monto_iva_general)',
   `fyh_creacion` datetime NOT NULL,
   `fyh_actualizacion` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `tb_compras`
+--
+
+INSERT INTO `tb_compras` (`id_compra`, `nro_compra`, `codigo_compra_referencia`, `fecha_compra`, `id_proveedor`, `comprobante`, `id_usuario`, `subtotal_general`, `monto_iva_general`, `total_general`, `fyh_creacion`, `fyh_actualizacion`) VALUES
+(1, 1, 'C-00001', '2025-05-22', 14, NULL, 1, 0.50, 0.00, 0.50, '2025-05-22 22:06:42', '2025-05-22 22:06:42'),
+(2, 2, 'C-00002', '2025-05-22', 16, NULL, 1, 0.50, 0.06, 0.56, '2025-05-22 22:07:04', '2025-05-22 22:07:04'),
+(3, 3, 'C-00003', '2025-05-22', 14, NULL, 1, 1.00, 0.12, 1.12, '2025-05-22 22:10:54', '2025-05-22 22:10:54');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tb_detalle_compras`
+--
+
+CREATE TABLE `tb_detalle_compras` (
+  `id_detalle_compra` int(11) NOT NULL,
+  `id_compra` int(11) NOT NULL COMMENT 'FK a tb_compras.id_compra',
+  `id_producto` int(11) NOT NULL COMMENT 'FK a tb_almacen.id_producto',
+  `cantidad` decimal(10,2) NOT NULL COMMENT 'Cantidad comprada, puede ser decimal',
+  `precio_compra_unitario` decimal(10,2) NOT NULL,
+  `porcentaje_iva_item` decimal(5,2) NOT NULL DEFAULT 0.00 COMMENT 'Porcentaje de IVA aplicado a este item específico',
+  `subtotal_item` decimal(10,2) NOT NULL COMMENT 'cantidad * precio_compra_unitario',
+  `monto_iva_item` decimal(10,2) NOT NULL COMMENT 'subtotal_item * (porcentaje_iva_item / 100)',
+  `total_item` decimal(10,2) NOT NULL COMMENT 'subtotal_item + monto_iva_item',
+  `fyh_creacion` datetime NOT NULL,
+  `fyh_actualizacion` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `tb_detalle_compras`
+--
+
+INSERT INTO `tb_detalle_compras` (`id_detalle_compra`, `id_compra`, `id_producto`, `cantidad`, `precio_compra_unitario`, `porcentaje_iva_item`, `subtotal_item`, `monto_iva_item`, `total_item`, `fyh_creacion`, `fyh_actualizacion`) VALUES
+(1, 1, 1, 1.00, 0.50, 0.00, 0.50, 0.00, 0.50, '2025-05-22 22:06:42', '2025-05-22 22:06:42'),
+(2, 2, 1, 1.00, 0.50, 12.00, 0.50, 0.06, 0.56, '2025-05-22 22:07:04', '2025-05-22 22:07:04'),
+(3, 3, 1, 2.00, 0.50, 12.00, 1.00, 0.12, 1.12, '2025-05-22 22:10:54', '2025-05-22 22:10:54');
 
 -- --------------------------------------------------------
 
@@ -290,9 +328,16 @@ ALTER TABLE `tb_clientes`
 --
 ALTER TABLE `tb_compras`
   ADD PRIMARY KEY (`id_compra`),
-  ADD KEY `id_producto` (`id_producto`),
-  ADD KEY `id_proveedor` (`id_proveedor`),
-  ADD KEY `id_usuario` (`id_usuario`);
+  ADD KEY `idx_proveedor_compra` (`id_proveedor`),
+  ADD KEY `idx_usuario_compra` (`id_usuario`);
+
+--
+-- Indices de la tabla `tb_detalle_compras`
+--
+ALTER TABLE `tb_detalle_compras`
+  ADD PRIMARY KEY (`id_detalle_compra`),
+  ADD KEY `idx_compra_detalle` (`id_compra`),
+  ADD KEY `idx_producto_detalle` (`id_producto`);
 
 --
 -- Indices de la tabla `tb_proveedores`
@@ -354,7 +399,13 @@ ALTER TABLE `tb_clientes`
 -- AUTO_INCREMENT de la tabla `tb_compras`
 --
 ALTER TABLE `tb_compras`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `tb_detalle_compras`
+--
+ALTER TABLE `tb_detalle_compras`
+  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_proveedores`
@@ -407,9 +458,15 @@ ALTER TABLE `tb_categorias`
 -- Filtros para la tabla `tb_compras`
 --
 ALTER TABLE `tb_compras`
-  ADD CONSTRAINT `tb_compras_ibfk_2` FOREIGN KEY (`id_producto`) REFERENCES `tb_almacen` (`id_producto`) ON DELETE NO ACTION ON UPDATE CASCADE,
-  ADD CONSTRAINT `tb_compras_ibfk_3` FOREIGN KEY (`id_usuario`) REFERENCES `tb_usuarios` (`id_usuario`) ON DELETE NO ACTION ON UPDATE CASCADE,
-  ADD CONSTRAINT `tb_compras_ibfk_4` FOREIGN KEY (`id_proveedor`) REFERENCES `tb_proveedores` (`id_proveedor`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ADD CONSTRAINT `fk_compras_proveedor` FOREIGN KEY (`id_proveedor`) REFERENCES `tb_proveedores` (`id_proveedor`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_compras_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `tb_usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `tb_detalle_compras`
+--
+ALTER TABLE `tb_detalle_compras`
+  ADD CONSTRAINT `fk_detallecompras_compra` FOREIGN KEY (`id_compra`) REFERENCES `tb_compras` (`id_compra`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detallecompras_producto` FOREIGN KEY (`id_producto`) REFERENCES `tb_almacen` (`id_producto`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `tb_usuarios`
