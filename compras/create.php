@@ -482,46 +482,89 @@ $(document).ready(function() {
     }
 
     $('#modalBuscarProducto').on('shown.bs.modal', function () {
-        cargarCategoriasUsuario(); 
-        if ($('#crear-producto-tab').hasClass('active')) { 
-            generarSiguienteCodigoProducto();
-             $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0);
-        }
+    // ... (código de inicialización de DataTables) ...
+    if (!$.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
+        tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
+            // ... (tu configuración existente de DataTables) ...
+            "columns": [
+                { "data": "id_producto" }, 
+                { "data": "codigo" }, 
+                { "data": "nombre" },
+                { "data": "stock" },
+                { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
+                { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0) + '%';} }, 
+                { "data": "nombre_categoria" }, 
+                {
+                    "data": null, "title": "Acción", "orderable": false, "searchable": false,
+                    "defaultContent": `<button type="button" class="btn btn-success btn-sm seleccionar-producto-para-compra"> 
+                                        <i class="fas fa-check-circle"></i> Seleccionar
+                                       </button>` // Usar defaultContent para el botón
+                }
+            ],
+            // ... (resto de tu configuración) ...
+        });
 
-        if (!$.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
-            tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
-                "processing": true, "serverSide": true,
-                "ajax": {
-                    "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
-                    "type": "POST",
-                    "data": function (d) { d.id_usuario = idUsuarioActual; }
-                },
-                "columns": [
-                    { "data": "id_producto" }, { "data": "codigo" }, { "data": "nombre" },
-                    { "data": "stock" },
-                    { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
-                    { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0) + '%';} }, 
-                    { "data": "nombre_categoria" }, 
-                    {
-                        "data": null, "title": "Acción", "orderable": false, "searchable": false,
-                        "render": function (data, type, row) {
-                            return `<button type="button" class="btn btn-success btn-sm seleccionar-producto-para-compra" 
-                                data-id="${row.id_producto}" data-nombre="${row.nombre}" 
-                                data-codigo="${row.codigo || 'N/A'}" data-stock="${row.stock || 0}" 
-                                data-preciocompra="${row.precio_compra || 0}"
-                                data-iva="${row.iva_porcentaje_producto || 0}"> 
-                                <i class="fas fa-check-circle"></i> Seleccionar
-                                </button>`;
-                        }
-                    }
-                ],
-                "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
-                "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
+        // Mover el manejador de clic FUERA de la inicialización, adjuntándolo a la tabla
+        // para que funcione con las filas creadas por DataTables.
+        $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
+            var fila = $(this).closest('tr'); // Obtener la fila TR más cercana
+            var datosFila = tablaProductosAlmacen.row(fila).data(); // Obtener los datos de la fila desde DataTables
+
+            if (!datosFila) {
+                console.error("No se pudieron obtener los datos de la fila para el producto seleccionado.");
+                Swal.fire('Error', 'No se pudieron obtener los datos del producto. Intente de nuevo.', 'error');
+                return;
+            }
+
+            console.log("--- Evento: Click en .seleccionar-producto-para-compra (Datos de Fila) ---");
+            console.log("Datos de la Fila:", datosFila); // Log para ver todo el objeto de la fila
+            console.log("ID del producto seleccionado:", datosFila.id_producto);
+            console.log("Nombre del producto:", datosFila.nombre);
+            console.log("IVA (original del producto):", datosFila.iva_porcentaje_producto);
+
+
+            var idProducto = datosFila.id_producto;
+            // Verificar si el producto ya está en la lista
+            var yaEnLista = false;
+            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+                if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
+                    yaEnLista = true;
+                    return false; // Salir del bucle
+                }
             });
-        } else {
-            tablaProductosAlmacen.ajax.reload(null, false); 
-        }
-    });
+
+            if (yaEnLista) {
+                Swal.fire('Atención', 'Este producto ya ha sido añadido a la lista.', 'warning');
+                return;
+            }
+
+            $('#temp_id_producto').val(idProducto);
+            $('#temp_nombre_producto').val(datosFila.nombre);
+            $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
+            $('#temp_stock_actual_producto').val(datosFila.stock || 0);
+            
+            let precioCompraSugerido = parseFloat(datosFila.precio_compra || 0).toFixed(2);
+            $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
+            $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
+
+            // Usar iva_porcentaje_producto directamente del objeto datosFila
+            let ivaProducto = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
+            $('#temp_iva_predeterminado_producto').val(ivaProducto);
+            $('#temp_porcentaje_iva').val(ivaProducto);
+            
+            console.log("Valor asignado a #temp_iva_predeterminado_producto:", $('#temp_iva_predeterminado_producto').val());
+            console.log("Valor asignado a #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
+
+            $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Predet: ${ivaProducto}%`).show();
+            $('#temp_cantidad').val(1).focus(); 
+            
+            $('#modalBuscarProducto').modal('hide');
+        });
+
+    } else {
+        tablaProductosAlmacen.ajax.reload(null, false); 
+    }
+});
 
     // AL SELECCIONAR PRODUCTO DEL MODAL PARA LA LISTA DE COMPRA
     $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
