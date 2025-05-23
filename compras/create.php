@@ -554,7 +554,7 @@ $(document).ready(function() {
             tablaProveedores = $('#tablaProveedores').DataTable({
                 "processing": true, "serverSide": true,
                 "ajax": {
-                    "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_buscar_proveedores_dt.php", 
+                    "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php",
                     "type": "POST",
                      "data": function (d) { d.id_usuario = idUsuarioActual; }
                 },
