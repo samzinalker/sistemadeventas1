@@ -39,75 +39,33 @@ include '../layout/mensajes.php';
     <!-- Main content -->
     <div class="content">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">Ingrese los datos de la compra</h3>
-                        </div>
-                        <form action="<?php echo $URL;?>/app/controllers/compras/controller_create_compra.php" method="POST" id="formNuevaCompra">
-                            <input type="hidden" name="id_usuario_compra" value="<?php echo $id_usuario_sesion; ?>">
-                            <!-- Hidden input para el nro_secuencial si tu controller_create_compra lo necesita -->
-                            <!-- <input type="hidden" id="nro_compra_secuencial_hidden" name="nro_compra_secuencial"> -->
+            <form action="<?php echo $URL;?>/app/controllers/compras/controller_create_compra.php" method="POST" id="formNuevaCompra">
+                <input type="hidden" name="id_usuario_compra" value="<?php echo $id_usuario_sesion; ?>">
+                
+                <div class="row">
+                    <!-- Columna Izquierda: Datos Generales y Selección de Productos -->
+                    <div class="col-md-8">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">Datos Generales y Productos</h3>
+                            </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6"> <!-- Ajustado de col-md-7 -->
-                                        <div class="form-group">
-                                            <label for="producto">Producto</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_producto_compra" name="nombre_producto_compra_display" placeholder="Seleccione un producto de su almacén" readonly>
-                                                <input type="hidden" id="id_producto_compra" name="id_producto_compra" required>
-                                                <input type="hidden" id="iva_original_producto" name="iva_original_producto"> 
-                                                <div class="input-group-append">
-                                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalBuscarProducto">
-                                                        <i class="fas fa-search"></i> Buscar/Crear Producto
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div id="detalle_producto_seleccionado" class="alert alert-light mt-2" style="display:none;">
-                                            <h6>Producto Seleccionado:</h6>
-                                            <small><strong>Código:</strong> <span id="info_codigo_producto"></span> | <strong>Stock Actual:</strong> <span id="info_stock_producto"></span> | <strong>Precio Compra Ref.:</strong> $<span id="info_precio_compra_producto"></span></small><br>
-                                            <small><strong>IVA Predeterminado Producto:</strong> <span id="info_iva_producto">0</span>%</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2"> 
-                                        <div class="form-group">
-                                            <label for="cantidad_compra">Cantidad</label>
-                                            <input type="number" class="form-control" id="cantidad_compra" name="cantidad_compra" min="1" value="1" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4"> <!-- Ajustado de col-md-3 -->
-                                        <div class="form-group">
-                                            <label for="precio_compra_unidad_compra">Precio de Compra (Unidad)</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">$</span>
-                                                </div>
-                                                <input type="number" step="0.01" class="form-control" id="precio_compra_unidad_compra" name="precio_compra_unidad_compra" min="0" required>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <hr>
-
+                                <!-- Datos del Proveedor y Fecha -->
                                 <div class="row">
                                     <div class="col-md-7">
                                         <div class="form-group">
                                             <label for="proveedor">Proveedor</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor de su lista" readonly>
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor" readonly required>
                                                 <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
-                                                        <i class="fas fa-search"></i> Buscar/Crear Proveedor
+                                                        <i class="fas fa-search"></i> Buscar/Crear
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div id="detalle_proveedor_seleccionado" class="alert alert-light mt-2" style="display:none;">
-                                            <h6>Proveedor Seleccionado:</h6>
+                                        <div id="detalle_proveedor_seleccionado" class="alert alert-light mt-0 mb-2 py-1 px-2" style="display:none; font-size:0.9em;">
                                             <small><strong>Empresa:</strong> <span id="info_empresa_proveedor"></span> | <strong>Celular:</strong> <span id="info_celular_proveedor"></span></small>
                                         </div>
                                     </div>
@@ -118,8 +76,7 @@ include '../layout/mensajes.php';
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div class="row">
+                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="nro_compra_referencia">Nro. Compra (Referencia Interna)</label>
@@ -133,36 +90,112 @@ include '../layout/mensajes.php';
                                         </div>
                                     </div>
                                 </div>
-
                                 <hr>
-                                <div class="row">
-                                    <div class="col-md-3">
+                                <!-- Sección para Añadir Productos a la Lista -->
+                                <h5>Añadir Producto a la Compra</h5>
+                                <div class="row align-items-end">
+                                    <div class="col-md-5">
                                         <div class="form-group">
-                                            <label for="porcentaje_iva_compra">IVA Aplicado a esta Compra (%)</label>
-                                            <input type="number" step="0.01" class="form-control" id="porcentaje_iva_compra" name="porcentaje_iva_compra_transaccion" value="0" min="0">
-                                            <small>El IVA predeterminado de este producto es <span id="iva_predeterminado_producto_info">0</span>%. Si lo cambia aquí, se usará para esta compra y podrá actualizar el producto si lo desea.</small>
+                                            <label for="temp_nombre_producto">Producto</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="temp_nombre_producto" placeholder="Buscar producto..." readonly>
+                                                <input type="hidden" id="temp_id_producto">
+                                                <input type="hidden" id="temp_codigo_producto">
+                                                <input type="hidden" id="temp_iva_predeterminado_producto">
+                                                <input type="hidden" id="temp_precio_compra_sugerido_producto">
+                                                <input type="hidden" id="temp_stock_actual_producto">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalBuscarProducto"><i class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                             <small id="temp_producto_info" class="form-text text-muted" style="display:none;"></small>
                                         </div>
                                     </div>
-                                    <div class="col-md-9 text-right">
-                                        <h5>Subtotal: <span class="text-muted">$<span id="subtotal_compra_display">0.00</span></span></h5>
-                                        <h5>IVA (<span id="iva_porcentaje_display_dinamico">0</span>%): <span class="text-muted">$<span id="monto_iva_display">0.00</span></span></h5>
-                                        <h3>Total Compra: <span class="text-primary">$<span id="total_compra_display">0.00</span></span></h3>
-                                        
-                                        <input type="hidden" name="subtotal_compra_calculado" id="subtotal_compra_hidden">
-                                        <input type="hidden" name="monto_iva_calculado" id="monto_iva_hidden">
-                                        <input type="hidden" name="total_compra_calculado" id="total_compra_hidden">
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label for="temp_cantidad">Cantidad</label>
+                                            <input type="number" class="form-control" id="temp_cantidad" min="1" value="1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label for="temp_precio_compra">Precio U.</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                                <input type="number" step="0.01" class="form-control" id="temp_precio_compra" min="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label for="temp_porcentaje_iva">IVA %</label>
+                                            <input type="number" step="0.01" class="form-control" id="temp_porcentaje_iva" min="0" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-success btn-block" id="btnAnadirProductoALista" title="Añadir a la lista"><i class="fas fa-plus"></i></button>
+                                        </div>
                                     </div>
                                 </div>
+                                <hr>
+                                <!-- Tabla de Ítems de la Compra -->
+                                <h5>Ítems de la Compra</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover table-sm" id="tablaItemsCompra">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="width: 30px;">#</th>
+                                                <th>Código</th>
+                                                <th>Producto</th>
+                                                <th style="width: 80px;">Cant.</th>
+                                                <th style="width: 100px;">Precio U.</th>
+                                                <th style="width: 70px;">IVA %</th>
+                                                <th style="width: 100px;">Subtotal</th>
+                                                <th style="width: 90px;">Monto IVA</th>
+                                                <th style="width: 110px;">Total Ítem</th>
+                                                <th style="width: 50px;">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Las filas se agregarán dinámicamente aquí -->
+                                            <tr id="filaNoItems">
+                                                <td colspan="10" class="text-center">No hay productos añadidos a la compra.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Columna Derecha: Resumen y Totales -->
+                    <div class="col-md-4">
+                        <div class="card card-primary">
+                             <div class="card-header">
+                                <h3 class="card-title">Resumen de la Compra</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-right">
+                                    <h5>Subtotal General: <span class="text-muted">$<span id="subtotal_general_compra_display">0.00</span></span></h5>
+                                    <h5>IVA General: <span class="text-muted">$<span id="monto_iva_general_display">0.00</span></span></h5>
+                                    <hr>
+                                    <h3>Total Compra: <span class="text-primary">$<span id="total_general_compra_display">0.00</span></span></h3>
+                                </div>
+                                
+                                <!-- Campos hidden para enviar los totales generales -->
+                                <input type="hidden" name="subtotal_general_compra_calculado" id="subtotal_general_compra_hidden">
+                                <input type="hidden" name="monto_iva_general_calculado" id="monto_iva_general_hidden">
+                                <input type="hidden" name="total_general_compra_calculado" id="total_general_compra_hidden">
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Registrar Compra</button>
-                                <a href="<?php echo $URL;?>/compras/" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+                                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> Registrar Compra</button>
+                                <a href="<?php echo $URL;?>/compras/" class="btn btn-secondary btn-block mt-2"><i class="fas fa-times"></i> Cancelar</a>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
         </div><!-- /.container-fluid -->
     </div>
     <!-- /.content -->
@@ -316,7 +349,6 @@ include '../layout/mensajes.php';
                     <div class="tab-pane fade p-3" id="crearProveedorPane" role="tabpanel" aria-labelledby="crear-proveedor-tab">
                         <h5>Registrar Nuevo Proveedor Personal</h5>
                         <form id="formNuevoProveedor" class="mt-3">
-                             <!-- No se necesita id_usuario aquí, el controlador create.php lo toma de la sesión -->
                              <div class="row">
                                 <div class="col-md-6 form-group">
                                     <label for="nuevo_proveedor_nombre">Nombre del Proveedor <span class="text-danger">*</span></label>
@@ -345,7 +377,6 @@ include '../layout/mensajes.php';
                                 <div class="col-md-6 form-group">
                                     <label for="nuevo_proveedor_direccion">Dirección</label>
                                     <input type="text" class="form-control" id="nuevo_proveedor_direccion" name="direccion">
-                                    <!-- El HTML original tenía input type="text", lo mantengo. Si era textarea, ajustar -->
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-success"><i class="fas fa-plus-circle"></i> Guardar Nuevo Proveedor</button>
@@ -368,22 +399,18 @@ $(document).ready(function() {
     var tablaProductosAlmacen;
     var tablaProveedores; 
     var idUsuarioActual = <?php echo json_encode($id_usuario_sesion); ?>;
+    var contadorItemsCompra = 0;
 
     // --- LÓGICA PARA GENERAR NRO DE COMPRA DE REFERENCIA ---
     function generarNroCompraReferencia() {
         $('#nro_compra_referencia').val('Generando...');
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/compras/controller_generar_codigo_compra.php',
-            type: 'POST', // Puede ser GET si prefieres, ya que el id_usuario se toma de la sesión del servidor
+            type: 'POST', 
             dataType: 'json',
-            // No es necesario enviar id_usuario_sesion desde el cliente explícitamente
-            // si el controlador PHP lo toma de $_SESSION['id_usuario']
             success: function(response) {
                 if (response && response.status === 'success' && response.codigo_compra) {
                     $('#nro_compra_referencia').val(response.codigo_compra);
-                    // Si necesitas el secuencial para el backend (controller_create_compra.php)
-                    // y no quieres que el controlador de creación lo recalcule, puedes guardarlo en un hidden input:
-                    // $('#nro_compra_secuencial_hidden').val(response.nro_secuencial);
                 } else {
                     $('#nro_compra_referencia').val('Error REF');
                     Swal.fire('Error', response.message || 'No se pudo generar la referencia de compra.', 'error');
@@ -396,6 +423,7 @@ $(document).ready(function() {
         });
     }
 
+    // --- LÓGICA PARA MODAL DE PRODUCTOS ---
     function generarSiguienteCodigoProducto() {
         $('#producto_codigo_rapido_display').val('Generando...');
         $.ajax({
@@ -424,8 +452,8 @@ $(document).ready(function() {
     $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         if ($(e.target).attr('href') === '#crearProductoPane' && $(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
             generarSiguienteCodigoProducto();
-            var ivaActualFormPrincipal = parseFloat($('#porcentaje_iva_compra').val()) || 0;
-            $('#producto_iva_rapido').val(ivaActualFormPrincipal);
+            // Podrías tomar el IVA del último producto añadido o un default
+            $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0);
         }
     });
 
@@ -433,7 +461,6 @@ $(document).ready(function() {
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/categorias/controller_listar_categorias_usuario.php', 
             type: 'POST', 
-            // data: { id_usuario: idUsuarioActual }, // No es necesario si el controller usa la sesión
             dataType: 'json',
             success: function(response) {
                 var options = '<option value="">Seleccione una categoría</option>';
@@ -442,9 +469,8 @@ $(document).ready(function() {
                         options += '<option value="' + cat.id_categoria + '">' + cat.nombre_categoria + '</option>';
                     });
                 } else if (response && response.status === 'success' && response.data && response.data.length === 0) {
-                    options = '<option value="">No tiene categorías registradas. Puede crear en el módulo de Categorías.</option>';
-                } 
-                else {
+                    options = '<option value="">No tiene categorías. Puede crear en el módulo de Categorías.</option>';
+                } else {
                      options = '<option value="">Error: ' + (response.message || 'No se pudo cargar categorías') + '</option>';
                 }
                 $('#producto_id_categoria_rapido').html(options);
@@ -459,8 +485,7 @@ $(document).ready(function() {
         cargarCategoriasUsuario(); 
         if ($('#crear-producto-tab').hasClass('active')) { 
             generarSiguienteCodigoProducto();
-            var ivaActualFormPrincipal = parseFloat($('#porcentaje_iva_compra').val()) || 0;
-            $('#producto_iva_rapido').val(ivaActualFormPrincipal);
+             $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0);
         }
 
         if (!$.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
@@ -475,14 +500,12 @@ $(document).ready(function() {
                     { "data": "id_producto" }, { "data": "codigo" }, { "data": "nombre" },
                     { "data": "stock" },
                     { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
-                    { "data": "iva_porcentaje_producto", 
-                      "render": function(data, type, row){ return (parseFloat(data) || 0) + '%';} 
-                    }, 
+                    { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0) + '%';} }, 
                     { "data": "nombre_categoria" }, 
                     {
                         "data": null, "title": "Acción", "orderable": false, "searchable": false,
                         "render": function (data, type, row) {
-                            return `<button type="button" class="btn btn-success btn-sm seleccionar-producto" 
+                            return `<button type="button" class="btn btn-success btn-sm seleccionar-producto-para-compra" 
                                 data-id="${row.id_producto}" data-nombre="${row.nombre}" 
                                 data-codigo="${row.codigo || 'N/A'}" data-stock="${row.stock || 0}" 
                                 data-preciocompra="${row.precio_compra || 0}"
@@ -500,32 +523,43 @@ $(document).ready(function() {
         }
     });
 
-    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto', function () {
-        var ivaProducto = parseFloat($(this).data('iva')) || 0;
+    // AL SELECCIONAR PRODUCTO DEL MODAL PARA LA LISTA DE COMPRA
+    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
+        var idProducto = $(this).data('id');
+        // Verificar si el producto ya está en la lista
+        var yaEnLista = false;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+            if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
+                yaEnLista = true;
+                return false; // Salir del bucle
+            }
+        });
 
-        $('#id_producto_compra').val($(this).data('id'));
-        $('#nombre_producto_compra').val($(this).data('nombre'));
-        $('#info_codigo_producto').text($(this).data('codigo'));
-        $('#info_stock_producto').text($(this).data('stock'));
-        let precioCompraSugerido = parseFloat($(this).data('preciocompra')).toFixed(2);
-        $('#info_precio_compra_producto').text(precioCompraSugerido);
-        
-        $('#info_iva_producto').text(ivaProducto.toFixed(2));
-        $('#iva_predeterminado_producto_info').text(ivaProducto.toFixed(2));
-        $('#porcentaje_iva_compra').val(ivaProducto.toFixed(2));
-        $('#iva_original_producto').val(ivaProducto.toFixed(2));
-
-        $('#detalle_producto_seleccionado').fadeIn();
-        
-        if(precioCompraSugerido > 0 && parseFloat(precioCompraSugerido) > 0) { 
-             $('#precio_compra_unidad_compra').val(precioCompraSugerido);
-        } else {
-            $('#precio_compra_unidad_compra').val(''); 
+        if (yaEnLista) {
+            Swal.fire('Atención', 'Este producto ya ha sido añadido a la lista.', 'warning');
+            return;
         }
+
+        $('#temp_id_producto').val(idProducto);
+        $('#temp_nombre_producto').val($(this).data('nombre'));
+        $('#temp_codigo_producto').val($(this).data('codigo'));
+        $('#temp_stock_actual_producto').val($(this).data('stock'));
+        
+        let precioCompraSugerido = parseFloat($(this).data('preciocompra') || 0).toFixed(2);
+        $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
+        $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
+
+        let ivaProducto = parseFloat($(this).data('iva') || 0).toFixed(2);
+        $('#temp_iva_predeterminado_producto').val(ivaProducto);
+        $('#temp_porcentaje_iva').val(ivaProducto);
+
+        $('#temp_producto_info').html(`Cód: ${$(this).data('codigo')} | Stock: ${$(this).data('stock')} | IVA Predet: ${ivaProducto}%`).show();
+        $('#temp_cantidad').val(1).focus(); // Poner foco en cantidad
+        
         $('#modalBuscarProducto').modal('hide');
-        calcularTotalCompra();
     });
 
+    // FORMULARIO DE CREACIÓN RÁPIDA DE PRODUCTO (dentro del modal de búsqueda de producto)
     $('#formNuevoProductoRapido').on('submit', function(e) {
         e.preventDefault();
         if (!$('#producto_codigo_rapido_hidden').val() || $('#producto_codigo_rapido_hidden').val() === 'Error al generar' || $('#producto_codigo_rapido_hidden').val() === 'Error de conexión') {
@@ -541,22 +575,23 @@ $(document).ready(function() {
             success: function(response) {
                 if(response.status === 'success' && response.producto) {
                     Swal.fire('¡Éxito!', response.message || 'Producto creado.', 'success');
-                    var ivaNuevoProducto = parseFloat(response.producto.iva_predeterminado || 0);
-
-                    $('#id_producto_compra').val(response.producto.id_producto);
-                    $('#nombre_producto_compra').val(response.producto.nombre);
-                    $('#info_codigo_producto').text(response.producto.codigo || 'N/A'); 
-                    $('#info_stock_producto').text(response.producto.stock_inicial || '0'); 
+                    
+                    // Poblar campos temporales con el nuevo producto para añadirlo a la lista de compra
+                    $('#temp_id_producto').val(response.producto.id_producto);
+                    $('#temp_nombre_producto').val(response.producto.nombre);
+                    $('#temp_codigo_producto').val(response.producto.codigo || 'N/A');
+                    $('#temp_stock_actual_producto').val(response.producto.stock_inicial || '0');
+                    
                     let precioCompraSugerido = parseFloat(response.producto.precio_compra || 0).toFixed(2);
-                    $('#info_precio_compra_producto').text(precioCompraSugerido);
+                    $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
+                    $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
+                    
+                    let ivaNuevoProducto = parseFloat(response.producto.iva_predeterminado || 0).toFixed(2);
+                    $('#temp_iva_predeterminado_producto').val(ivaNuevoProducto);
+                    $('#temp_porcentaje_iva').val(ivaNuevoProducto);
 
-                    $('#info_iva_producto').text(ivaNuevoProducto.toFixed(2));
-                    $('#iva_predeterminado_producto_info').text(ivaNuevoProducto.toFixed(2));
-                    $('#porcentaje_iva_compra').val(ivaNuevoProducto.toFixed(2));
-                    $('#iva_original_producto').val(ivaNuevoProducto.toFixed(2));
-
-                    $('#detalle_producto_seleccionado').fadeIn();
-                    if(precioCompraSugerido > 0 && parseFloat(precioCompraSugerido) > 0) $('#precio_compra_unidad_compra').val(precioCompraSugerido);
+                    $('#temp_producto_info').html(`Cód: ${response.producto.codigo || 'N/A'} | Stock: ${response.producto.stock_inicial || '0'} | IVA Predet: ${ivaNuevoProducto}%`).show();
+                    $('#temp_cantidad').val(1).focus();
 
                     $('#modalBuscarProducto').modal('hide');
                     $('#formNuevoProductoRapido')[0].reset();
@@ -564,7 +599,6 @@ $(document).ready(function() {
                     $('#producto_codigo_rapido_hidden').val(''); 
                     $('#producto_iva_rapido').val(0); 
                     if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload(null, false);
-                    calcularTotalCompra();
                 } else {
                     Swal.fire('Error', response.message || 'No se pudo crear el producto.', 'error');
                 }
@@ -575,48 +609,162 @@ $(document).ready(function() {
         });
     });
 
+    // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
+    $('#btnAnadirProductoALista').on('click', function() {
+        var idProducto = $('#temp_id_producto').val();
+        var codigoProducto = $('#temp_codigo_producto').val();
+        var nombreProducto = $('#temp_nombre_producto').val();
+        var cantidad = parseFloat($('#temp_cantidad').val()) || 0;
+        var precioCompra = parseFloat($('#temp_precio_compra').val()) || 0;
+        var porcentajeIva = parseFloat($('#temp_porcentaje_iva').val()) || 0;
+
+        if (!idProducto) {
+            Swal.fire('Atención', 'Debe seleccionar un producto.', 'warning'); return;
+        }
+        if (cantidad <= 0) {
+            Swal.fire('Atención', 'La cantidad debe ser mayor a cero.', 'warning'); $('#temp_cantidad').focus(); return;
+        }
+        if (precioCompra < 0) { // Permitir 0 por si es un item de regalo, aunque para compras no es común
+            Swal.fire('Atención', 'El precio de compra no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return;
+        }
+         if (porcentajeIva < 0) {
+            Swal.fire('Atención', 'El porcentaje de IVA no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return;
+        }
+
+        // Verificar si el producto ya está en la lista (por si acaso, aunque ya se verifica al seleccionar)
+        var yaEnLista = false;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+            if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
+                yaEnLista = true; return false; 
+            }
+        });
+        if (yaEnLista) {
+            Swal.fire('Atención', 'Este producto ya está en la lista. Puede modificar la cantidad allí o eliminarlo y volver a añadirlo.', 'warning');
+            return;
+        }
+
+        contadorItemsCompra++;
+        var subtotalItem = cantidad * precioCompra;
+        var montoIvaItem = subtotalItem * (porcentajeIva / 100);
+        var totalItem = subtotalItem + montoIvaItem;
+
+        var nuevaFila = `
+            <tr>
+                <td>${contadorItemsCompra}</td>
+                <td>${codigoProducto}
+                    <input type="hidden" name="item_id_producto[]" value="${idProducto}">
+                    <input type="hidden" name="item_codigo_producto[]" value="${codigoProducto}">
+                    <input type="hidden" name="item_nombre_producto[]" value="${nombreProducto}">
+                </td>
+                <td>${nombreProducto}</td>
+                <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad" value="${cantidad}" min="1" style="width:70px;"></td>
+                <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;"></td>
+                <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;"></td>
+                <td class="item-subtotal">${subtotalItem.toFixed(2)}</td>
+                <td class="item-monto-iva">${montoIvaItem.toFixed(2)}</td>
+                <td class="item-total">${totalItem.toFixed(2)}</td>
+                <td><button type="button" class="btn btn-danger btn-sm btn-eliminar-item"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `;
+        
+        $('#filaNoItems').hide(); // Ocultar fila de "No hay productos"
+        $('#tablaItemsCompra tbody').append(nuevaFila);
+        recalcularTotalesGenerales();
+
+        // Limpiar campos temporales
+        $('#temp_id_producto, #temp_codigo_producto, #temp_nombre_producto, #temp_iva_predeterminado_producto, #temp_precio_compra_sugerido_producto, #temp_stock_actual_producto').val('');
+        $('#temp_cantidad').val(1);
+        $('#temp_precio_compra, #temp_porcentaje_iva').val(0);
+        $('#temp_producto_info').hide().empty();
+        $('#temp_nombre_producto').focus(); // Foco en buscar producto para el siguiente
+    });
+
+    // --- RECALCULAR TOTALES DE UN ITEM SI SE MODIFICA EN LA TABLA ---
+    $('#tablaItemsCompra tbody').on('change keyup', '.item-cantidad, .item-precio, .item-iva', function() {
+        var fila = $(this).closest('tr');
+        var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
+        var precio = parseFloat(fila.find('.item-precio').val()) || 0;
+        var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
+
+        var subtotal = cantidad * precio;
+        var montoIva = subtotal * (ivaPct / 100);
+        var total = subtotal + montoIva;
+
+        fila.find('.item-subtotal').text(subtotal.toFixed(2));
+        fila.find('.item-monto-iva').text(montoIva.toFixed(2));
+        fila.find('.item-total').text(total.toFixed(2));
+        
+        recalcularTotalesGenerales();
+    });
     
+    // --- ELIMINAR ITEM DE LA LISTA ---
+    $('#tablaItemsCompra tbody').on('click', '.btn-eliminar-item', function() {
+        $(this).closest('tr').remove();
+        recalcularTotalesGenerales();
+        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems').length === 0) {
+            $('#filaNoItems').show();
+            contadorItemsCompra = 0; // Reiniciar contador si la tabla está vacía
+        } else {
+            // Re-numerar items si es necesario
+            var count = 1;
+            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function(){
+                $(this).find('td:first').text(count++);
+            });
+            contadorItemsCompra = count -1;
+        }
+    });
+
+    // --- RECALCULAR TOTALES GENERALES DE LA COMPRA ---
+    function recalcularTotalesGenerales() {
+        var subtotalGeneral = 0;
+        var montoIvaGeneral = 0;
+        var totalGeneral = 0;
+
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+            var fila = $(this);
+            var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
+            var precio = parseFloat(fila.find('.item-precio').val()) || 0;
+            var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
+
+            var subtotalItem = cantidad * precio;
+            var montoIvaItem = subtotalItem * (ivaPct / 100);
+            
+            subtotalGeneral += subtotalItem;
+            montoIvaGeneral += montoIvaItem;
+        });
+        totalGeneral = subtotalGeneral + montoIvaGeneral;
+
+        $('#subtotal_general_compra_display').text(subtotalGeneral.toFixed(2));
+        $('#monto_iva_general_display').text(montoIvaGeneral.toFixed(2));
+        $('#total_general_compra_display').text(totalGeneral.toFixed(2));
+
+        $('#subtotal_general_compra_hidden').val(subtotalGeneral.toFixed(2));
+        $('#monto_iva_general_hidden').val(montoIvaGeneral.toFixed(2));
+        $('#total_general_compra_hidden').val(totalGeneral.toFixed(2));
+    }
+
+    // --- LÓGICA PARA PROVEEDORES (MODAL Y FORMULARIO) ---
     $('#modalBuscarProveedor').on('shown.bs.modal', function () {
         if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
             tablaProveedores = $('#tablaProveedores').DataTable({
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php",
-                    "type": "POST"
-                },
+                "processing": true, "serverSide": true,
+                "ajax": {"url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", "type": "POST"},
                 "columns": [
-                    { "data": "id_proveedor", "title": "ID" },
-                    { "data": "nombre_proveedor", "title": "Nombre" },
-                    { "data": "empresa", "title": "Empresa" },
-                    { "data": "celular", "title": "Celular" },
-                    { "data": "telefono", "title": "Teléfono" },
-                    { "data": "email", "title": "Email" },
+                    { "data": "id_proveedor", "title": "ID" }, { "data": "nombre_proveedor", "title": "Nombre" },
+                    { "data": "empresa", "title": "Empresa" }, { "data": "celular", "title": "Celular" },
+                    { "data": "telefono", "title": "Teléfono" }, { "data": "email", "title": "Email" },
                     { "data": "direccion", "title": "Dirección" },
-                    {
-                        "data": null,
-                        "title": "Acción", 
-                        "orderable": false,
-                        "searchable": false,
+                    { "data": null, "title": "Acción", "orderable": false, "searchable": false,
                         "render": function (data, type, row) {
                             return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" 
-                                data-id="${row.id_proveedor}" 
-                                data-nombre="${row.nombre_proveedor}"
-                                data-empresa="${row.empresa || 'N/A'}" 
-                                data-celular="${row.celular || 'N/A'}">
-                                <i class="fas fa-check-circle"></i> Seleccionar
-                                </button>`;
+                                data-id="${row.id_proveedor}" data-nombre="${row.nombre_proveedor}"
+                                data-empresa="${row.empresa || 'N/A'}" data-celular="${row.celular || 'N/A'}">
+                                <i class="fas fa-check-circle"></i> Seleccionar</button>`;
                         }
                     }
                 ],
-                "language": {
-                    "url": "<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"
-                },
-                "responsive": true, 
-                "lengthChange": true, 
-                "autoWidth": false,
-                "pageLength": 5,
-                "lengthMenu": [5, 10, 25, 50]
+                "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
+                "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
             });
         } else {
             tablaProveedores.ajax.reload(null, false); 
@@ -624,103 +772,82 @@ $(document).ready(function() {
     });
 
     $('#tablaProveedores tbody').on('click', '.seleccionar-proveedor', function () {
-        var idProveedor = $(this).data('id');
-        var nombreProveedor = $(this).data('nombre');
-        var empresaProveedor = $(this).data('empresa');
-        var celularProveedor = $(this).data('celular');
-        
-        $('#id_proveedor_compra').val(idProveedor);
-        $('#nombre_proveedor_compra').val(nombreProveedor); 
-        
-        $('#info_empresa_proveedor').text(empresaProveedor);
-        $('#info_celular_proveedor').text(celularProveedor);
-        $('#detalle_proveedor_seleccionado').fadeIn();
-        
-        $('#modalBuscarProveedor').modal('hide'); 
+        $('#id_proveedor_compra').val($(this).data('id'));
+        $('#nombre_proveedor_compra_display').val($(this).data('nombre'));
+        $('#info_empresa_proveedor').text($(this).data('empresa'));
+        $('#info_celular_proveedor').text($(this).data('celular'));
+        $('#detalle_proveedor_seleccionado').show();
+        $('#modalBuscarProveedor').modal('hide');
     });
 
     $('#formNuevoProveedor').on('submit', function(e) {
         e.preventDefault();
         var formData = $(this).serialize(); 
-
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
+            type: 'POST', data: formData, dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
-                    Swal.fire('¡Éxito!', response.message || 'Proveedor creado correctamente.', 'success');
-                    
-                    var nombreNuevoProv = $('#nuevo_proveedor_nombre').val();
-                    var empresaNuevoProv = $('#nuevo_proveedor_empresa').val() || 'N/A';
-                    var celularNuevoProv = $('#nuevo_proveedor_celular').val() || 'N/A';
-
-                    if(response.creadoId){ // Asegúrate que el controlador create.php devuelva 'creadoId' o el id del proveedor
+                    Swal.fire('¡Éxito!', response.message || 'Proveedor creado.', 'success');
+                    if(response.data && response.data.id_proveedor) { // Asumiendo que create.php devuelve 'data' con el proveedor
+                         $('#id_proveedor_compra').val(response.data.id_proveedor);
+                        $('#nombre_proveedor_compra_display').val(response.data.nombre_proveedor);
+                        $('#info_empresa_proveedor').text(response.data.empresa || 'N/A');
+                        $('#info_celular_proveedor').text(response.data.celular || 'N/A');
+                        $('#detalle_proveedor_seleccionado').show();
+                    } else if (response.creadoId) { // Fallback si devuelve creadoId directamente
                          $('#id_proveedor_compra').val(response.creadoId);
-                    } else {
-                        // Fallback o manejar el caso donde el ID no es devuelto explícitamente
-                        // Podrías intentar obtener el último ID o simplemente dejarlo para que el usuario lo seleccione de la tabla
-                         $('#id_proveedor_compra').val(''); // O no hacer nada si el usuario debe re-seleccionar
+                         $('#nombre_proveedor_compra_display').val( $('#nuevo_proveedor_nombre').val());
+                         $('#info_empresa_proveedor').text( $('#nuevo_proveedor_empresa').val() || 'N/A');
+                         $('#info_celular_proveedor').text( $('#nuevo_proveedor_celular').val() || 'N/A');
+                         $('#detalle_proveedor_seleccionado').show();
                     }
-                    $('#nombre_proveedor_compra').val(nombreNuevoProv);
-                    
-                    $('#info_empresa_proveedor').text(empresaNuevoProv);
-                    $('#info_celular_proveedor').text(celularNuevoProv);
-                    $('#detalle_proveedor_seleccionado').fadeIn();
-
                     $('#modalBuscarProveedor').modal('hide');
-                    $('#formNuevoProveedor')[0].reset(); 
-                    if (tablaProveedores) {
-                        tablaProveedores.ajax.reload(null, false); 
-                    }
+                    $('#formNuevoProveedor')[0].reset();
+                    if(tablaProveedores) tablaProveedores.ajax.reload(null, false);
                 } else {
-                    Swal.fire('Error', response.message || 'No se pudo crear el proveedor.', 'error');
+                    Swal.fire('Error', response.message || 'No se pudo crear.', 'error');
                 }
             },
-            error: function() {
-                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor para crear el proveedor.', 'error');
+            error: function() { 
+                Swal.fire('Error de Conexión', 'No se pudo conectar.', 'error');
             }
         });
     });
-
-    function calcularTotalCompra() {
-        var cantidad = parseFloat($('#cantidad_compra').val()) || 0;
-        var precioUnidad = parseFloat($('#precio_compra_unidad_compra').val()) || 0;
-        var porcentajeIvaTransaccion = parseFloat($('#porcentaje_iva_compra').val()) || 0;
-
-        var subtotal = cantidad * precioUnidad;
-        var montoIva = subtotal * (porcentajeIvaTransaccion / 100);
-        var total = subtotal + montoIva;
-
-        $('#subtotal_compra_display').text(subtotal.toFixed(2));
-        $('#monto_iva_display').text(montoIva.toFixed(2));
-        $('#total_compra_display').text(total.toFixed(2));
-        $('#iva_porcentaje_display_dinamico').text(porcentajeIvaTransaccion.toFixed(2));
-        $('#subtotal_compra_hidden').val(subtotal.toFixed(2));
-        $('#monto_iva_hidden').val(montoIva.toFixed(2));
-        $('#total_compra_hidden').val(total.toFixed(2));
-    }
-    $('#cantidad_compra, #precio_compra_unidad_compra, #porcentaje_iva_compra').on('input change keyup', calcularTotalCompra);
     
-    // Llamadas iniciales al cargar el documento
-    calcularTotalCompra(); 
-    generarNroCompraReferencia(); // <--- LLAMADA PARA GENERAR EL NRO DE COMPRA
+    // --- INICIALIZACIÓN Y VALIDACIÓN DEL FORMULARIO PRINCIPAL ---
+    generarNroCompraReferencia();
+    recalcularTotalesGenerales(); // Para que los totales muestren 0.00 al inicio
 
     $('#formNuevaCompra').on('submit', function(e){
-        if (!$('#id_producto_compra').val()) {
-            e.preventDefault(); Swal.fire('Atención', 'Debe seleccionar un producto.', 'warning'); return false;
-        }
         if (!$('#id_proveedor_compra').val()) { 
             e.preventDefault(); Swal.fire('Atención', 'Debe seleccionar un proveedor.', 'warning'); return false;
+        }
+        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems').length === 0) {
+            e.preventDefault(); Swal.fire('Atención', 'Debe añadir al menos un producto a la compra.', 'warning'); return false;
         }
         if (!$('#nro_compra_referencia').val() || $('#nro_compra_referencia').val() === 'Generando...' || $('#nro_compra_referencia').val().startsWith('Error')) {
             e.preventDefault(); Swal.fire('Atención', 'Espere a que se genere el Número de Compra o verifique si hay errores.', 'warning'); return false;
         }
-        var porcentajeIva = parseFloat($('#porcentaje_iva_compra').val());
-        if (isNaN(porcentajeIva) || porcentajeIva < 0) {
-             e.preventDefault(); Swal.fire('Atención', 'El IVA aplicado debe ser un número válido (0 o mayor).', 'warning'); $('#porcentaje_iva_compra').focus(); return false;
+        // Validaciones adicionales por cada item si es necesario (ej. cantidad > 0)
+        var itemsValidos = true;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+            var cantidad = parseFloat($(this).find('.item-cantidad').val()) || 0;
+            if (cantidad <= 0) {
+                itemsValidos = false;
+                Swal.fire('Atención', 'Todas las cantidades de los productos deben ser mayores a cero.', 'warning');
+                $(this).find('.item-cantidad').focus();
+                return false; // Salir del bucle
+            }
+        });
+        if(!itemsValidos) {
+            e.preventDefault();
+            return false;
         }
+
+        // Aquí, antes de enviar, el formulario serializará automáticamente los campos
+        // item_id_producto[], item_cantidad[], item_precio_unitario[], item_porcentaje_iva[]
+        // que el controlador PHP recibirá como arrays.
     });
 });
 </script>
