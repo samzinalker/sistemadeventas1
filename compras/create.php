@@ -304,7 +304,9 @@ include '../layout/mensajes.php';
                                     <th>Nombre</th>
                                     <th>Empresa</th>
                                     <th>Celular</th>
+                                    <th>Teléfono</th>
                                     <th>Email</th>
+                                    <th>Dirección</th>
                                     <th>Acción</th>
                                 </tr>
                             </thead>

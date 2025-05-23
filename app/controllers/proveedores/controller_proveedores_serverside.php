@@ -36,15 +36,17 @@ $columnOrderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] :
 // IMPORTANTE: Ajusta esto según las columnas en tu tabla #tablaProveedores y su orden VISIBLE
 // Esto es para el ORDENAMIENTO.
 $columnsSortable = [
-    0 => 'nombre_proveedor', // Si la primera columna visible es nombre_proveedor
-    1 => 'celular',
-    2 => 'telefono',
-    3 => 'empresa',
-    4 => 'email',
-    5 => 'direccion'
-    // Si tienes una columna de ID o acciones como primera visible, ajusta los índices.
+    0 => 'id_proveedor',       // Columna ID
+    1 => 'nombre_proveedor',   // Columna Nombre
+    2 => 'empresa',            // Columna Empresa
+    3 => 'celular',            // Columna Celular
+    4 => 'telefono',           // Columna Teléfono
+    5 => 'email',              // Columna Email
+    6 => 'direccion'           // Columna Dirección
+    // La columna 7 (Acciones) no es ordenable por datos de la BD
 ];
-$orderBy = $columnsSortable[$columnOrderIndex] ?? 'nombre_proveedor';
+$orderBy = $columnsSortable[$columnOrderIndex] ?? 'nombre_proveedor'; // Por defecto ordenar por nombre
+
 
 // --- Lógica para obtener el total de registros (sin filtrar) ---
 $sqlTotal = "SELECT COUNT(id_proveedor) FROM tb_proveedores WHERE id_usuario = :id_usuario";
