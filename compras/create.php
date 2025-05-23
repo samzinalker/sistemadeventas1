@@ -552,7 +552,8 @@ $(document).ready(function() {
         let ivaProducto = parseFloat($(this).data('iva') || 0).toFixed(2);
         $('#temp_iva_predeterminado_producto').val(ivaProducto);
         $('#temp_porcentaje_iva').val(ivaProducto);
-
+  console.log("Valor asignado a #temp_iva_predeterminado_producto:", $('#temp_iva_predeterminado_producto').val());
+    console.log("Valor asignado a #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
         $('#temp_producto_info').html(`Cód: ${$(this).data('codigo')} | Stock: ${$(this).data('stock')} | IVA Predet: ${ivaProducto}%`).show();
         $('#temp_cantidad').val(1).focus(); // Poner foco en cantidad
         
@@ -611,6 +612,12 @@ $(document).ready(function() {
 
     // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
     $('#btnAnadirProductoALista').on('click', function() {
+                console.log("--- Evento: Click en .seleccionar-producto-para-compra ---");
+                 console.log("ID del producto seleccionado:", $(this).data('id'));
+                console.log("Nombre del producto:", $(this).data('nombre'));
+                console.log("Data-IVA (original del producto):", $(this).data('iva'));
+
+
         var idProducto = $('#temp_id_producto').val();
         var codigoProducto = $('#temp_codigo_producto').val();
         var nombreProducto = $('#temp_nombre_producto').val();
