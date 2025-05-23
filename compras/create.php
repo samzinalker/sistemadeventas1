@@ -53,7 +53,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="producto">Producto</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_producto_compra" name="nombre_producto_compra_display" placeholder="Seleccione un producto de su almacén" readonly>
+                                                <input type="text" class="form-control" id="nombre_producto_compra" name="nombre_producto_compra_display" placeholder="Seleccione un producto de su almacén" readonly required>
                                                 <input type="hidden" id="id_producto_compra" name="id_producto_compra" required>
                                                 <input type="hidden" id="iva_original_producto" name="iva_original_producto"> 
                                                 <div class="input-group-append">
@@ -65,7 +65,7 @@ include '../layout/mensajes.php';
                                         </div>
                                         <div id="detalle_producto_seleccionado" class="alert alert-light mt-2" style="display:none;">
                                             <h6>Producto Seleccionado:</h6>
-                                            <small><strong>Código:</strong> <span id="info_codigo_producto"></span> | <strong>Stock Actual:</strong> <span id="info_stock_producto"></span> | <strong>Precio Compra Ref.:</strong> $<span id="info_precio_compra_producto"></span></small><br>
+                                            <small><strong>Código:</strong> <span id="info_codigo_producto"></span> | <strong>Stock Actual:</strong> <span id="info_stock_producto"></span> | <strong>P. Compra Ref:</strong> $<span id="info_precio_compra_producto"></span></small><br>
                                             <small><strong>IVA Predeterminado Producto:</strong> <span id="info_iva_producto">0</span>%</small>
                                         </div>
                                     </div>
@@ -95,7 +95,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="proveedor">Proveedor</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor de su lista" readonly>
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor de su lista" readonly required>
                                                 <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
@@ -138,7 +138,7 @@ include '../layout/mensajes.php';
                                         <div class="form-group">
                                             <label for="porcentaje_iva_compra">IVA Aplicado a esta Compra (%)</label>
                                             <input type="number" step="0.01" class="form-control" id="porcentaje_iva_compra" name="porcentaje_iva_compra_transaccion" value="0" min="0">
-                                            <small>El IVA predeterminado de este producto es <span id="iva_predeterminado_producto_info">0</span>%. Si lo cambia aquí, se usará para esta compra y podrá actualizar el IVA predeterminado del producto si lo desea.</small>
+                                            <small>El IVA predeterminado de este producto es <span id="iva_predeterminado_producto_info">0</span>%. Si lo cambia aquí, se usará para esta compra y podrá actualizar el predeterminado del producto si lo desea.</small>
                                         </div>
                                     </div>
                                     <div class="col-md-9 text-right">
@@ -211,13 +211,11 @@ include '../layout/mensajes.php';
                             <input type="hidden" name="id_usuario_creador" value="<?php echo $id_usuario_sesion; ?>">
                             <input type="hidden" name="accion" value="crear_producto_almacen_rapido">
                             <input type="hidden" id="producto_iva_predeterminado_rapido_hidden" name="producto_iva_predeterminado">
-                            <!-- Este campo oculto SÍ se enviará con el código generado -->
                             <input type="hidden" id="producto_codigo_rapido_hidden" name="producto_codigo">
 
                             <div class="row">
                                 <div class="col-md-4 form-group">
                                     <label for="producto_codigo_rapido_display">Código <small>(Se autogenera)</small></label>
-                                    <!-- Este campo es solo para mostrar, no se envía directamente -->
                                     <input type="text" class="form-control" id="producto_codigo_rapido_display" readonly placeholder="Generando...">
                                 </div>
                                 <div class="col-md-8 form-group">
@@ -275,7 +273,7 @@ include '../layout/mensajes.php';
     </div>
 </div>
 
-<!-- Modal Buscar/Crear Proveedor (sin cambios) -->
+<!-- Modal Buscar/Crear Proveedor -->
 <div class="modal fade" id="modalBuscarProveedor" tabindex="-1" role="dialog" aria-labelledby="modalBuscarProveedorLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -316,6 +314,7 @@ include '../layout/mensajes.php';
                     <div class="tab-pane fade p-3" id="crearProveedorPane" role="tabpanel" aria-labelledby="crear-proveedor-tab">
                         <h5>Registrar Nuevo Proveedor Personal</h5>
                         <form id="formNuevoProveedor" class="mt-3">
+                             <!-- No se necesita id_usuario aquí, el controlador create.php lo toma de la sesión -->
                              <div class="row">
                                 <div class="col-md-6 form-group">
                                     <label for="nuevo_proveedor_nombre">Nombre del Proveedor <span class="text-danger">*</span></label>
@@ -344,6 +343,7 @@ include '../layout/mensajes.php';
                                 <div class="col-md-6 form-group">
                                     <label for="nuevo_proveedor_direccion">Dirección</label>
                                     <input type="text" class="form-control" id="nuevo_proveedor_direccion" name="direccion">
+                                    <!-- El HTML original tenía input type="text", lo mantengo. Si era textarea, ajustar -->
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-success"><i class="fas fa-plus-circle"></i> Guardar Nuevo Proveedor</button>
@@ -364,13 +364,13 @@ include '../layout/parte2.php';
 <script>
 $(document).ready(function() {
     var tablaProductosAlmacen;
-    var tablaProveedores;
+    var tablaProveedores; // Declarar aquí para que sea accesible
     var idUsuarioActual = <?php echo json_encode($id_usuario_sesion); ?>;
 
     function generarSiguienteCodigoProducto() {
         $('#producto_codigo_rapido_display').val('Generando...');
         $.ajax({
-            url: '<?php echo $URL; ?>/app/controllers/almacen/controller_generar_siguiente_codigo.php', // NUEVO CONTROLADOR
+            url: '<?php echo $URL; ?>/app/controllers/almacen/controller_generar_siguiente_codigo.php',
             type: 'POST',
             data: { id_usuario: idUsuarioActual },
             dataType: 'json',
@@ -380,7 +380,7 @@ $(document).ready(function() {
                     $('#producto_codigo_rapido_hidden').val(response.nuevo_codigo);
                 } else {
                     $('#producto_codigo_rapido_display').val('Error al generar');
-                    $('#producto_codigo_rapido_hidden').val(''); // No enviar si hay error
+                    $('#producto_codigo_rapido_hidden').val('');
                     Swal.fire('Error', response.message || 'No se pudo generar el código del producto.', 'error');
                 }
             },
@@ -392,17 +392,14 @@ $(document).ready(function() {
         });
     }
 
-    // Generar código cuando se muestra la pestaña de crear producto
     $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        if ($(e.target).attr('href') === '#crearProductoPane') {
+        if ($(e.target).attr('href') === '#crearProductoPane' && $(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
             generarSiguienteCodigoProducto();
-            // También, tomar el IVA del form principal si ya hay un producto seleccionado
-            // o dejarlo en 0 (o el valor por defecto del campo 'producto_iva_rapido')
             var ivaActualFormPrincipal = parseFloat($('#porcentaje_iva_compra').val()) || 0;
             $('#producto_iva_rapido').val(ivaActualFormPrincipal);
         }
+        // Podrías añadir lógica similar si la pestaña de crear proveedor necesita alguna acción al mostrarse
     });
-
 
     // --- LÓGICA PARA PRODUCTOS ---
     function cargarCategoriasUsuario() {
@@ -428,8 +425,7 @@ $(document).ready(function() {
 
     $('#modalBuscarProducto').on('shown.bs.modal', function () {
         cargarCategoriasUsuario(); 
-        // Si la pestaña de crear es la activa por defecto (o la primera vez que se abre el modal y está activa)
-        if ($('#crear-producto-tab').hasClass('active')) {
+        if ($('#crear-producto-tab').hasClass('active')) { // Si la pestaña de crear es la activa
             generarSiguienteCodigoProducto();
             var ivaActualFormPrincipal = parseFloat($('#porcentaje_iva_compra').val()) || 0;
             $('#producto_iva_rapido').val(ivaActualFormPrincipal);
@@ -452,16 +448,15 @@ $(document).ready(function() {
                     }, 
                     { "data": "nombre_categoria" }, 
                     {
-                        "data": null,
+                        "data": null, "title": "Acción", "orderable": false, "searchable": false,
                         "render": function (data, type, row) {
-                            // Asegurarse que row.iva_porcentaje_producto se usa para el data-iva
                             return `<button type="button" class="btn btn-success btn-sm seleccionar-producto" 
                                 data-id="${row.id_producto}" data-nombre="${row.nombre}" 
                                 data-codigo="${row.codigo || 'N/A'}" data-stock="${row.stock || 0}" 
                                 data-preciocompra="${row.precio_compra || 0}"
                                 data-iva="${row.iva_porcentaje_producto || 0}"> 
-                                <i class="fas fa-check-circle"></i>
-                                </button>`;
+                                <i class="fas fa-check-circle"></i> Seleccionar
+                                </button>`; // Añadido "Seleccionar" texto al botón
                         }
                     }
                 ],
@@ -469,7 +464,7 @@ $(document).ready(function() {
                 "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
             });
         } else {
-            tablaProductosAlmacen.ajax.reload();
+            tablaProductosAlmacen.ajax.reload(null, false); // false para mantener paginación
         }
     });
 
@@ -490,7 +485,7 @@ $(document).ready(function() {
 
         $('#detalle_producto_seleccionado').fadeIn();
         
-        if(precioCompraSugerido > 0) {
+        if(precioCompraSugerido > 0 && parseFloat(precioCompraSugerido) > 0) { // Asegurar que es > 0
              $('#precio_compra_unidad_compra').val(precioCompraSugerido);
         } else {
             $('#precio_compra_unidad_compra').val(''); 
@@ -501,7 +496,6 @@ $(document).ready(function() {
 
     $('#formNuevoProductoRapido').on('submit', function(e) {
         e.preventDefault();
-        // Asegurarse que el código hidden tiene valor antes de enviar
         if (!$('#producto_codigo_rapido_hidden').val() || $('#producto_codigo_rapido_hidden').val() === 'Error al generar' || $('#producto_codigo_rapido_hidden').val() === 'Error de conexión') {
             Swal.fire('Atención', 'No se pudo generar un código de producto válido. Intente abrir la pestaña de nuevo.', 'warning');
             return;
@@ -510,18 +504,17 @@ $(document).ready(function() {
         var formData = new FormData(this);
 
         $.ajax({
-            url: '<?php echo $URL; ?>/almacen/acciones_almacen.php',
+            url: '<?php echo $URL; ?>/almacen/acciones_almacen.php', // Este controlador debe manejar 'crear_producto_almacen_rapido'
             type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
             success: function(response) {
                 if(response.status === 'success' && response.producto) {
                     Swal.fire('¡Éxito!', response.message || 'Producto creado.', 'success');
-                    // Usar response.producto.iva_predeterminado ya que es el nombre real de la columna en la BD
                     var ivaNuevoProducto = parseFloat(response.producto.iva_predeterminado || 0);
 
                     $('#id_producto_compra').val(response.producto.id_producto);
                     $('#nombre_producto_compra').val(response.producto.nombre);
                     $('#info_codigo_producto').text(response.producto.codigo || 'N/A'); 
-                    $('#info_stock_producto').text(response.producto.stock || '0'); // Stock será 0 al crear rápido
+                    $('#info_stock_producto').text(response.producto.stock_inicial || '0'); // Usar stock_inicial si es el que se define al crear
                     let precioCompraSugerido = parseFloat(response.producto.precio_compra || 0).toFixed(2);
                     $('#info_precio_compra_producto').text(precioCompraSugerido);
 
@@ -531,14 +524,14 @@ $(document).ready(function() {
                     $('#iva_original_producto').val(ivaNuevoProducto.toFixed(2));
 
                     $('#detalle_producto_seleccionado').fadeIn();
-                    if(precioCompraSugerido > 0) $('#precio_compra_unidad_compra').val(precioCompraSugerido);
+                    if(precioCompraSugerido > 0 && parseFloat(precioCompraSugerido) > 0) $('#precio_compra_unidad_compra').val(precioCompraSugerido);
 
                     $('#modalBuscarProducto').modal('hide');
                     $('#formNuevoProductoRapido')[0].reset();
                     $('#producto_codigo_rapido_display').val(''); 
                     $('#producto_codigo_rapido_hidden').val(''); 
-                    $('#producto_iva_rapido').val(0); // Resetear campo IVA del modal
-                    if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload();
+                    $('#producto_iva_rapido').val(0); 
+                    if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload(null, false);
                     calcularTotalCompra();
                 } else {
                     Swal.fire('Error', response.message || 'No se pudo crear el producto.', 'error');
@@ -550,79 +543,123 @@ $(document).ready(function() {
         });
     });
 
-    // --- LÓGICA PARA PROVEEDORES (sin cambios) ---
-    $(document).ready(function() {
-    var tablaProveedores = $('#tablaProveedores').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "ajax": {
-            "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", // Asegúrate que esta ruta sea correcta
-            "type": "POST"
-            
-        },
-        "columns": [
-            // Columna 0: Asumiendo que quieres mostrar el ID del proveedor
-            { "data": "id_proveedor", "title": "ID" }, // "title" es opcional, lo pone en el <th> si no existe
+    // --- LÓGICA PARA PROVEEDORES ---
+    $('#modalBuscarProveedor').on('shown.bs.modal', function () {
+        if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
+            tablaProveedores = $('#tablaProveedores').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php",
+                    "type": "POST"
+                    // No es necesario enviar id_usuario aquí, el controlador server-side lo toma de la sesión.
+                },
+                "columns": [
+                    { "data": "id_proveedor", "title": "ID" },
+                    { "data": "nombre_proveedor", "title": "Nombre" },
+                    { "data": "empresa", "title": "Empresa" },
+                    { "data": "celular", "title": "Celular" },
+                    { "data": "telefono", "title": "Teléfono" },
+                    { "data": "email", "title": "Email" },
+                    { "data": "direccion", "title": "Dirección" },
+                    {
+                        "data": null,
+                        "title": "Acción", // Coincide con el <th> en el HTML
+                        "orderable": false,
+                        "searchable": false,
+                        "render": function (data, type, row) {
+                            return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" 
+                                data-id="${row.id_proveedor}" 
+                                data-nombre="${row.nombre_proveedor}"
+                                data-empresa="${row.empresa || 'N/A'}" 
+                                data-celular="${row.celular || 'N/A'}">
+                                <i class="fas fa-check-circle"></i> Seleccionar
+                                </button>`;
+                        }
+                    }
+                ],
+                "language": {
+                    "url": "<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"
+                },
+                "responsive": true, 
+                "lengthChange": true, 
+                "autoWidth": false,
+                "pageLength": 5,
+                "lengthMenu": [5, 10, 25, 50]
+                // "buttons": ["copy", "excel", "pdf", "print", "colvis"] // Descomenta si los usas
+            });//.buttons().container().appendTo('#tablaProveedores_wrapper .col-md-6:eq(0)'); // Descomenta si los usas
+        } else {
+            tablaProveedores.ajax.reload(null, false); // false para mantener paginación
+        }
+    });
 
-            // Columna 1: Nombre del proveedor
-            { "data": "nombre_proveedor", "title": "Nombre" },
-
-            // Columna 2: Celular
-            { "data": "celular", "title": "Celular" },
-
-            // Columna 3: Teléfono
-            { "data": "telefono", "title": "Teléfono" },
-
-            // Columna 4: Empresa
-            { "data": "empresa", "title": "Empresa" },
-
-            // Columna 5: Email
-            { "data": "email", "title": "Email" },
-
-            // Columna 6: Dirección
-            { "data": "direccion", "title": "Dirección" },
-            
-            // Columna 7: Acciones (ejemplo si quieres un botón para seleccionar)
-            // Para esto, necesitarías que el servidor envíe una propiedad "acciones"
-            // o puedes renderizarla en el cliente usando "render".
-            {
-                "data": null, // No se enlaza directamente a una propiedad de datos para el contenido principal
-                "title": "Acciones",
-                "orderable": false,
-                "searchable": false,
-                "render": function (data, type, row, meta) {
-                    // 'row' es el objeto completo de datos para esta fila
-                    // (ej. row.id_proveedor, row.nombre_proveedor)
-                    return '<button class="btn btn-xs btn-success btn-seleccionar-proveedor" data-id="'+row.id_proveedor+'" data-nombre="'+row.nombre_proveedor+'">Seleccionar</button>';
-                }
-            }
-        ],
-        "language": {
-            "url": "<?php echo $URL; ?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"
-        },
-        "responsive": true, 
-        "lengthChange": true, 
-        "autoWidth": false,
-        // "buttons": ["copy", "excel", "pdf", "print", "colvis"] // Descomenta si los usas
-    });//.buttons().container().appendTo('#tablaProveedores_wrapper .col-md-6:eq(0)'); // Descomenta si los usas
-
-    // Ejemplo de cómo manejar el clic del botón "Seleccionar"
-    $('#tablaProveedores tbody').on('click', '.btn-seleccionar-proveedor', function () {
+    $('#tablaProveedores tbody').on('click', '.seleccionar-proveedor', function () {
         var idProveedor = $(this).data('id');
         var nombreProveedor = $(this).data('nombre');
+        var empresaProveedor = $(this).data('empresa');
+        var celularProveedor = $(this).data('celular');
         
-        // Aquí va tu lógica para usar el proveedor seleccionado
-        // Por ejemplo, llenar campos en el formulario de compras:
-        $('#id_proveedor_compra').val(idProveedor); // Asume que tienes un input con este ID
-        $('#nombre_proveedor_compra_display').val(nombreProveedor); // Asume que tienes un input para mostrar el nombre
+        $('#id_proveedor_compra').val(idProveedor);
+        $('#nombre_proveedor_compra').val(nombreProveedor); // El input visible del formulario principal
         
-        // Cerrar el modal
-        $('#modal-buscar-crear-proveedor').modal('hide'); // Asegúrate que el ID de tu modal sea correcto
-
-        // Puedes mostrar una alerta si quieres
-        Swal.fire('Proveedor Seleccionado', nombreProveedor, 'success');
+        $('#info_empresa_proveedor').text(empresaProveedor);
+        $('#info_celular_proveedor').text(celularProveedor);
+        $('#detalle_proveedor_seleccionado').fadeIn();
+        
+        $('#modalBuscarProveedor').modal('hide'); // Corregido ID del modal
+        // No es necesario el Swal.fire aquí, ya que la selección es visual.
     });
-});
+
+    $('#formNuevoProveedor').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize(); // El controlador de creación de proveedor espera datos POST normales
+
+        $.ajax({
+            url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    Swal.fire('¡Éxito!', response.message || 'Proveedor creado correctamente.', 'success');
+                    
+                    // Aquí asumimos que el 'response' NO devuelve el objeto proveedor completo.
+                    // Si lo hiciera, podríamos tomar los datos de response.proveedor.
+                    // Por ahora, tomamos los datos del formulario que se acaba de enviar.
+                    var nombreNuevoProv = $('#nuevo_proveedor_nombre').val();
+                    var empresaNuevoProv = $('#nuevo_proveedor_empresa').val() || 'N/A';
+                    var celularNuevoProv = $('#nuevo_proveedor_celular').val() || 'N/A';
+                    // El ID del nuevo proveedor se obtiene de response.creadoId (si create.php lo devuelve así)
+                    // o lo dejamos vacío y el usuario deberá buscarlo si es estrictamente necesario el ID aquí.
+                    // Para el propósito de la compra, necesitamos el ID. create.php devuelve el ID.
+
+                    if(response.creadoId){ // Asumiendo que tu create.php devuelve el ID en 'creadoId'
+                         $('#id_proveedor_compra').val(response.creadoId);
+                    } else {
+                        // Si no hay ID, al menos limpiamos para que no quede uno anterior.
+                         $('#id_proveedor_compra').val('');
+                    }
+                    $('#nombre_proveedor_compra').val(nombreNuevoProv);
+                    
+                    $('#info_empresa_proveedor').text(empresaNuevoProv);
+                    $('#info_celular_proveedor').text(celularNuevoProv);
+                    $('#detalle_proveedor_seleccionado').fadeIn();
+
+                    $('#modalBuscarProveedor').modal('hide');
+                    $('#formNuevoProveedor')[0].reset(); 
+                    if (tablaProveedores) {
+                        tablaProveedores.ajax.reload(null, false); // Recargar la tabla para mostrar el nuevo proveedor
+                    }
+                } else {
+                    Swal.fire('Error', response.message || 'No se pudo crear el proveedor.', 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor para crear el proveedor.', 'error');
+            }
+        });
+    });
+
 
     // --- CÁLCULO TOTAL COMPRA CON IVA ---
     function calcularTotalCompra() {
@@ -644,17 +681,21 @@ $(document).ready(function() {
     }
     $('#cantidad_compra, #precio_compra_unidad_compra, #porcentaje_iva_compra').on('input change keyup', calcularTotalCompra);
     
+    // Calcular al cargar la página por si hay valores por defecto (aunque aquí no parece ser el caso para estos campos)
     calcularTotalCompra(); 
 
     $('#formNuevaCompra').on('submit', function(e){
         if (!$('#id_producto_compra').val()) {
             e.preventDefault(); Swal.fire('Atención', 'Debe seleccionar un producto.', 'warning'); return false;
         }
+        if (!$('#id_proveedor_compra').val()) { // Validación añadida para proveedor
+            e.preventDefault(); Swal.fire('Atención', 'Debe seleccionar un proveedor.', 'warning'); return false;
+        }
         var porcentajeIva = parseFloat($('#porcentaje_iva_compra').val());
         if (isNaN(porcentajeIva) || porcentajeIva < 0) {
-             e.preventDefault(); Swal.fire('Atención', 'El IVA aplicado debe ser un número válido (puede ser 0).', 'warning'); $('#porcentaje_iva_compra').focus(); return false;
+             e.preventDefault(); Swal.fire('Atención', 'El IVA aplicado debe ser un número válido (0 o mayor).', 'warning'); $('#porcentaje_iva_compra').focus(); return false;
         }
-        // ... resto de validaciones que tenías ...
+        // Aquí puedes añadir más validaciones si son necesarias antes de enviar el formulario principal
     });
 });
 </script>
