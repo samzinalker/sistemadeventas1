@@ -5,8 +5,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Corregido para apuntar al nombre de archivo correcto "ComprasModel.php"
+require_once __DIR__ . '/../../models/ComprasModel.php'; 
 require_once __DIR__ . '/../../config.php'; // Para $pdo
-require_once __DIR__ . '/../../models/CompraModel.php';
 
 $response = ['status' => 'error', 'message' => 'No se pudo generar el código de compra.'];
 
@@ -19,13 +20,14 @@ if (!isset($_SESSION['id_usuario'])) {
 $id_usuario_sesion = (int)$_SESSION['id_usuario'];
 
 try {
-    $compraModel = new CompraModel($pdo);
+    // La clase se llama CompraModel, lo cual es correcto aquí
+    $compraModel = new CompraModel($pdo); 
     $siguienteNroSecuencial = $compraModel->getSiguienteNumeroCompraSecuencial($id_usuario_sesion);
     $codigoFormateado = $compraModel->formatearCodigoCompra($siguienteNroSecuencial);
 
     $response['status'] = 'success';
     $response['codigo_compra'] = $codigoFormateado;
-    $response['nro_secuencial'] = $siguienteNroSecuencial; // Opcional, por si lo necesitas en el form
+    $response['nro_secuencial'] = $siguienteNroSecuencial; 
     $response['message'] = 'Código de compra generado.';
 
 } catch (PDOException $e) {
