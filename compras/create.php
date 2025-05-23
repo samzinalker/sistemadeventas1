@@ -483,26 +483,49 @@ $(document).ready(function() {
 
     $('#modalBuscarProducto').on('shown.bs.modal', function () {
     // ... (código de inicialización de DataTables) ...
-    if (!$.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
+    $('#modalBuscarProducto').on('shown.bs.modal', function () {
+    console.log("Modal #modalBuscarProducto mostrado. Intentando inicializar DataTables.");
+    if ($.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
+        console.log("DataTables ya está inicializada. Destruyendo para reinicializar.");
+        $('#tablaProductosAlmacen').DataTable().destroy();
+        $('#tablaProductosAlmacen tbody').empty(); // Limpiar el cuerpo de la tabla
+    }
+
+    try {
         tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
-            // ... (tu configuración existente de DataTables) ...
-            "columns": [
-                { "data": "id_producto" }, 
-                { "data": "codigo" }, 
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
+                "type": "POST",
+                "data": function (d) {
+                    d.id_usuario = idUsuarioActual;
+                    console.log("Enviando datos AJAX para DataTables:", d);
+                },
+                "error": function(jqXHR, textStatus, errorThrown) {
+                    console.error("Error en AJAX de DataTables:", textStatus, errorThrown);
+                    console.error("Respuesta del servidor (si existe):", jqXHR.responseText);
+                    alert("Error al cargar datos de productos: " + textStatus + "\n" + errorThrown + "\n\nRespuesta: " + jqXHR.responseText.substring(0, 500));
+                }
+            },
+            "columns": [ // Asegúrate que el número de <th> en tu HTML coincida con esto
+                { "data": "id_producto" },
+                { "data": "codigo" },
                 { "data": "nombre" },
                 { "data": "stock" },
-                { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
-                { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0) + '%';} }, 
-                { "data": "nombre_categoria" }, 
-                {
-                    "data": null, "title": "Acción", "orderable": false, "searchable": false,
-                    "defaultContent": `<button type="button" class="btn btn-success btn-sm seleccionar-producto-para-compra"> 
-                                        <i class="fas fa-check-circle"></i> Seleccionar
-                                       </button>` // Usar defaultContent para el botón
-                }
+                { "data": "precio_compra" }, // Simplificado sin render por ahora
+                { "data": "iva_porcentaje_producto" }, // Simplificado sin render por ahora
+                { "data": "nombre_categoria" },
+                { "data": null, "defaultContent": "<button class='btn btn-sm btn-success seleccionar-producto-para-compra'>Sel.</button>" }
             ],
-            // ... (resto de tu configuración) ...
+            "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"}
         });
+        console.log("DataTables inicializada (o reinicializada).");
+    } catch (e) {
+        console.error("Error durante la inicialización de DataTables:", e);
+        alert("Error crítico al inicializar la tabla de productos.");
+    }
+});
 
         // Mover el manejador de clic FUERA de la inicialización, adjuntándolo a la tabla
         // para que funcione con las filas creadas por DataTables.
@@ -562,6 +585,8 @@ $(document).ready(function() {
         });
 
     } else {
+        console.log("Intentando recargar DataTables. Instancia:", tablaProductosAlmacen);
+    console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
         tablaProductosAlmacen.ajax.reload(null, false); 
     }
 });
