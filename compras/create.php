@@ -499,7 +499,7 @@ $(document).ready(function() {
             console.log("DataTables ya está inicializada. Recargando datos.");
             try {
                 // Antes de recargar, puedes verificar la instancia si quieres depurar
-                /console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
+                console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
                  if (tablaProductosAlmacen && tablaProductosAlmacen.settings) {
                     console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
                  }
@@ -631,100 +631,10 @@ $(document).ready(function() {
         $('#modalBuscarProducto').modal('hide');
     });
 
-    } else {
-        console.log("Intentando recargar DataTables. Instancia:", tablaProductosAlmacen);
-    console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
-        tablaProductosAlmacen.ajax.reload(null, false); 
-    }
+   
 });
 
-    // AL SELECCIONAR PRODUCTO DEL MODAL PARA LA LISTA DE COMPRA
-    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
-        var idProducto = $(this).data('id');
-        // Verificar si el producto ya está en la lista
-        var yaEnLista = false;
-        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
-            if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
-                yaEnLista = true;
-                return false; // Salir del bucle
-            }
-        });
-
-        if (yaEnLista) {
-            Swal.fire('Atención', 'Este producto ya ha sido añadido a la lista.', 'warning');
-            return;
-        }
-
-        $('#temp_id_producto').val(idProducto);
-        $('#temp_nombre_producto').val($(this).data('nombre'));
-        $('#temp_codigo_producto').val($(this).data('codigo'));
-        $('#temp_stock_actual_producto').val($(this).data('stock'));
-        
-        let precioCompraSugerido = parseFloat($(this).data('preciocompra') || 0).toFixed(2);
-        $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
-        $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
-
-        let ivaProducto = parseFloat($(this).data('iva') || 0).toFixed(2);
-        $('#temp_iva_predeterminado_producto').val(ivaProducto);
-        $('#temp_porcentaje_iva').val(ivaProducto);
-  console.log("Valor asignado a #temp_iva_predeterminado_producto:", $('#temp_iva_predeterminado_producto').val());
-    console.log("Valor asignado a #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
-        $('#temp_producto_info').html(`Cód: ${$(this).data('codigo')} | Stock: ${$(this).data('stock')} | IVA Predet: ${ivaProducto}%`).show();
-        $('#temp_cantidad').val(1).focus(); // Poner foco en cantidad
-        
-        $('#modalBuscarProducto').modal('hide');
-    });
-
-    // FORMULARIO DE CREACIÓN RÁPIDA DE PRODUCTO (dentro del modal de búsqueda de producto)
-    $('#formNuevoProductoRapido').on('submit', function(e) {
-        e.preventDefault();
-        if (!$('#producto_codigo_rapido_hidden').val() || $('#producto_codigo_rapido_hidden').val() === 'Error al generar' || $('#producto_codigo_rapido_hidden').val() === 'Error de conexión') {
-            Swal.fire('Atención', 'No se pudo generar un código de producto válido. Intente abrir la pestaña de nuevo.', 'warning');
-            return;
-        }
-        $('#producto_iva_predeterminado_rapido_hidden').val($('#producto_iva_rapido').val());
-        var formData = new FormData(this);
-
-        $.ajax({
-            url: '<?php echo $URL; ?>/almacen/acciones_almacen.php', 
-            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
-            success: function(response) {
-                if(response.status === 'success' && response.producto) {
-                    Swal.fire('¡Éxito!', response.message || 'Producto creado.', 'success');
-                    
-                    // Poblar campos temporales con el nuevo producto para añadirlo a la lista de compra
-                    $('#temp_id_producto').val(response.producto.id_producto);
-                    $('#temp_nombre_producto').val(response.producto.nombre);
-                    $('#temp_codigo_producto').val(response.producto.codigo || 'N/A');
-                    $('#temp_stock_actual_producto').val(response.producto.stock_inicial || '0');
-                    
-                    let precioCompraSugerido = parseFloat(response.producto.precio_compra || 0).toFixed(2);
-                    $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
-                    $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
-                    
-                    let ivaNuevoProducto = parseFloat(response.producto.iva_predeterminado || 0).toFixed(2);
-                    $('#temp_iva_predeterminado_producto').val(ivaNuevoProducto);
-                    $('#temp_porcentaje_iva').val(ivaNuevoProducto);
-
-                    $('#temp_producto_info').html(`Cód: ${response.producto.codigo || 'N/A'} | Stock: ${response.producto.stock_inicial || '0'} | IVA Predet: ${ivaNuevoProducto}%`).show();
-                    $('#temp_cantidad').val(1).focus();
-
-                    $('#modalBuscarProducto').modal('hide');
-                    $('#formNuevoProductoRapido')[0].reset();
-                    $('#producto_codigo_rapido_display').val(''); 
-                    $('#producto_codigo_rapido_hidden').val(''); 
-                    $('#producto_iva_rapido').val(0); 
-                    if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload(null, false);
-                } else {
-                    Swal.fire('Error', response.message || 'No se pudo crear el producto.', 'error');
-                }
-            },
-            error: function() { 
-                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor.', 'error');
-            }
-        });
-    });
-
+   
     // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
     $('#btnAnadirProductoALista').on('click', function() {
                 console.log("--- Evento: Click en .seleccionar-producto-para-compra ---");
