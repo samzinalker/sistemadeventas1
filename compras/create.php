@@ -611,7 +611,7 @@ $(document).ready(function() {
                 Swal.fire('Atención', 'Este producto ya ha sido añadido a la lista.', 'warning');
                 return;
             }
-
+        
             $('#temp_id_producto').val(datosFila.id_producto);
         $('#temp_nombre_producto').val(datosFila.nombre);
         $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
@@ -632,7 +632,7 @@ $(document).ready(function() {
     });
 
    
-});
+
 
    
     // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
@@ -881,5 +881,5 @@ $(document).ready(function() {
         // item_id_producto[], item_cantidad[], item_precio_unitario[], item_porcentaje_iva[]
         // que el controlador PHP recibirá como arrays.
     });
-
+});
 </script>
