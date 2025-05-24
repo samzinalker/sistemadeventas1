@@ -54,9 +54,9 @@ include '../layout/mensajes.php';
                                 <div class="row">
                                     <div class="col-md-7">
                                         <div class="form-group">
-                                            <label for="proveedor">Proveedor <span class="text-danger">*</span></label>
+                                            <label for="proveedor">Proveedor</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor" readonly required>
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor o cree uno nuevo" readonly>
                                                 <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
@@ -71,7 +71,7 @@ include '../layout/mensajes.php';
                                     </div>
                                     <div class="col-md-5">
                                         <div class="form-group">
-                                            <label for="fecha_compra_compra">Fecha de Compra <span class="text-danger">*</span></label>
+                                            <label for="fecha_compra_compra">Fecha de Compra</label>
                                             <input type="date" class="form-control" id="fecha_compra_compra" name="fecha_compra_compra" value="<?php echo date('Y-m-d'); ?>" required>
                                         </div>
                                     </div>
@@ -79,7 +79,7 @@ include '../layout/mensajes.php';
                                  <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="nro_compra_referencia">Nro. Compra (Referencia Interna) <span class="text-danger">*</span></label>
+                                            <label for="nro_compra_referencia">Nro. Compra (Referencia Interna)</label>
                                             <input type="text" class="form-control" id="nro_compra_referencia" name="nro_compra_referencia" required readonly>
                                         </div>
                                     </div>
@@ -96,24 +96,14 @@ include '../layout/mensajes.php';
                                 <div class="row align-items-end">
                                     <div class="col-md-5">
                                         <div class="form-group">
-                                            <label for="temp_nombre_producto">Producto <span class="text-danger">*</span></label>
+                                            <label for="temp_nombre_producto">Producto</label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="temp_nombre_producto" placeholder="Buscar o crear producto..." readonly>
-                                                
+                                                <input type="text" class="form-control" id="temp_nombre_producto" placeholder="Buscar producto..." readonly>
                                                 <input type="hidden" id="temp_id_producto">
                                                 <input type="hidden" id="temp_codigo_producto">
-                                                <input type="hidden" id="temp_iva_predeterminado_producto">
+                                                <input type="hidden" id="temp_iva_predeterminado_producto"> <!-- Para referencia del IVA que se usó -->
                                                 <input type="hidden" id="temp_precio_compra_sugerido_producto">
                                                 <input type="hidden" id="temp_stock_actual_producto">
-                                                
-                                                <input type="hidden" id="temp_es_nuevo_producto" value="0">
-                                                <input type="hidden" id="temp_nueva_descripcion_producto">
-                                                <input type="hidden" id="temp_nueva_id_categoria_producto">
-                                                <input type="hidden" id="temp_nuevo_precio_venta_producto">
-                                                <input type="hidden" id="temp_nuevo_stock_minimo_producto">
-                                                <input type="hidden" id="temp_nuevo_stock_maximo_producto">
-                                                <input type="hidden" id="temp_nueva_fecha_ingreso_producto">
-
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalBuscarProducto"><i class="fas fa-search"></i></button>
                                                 </div>
@@ -123,28 +113,27 @@ include '../layout/mensajes.php';
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <label for="temp_cantidad">Cantidad <span class="text-danger">*</span></label>
-                                            <input type="number" class="form-control" id="temp_cantidad" min="1" step="1" value="1" pattern="[0-9]*">
+                                            <label for="temp_cantidad">Cantidad</label>
+                                            <input type="number" class="form-control" id="temp_cantidad" min="1" value="1">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <label for="temp_precio_compra">Precio U. <span class="text-danger">*</span></label>
+                                            <label for="temp_precio_compra">Precio U.</label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                                                <input type="number" step="0.01" class="form-control" id="temp_precio_compra" min="0" placeholder="0.00">
+                                                <input type="number" step="0.01" class="form-control" id="temp_precio_compra" min="0">
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <label for="temp_porcentaje_iva">IVA % <span class="text-danger">*</span></label>
+                                            <label for="temp_porcentaje_iva">IVA %</label>
                                             <input type="number" step="0.01" class="form-control" id="temp_porcentaje_iva" min="0" value="0">
                                         </div>
                                     </div>
                                     <div class="col-md-1">
                                         <div class="form-group">
-                                            <label>&nbsp;</label>
                                             <button type="button" class="btn btn-success btn-block" id="btnAnadirProductoALista" title="Añadir a la lista"><i class="fas fa-plus"></i></button>
                                         </div>
                                     </div>
@@ -162,13 +151,14 @@ include '../layout/mensajes.php';
                                                 <th style="width: 80px;">Cant.</th>
                                                 <th style="width: 100px;">Precio U.</th>
                                                 <th style="width: 70px;">IVA %</th>
-                                                <th style="width: 100px;" class="text-right">Subtotal</th>
-                                                <th style="width: 90px;" class="text-right">Monto IVA</th>
-                                                <th style="width: 110px;" class="text-right">Total Ítem</th>
+                                                <th style="width: 100px;">Subtotal</th>
+                                                <th style="width: 90px;">Monto IVA</th>
+                                                <th style="width: 110px;">Total Ítem</th>
                                                 <th style="width: 50px;">Acción</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <!-- Las filas se agregarán dinámicamente aquí -->
                                             <tr id="filaNoItems">
                                                 <td colspan="10" class="text-center">No hay productos añadidos a la compra.</td>
                                             </tr>
@@ -193,6 +183,7 @@ include '../layout/mensajes.php';
                                     <h3>Total Compra: <span class="text-primary">$<span id="total_general_compra_display">0.00</span></span></h3>
                                 </div>
                                 
+                                <!-- Campos hidden para enviar los totales generales -->
                                 <input type="hidden" name="subtotal_general_compra_calculado" id="subtotal_general_compra_hidden">
                                 <input type="hidden" name="monto_iva_general_calculado" id="monto_iva_general_hidden">
                                 <input type="hidden" name="total_general_compra_calculado" id="total_general_compra_hidden">
@@ -224,10 +215,10 @@ include '../layout/mensajes.php';
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="productoTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="buscar-producto-tab" data-toggle="tab" href="#buscarProductoPane" role="tab" aria-controls="buscarProductoPane" aria-selected="true">Buscar Producto Existente</a>
+                        <a class="nav-link active" id="buscar-producto-tab" data-toggle="tab" href="#buscarProductoPane" role="tab" aria-controls="buscarProductoPane" aria-selected="true">Buscar Producto</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="crear-producto-tab" data-toggle="tab" href="#crearProductoPane" role="tab" aria-controls="crearProductoPane" aria-selected="false">Crear Nuevo Producto (para esta compra)</a>
+                        <a class="nav-link" id="crear-producto-tab" data-toggle="tab" href="#crearProductoPane" role="tab" aria-controls="crearProductoPane" aria-selected="false">Crear Nuevo Producto</a>
                     </li>
                 </ul>
                 <div class="tab-content" id="productoTabsContent">
@@ -250,60 +241,63 @@ include '../layout/mensajes.php';
                         </table>
                     </div>
                     <div class="tab-pane fade p-3" id="crearProductoPane" role="tabpanel" aria-labelledby="crear-producto-tab">
-                        <h5>Registrar Nuevo Producto (se creará al finalizar la compra)</h5>
-                        <div id="formDatosNuevoProductoRapido" class="mt-3">
+                        <h5>Registrar Nuevo Producto en su Almacén (Creación Rápida)</h5>
+                        <form id="formNuevoProductoRapido" class="mt-3">
+                            <input type="hidden" name="id_usuario_creador" value="<?php echo $id_usuario_sesion; ?>">
+                            <input type="hidden" name="accion" value="crear_producto_almacen_rapido">
+                            <input type="hidden" id="producto_iva_predeterminado_rapido_hidden" name="producto_iva_predeterminado">
+                            <input type="hidden" id="producto_codigo_rapido_hidden" name="producto_codigo">
+
                             <div class="row">
                                 <div class="col-md-4 form-group">
-                                    <label for="modal_producto_codigo_rapido_display">Código <small>(Sugerido)</small></label>
-                                    <input type="text" class="form-control" id="modal_producto_codigo_rapido_display" readonly placeholder="Generando...">
+                                    <label for="producto_codigo_rapido_display">Código <small>(Se autogenera)</small></label>
+                                    <input type="text" class="form-control" id="producto_codigo_rapido_display" readonly placeholder="Generando...">
                                 </div>
                                 <div class="col-md-8 form-group">
-                                    <label for="modal_producto_nombre_rapido">Nombre del Producto <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="modal_producto_nombre_rapido" required>
+                                    <label for="producto_nombre_rapido">Nombre del Producto <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="producto_nombre_rapido" name="producto_nombre" required>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="modal_producto_descripcion_rapido">Descripción</label>
-                                <textarea class="form-control" id="modal_producto_descripcion_rapido" rows="2"></textarea>
+                                <label for="producto_descripcion_rapido">Descripción</label>
+                                <textarea class="form-control" id="producto_descripcion_rapido" name="producto_descripcion" rows="2"></textarea>
                             </div>
                             <div class="row">
                                 <div class="col-md-3 form-group">
-                                    <label for="modal_producto_id_categoria_rapido">Categoría <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="modal_producto_id_categoria_rapido" required>
+                                    <label for="producto_id_categoria_rapido">Categoría <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="producto_id_categoria_rapido" name="producto_id_categoria" required>
                                         <option value="">Cargando sus categorías...</option>
                                     </select>
                                 </div>
                                  <div class="col-md-3 form-group">
-                                    <label for="modal_producto_precio_compra_rapido">Precio Compra <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" class="form-control" id="modal_producto_precio_compra_rapido" min="0" required>
+                                    <label for="producto_precio_compra_rapido">Precio Compra Ref. <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" id="producto_precio_compra_rapido" name="producto_precio_compra" min="0" required>
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="modal_producto_precio_venta_rapido">Precio Venta <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" class="form-control" id="modal_producto_precio_venta_rapido" min="0" required>
+                                    <label for="producto_precio_venta_rapido">Precio Venta Ref. <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" id="producto_precio_venta_rapido" name="producto_precio_venta" min="0" required>
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="modal_producto_iva_rapido">IVA Predeterminado (%) <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" class="form-control" id="modal_producto_iva_rapido" value="0" min="0" required>
+                                    <label for="producto_iva_rapido">IVA Predeterminado (%) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" id="producto_iva_rapido" name="producto_iva_predeterminado_visible" value="0" min="0" required>
                                 </div>
                             </div>
                              <div class="row">
                                 <div class="col-md-4 form-group">
-                                    <label for="modal_producto_stock_minimo_rapido">Stock Mínimo <small>(Opcional)</small></label>
-                                    <input type="number" class="form-control" id="modal_producto_stock_minimo_rapido" min="0">
+                                    <label for="producto_stock_minimo_rapido">Stock Mínimo <small>(Opcional)</small></label>
+                                    <input type="number" class="form-control" id="producto_stock_minimo_rapido" name="producto_stock_minimo" min="0">
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="modal_producto_stock_maximo_rapido">Stock Máximo <small>(Opcional)</small></label>
-                                    <input type="number" class="form-control" id="modal_producto_stock_maximo_rapido" min="0">
+                                    <label for="producto_stock_maximo_rapido">Stock Máximo <small>(Opcional)</small></label>
+                                    <input type="number" class="form-control" id="producto_stock_maximo_rapido" name="producto_stock_maximo" min="0">
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="modal_producto_fecha_ingreso_rapido">Fecha Ingreso <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="modal_producto_fecha_ingreso_rapido" value="<?php echo date('Y-m-d'); ?>" required>
+                                    <label for="producto_fecha_ingreso_rapido">Fecha Ingreso <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="producto_fecha_ingreso_rapido" name="producto_fecha_ingreso" value="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-success" id="btnConfirmarNuevoProductoTemporal">
-                                <i class="fas fa-check"></i> Usar estos datos para el ítem
-                            </button>
-                        </div>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-plus-circle"></i> Guardar Nuevo Producto</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -404,29 +398,10 @@ include '../layout/parte2.php';
 $(document).ready(function() {
     var tablaProductosAlmacen;
     var tablaProveedores; 
-    var idUsuarioActual = <?php echo json_encode((int)$id_usuario_sesion); ?>; 
+    var idUsuarioActual = <?php echo json_encode($id_usuario_sesion); ?>;
     var contadorItemsCompra = 0;
 
-    function limpiarCamposProductoTemporal() {
-        $('#temp_id_producto').val('');
-        $('#temp_codigo_producto').val('');
-        $('#temp_nombre_producto').val('');
-        $('#temp_iva_predeterminado_producto').val('');
-        $('#temp_precio_compra_sugerido_producto').val('');
-        $('#temp_stock_actual_producto').val('');
-        $('#temp_precio_compra').val('');
-        $('#temp_porcentaje_iva').val('0');
-        $('#temp_cantidad').val('1').focus();
-        $('#temp_producto_info').hide().empty();
-        $('#temp_es_nuevo_producto').val('0');
-        $('#temp_nueva_descripcion_producto').val('');
-        $('#temp_nueva_id_categoria_producto').val('');
-        $('#temp_nuevo_precio_venta_producto').val('');
-        $('#temp_nuevo_stock_minimo_producto').val('');
-        $('#temp_nuevo_stock_maximo_producto').val('');
-        $('#temp_nueva_fecha_ingreso_producto').val('');
-    }
-
+    // --- LÓGICA PARA GENERAR NRO DE COMPRA DE REFERENCIA ---
     function generarNroCompraReferencia() {
         $('#nro_compra_referencia').val('Generando...');
         $.ajax({
@@ -448,8 +423,9 @@ $(document).ready(function() {
         });
     }
 
-    function generarSiguienteCodigoProductoParaModal() {
-        $('#modal_producto_codigo_rapido_display').val('Generando...');
+    // --- LÓGICA PARA MODAL DE PRODUCTOS ---
+    function generarSiguienteCodigoProducto() {
+        $('#producto_codigo_rapido_display').val('Generando...');
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/almacen/controller_generar_siguiente_codigo.php',
             type: 'POST',
@@ -457,177 +433,192 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response && response.status === 'success' && response.nuevo_codigo) {
-                    $('#modal_producto_codigo_rapido_display').val(response.nuevo_codigo);
+                    $('#producto_codigo_rapido_display').val(response.nuevo_codigo);
+                    $('#producto_codigo_rapido_hidden').val(response.nuevo_codigo);
                 } else {
-                    $('#modal_producto_codigo_rapido_display').val('Error GEN');
+                    $('#producto_codigo_rapido_display').val('Error al generar');
+                    $('#producto_codigo_rapido_hidden').val('');
+                    Swal.fire('Error', response.message || 'No se pudo generar el código del producto.', 'error');
                 }
             },
             error: function() {
-                $('#modal_producto_codigo_rapido_display').val('Error CON');
+                $('#producto_codigo_rapido_display').val('Error de conexión');
+                $('#producto_codigo_rapido_hidden').val('');
+                Swal.fire('Error', 'No se pudo conectar para generar el código del producto.', 'error');
             }
         });
     }
-    
-    function cargarCategoriasUsuarioParaModal() {
+
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        if ($(e.target).attr('href') === '#crearProductoPane' && $(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
+            generarSiguienteCodigoProducto();
+            // Podrías tomar el IVA del último producto añadido o un default
+            $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0);
+        }
+    });
+
+    function cargarCategoriasUsuario() {
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/categorias/controller_listar_categorias_usuario.php', 
             type: 'POST', 
             dataType: 'json',
-            data: { id_usuario: idUsuarioActual },
             success: function(response) {
                 var options = '<option value="">Seleccione una categoría</option>';
                 if(response && response.status === 'success' && response.data && response.data.length > 0) {
                     response.data.forEach(function(cat) {
                         options += '<option value="' + cat.id_categoria + '">' + cat.nombre_categoria + '</option>';
                     });
+                } else if (response && response.status === 'success' && response.data && response.data.length === 0) {
+                    options = '<option value="">No tiene categorías. Puede crear en el módulo de Categorías.</option>';
                 } else {
-                     options = '<option value="">No tiene categorías o hubo un error.</option>';
+                     options = '<option value="">Error: ' + (response.message || 'No se pudo cargar categorías') + '</option>';
                 }
-                $('#modal_producto_id_categoria_rapido').html(options);
+                $('#producto_id_categoria_rapido').html(options);
             },
             error: function() {
-                $('#modal_producto_id_categoria_rapido').html('<option value="">Error de conexión al cargar categorías</option>');
+                $('#producto_id_categoria_rapido').html('<option value="">Error de conexión al cargar categorías</option>');
             }
         });
     }
 
+  
+    // ... (código de inicialización de DataTables) ...
     $('#modalBuscarProducto').on('shown.bs.modal', function () {
-        cargarCategoriasUsuarioParaModal(); 
+        console.log("Modal #modalBuscarProducto mostrado.");
+
+        // Primero, llama a las funciones que deben ejecutarse cuando se muestra el modal
+        cargarCategoriasUsuario(); 
         if ($('#crear-producto-tab').hasClass('active')) { 
-            generarSiguienteCodigoProductoParaModal();
-            $('#formDatosNuevoProductoRapido')[0].reset(); // Resetear todo el formulario
-            $('#modal_producto_fecha_ingreso_rapido').val('<?php echo date('Y-m-d'); ?>');
-            $('#modal_producto_iva_rapido').val(0);
+            generarSiguienteCodigoProducto();
+            // Considera si esta línea de IVA debe estar aquí o solo cuando se crea un producto
+             $('#producto_iva_rapido').val( parseFloat($('#temp_porcentaje_iva').val()) || 0); 
         }
+
+        console.log("Intentando inicializar o recargar DataTables para #tablaProductosAlmacen.");
         if ($.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
-            tablaProductosAlmacen.ajax.reload(null, false);
+            console.log("DataTables ya está inicializada. Recargando datos.");
+            try {
+                // Antes de recargar, puedes verificar la instancia si quieres depurar
+                // console.log("Instancia de DataTables antes de recargar:", tablaProductosAlmacen);
+                 if (tablaProductosAlmacen && tablaProductosAlmacen.settings) {
+                    // console.log("Configuración AJAX de DataTables:", tablaProductosAlmacen.settings()[0].ajax);
+                 }
+                tablaProductosAlmacen.ajax.reload(null, false); // El 'null, false' evita resetear la paginación
+            } catch (e) {
+                console.error("Error al intentar recargar DataTables:", e);
+                // Si la recarga falla, podría ser mejor destruir y reinicializar
+                console.log("Intentando destruir y reinicializar DataTables debido a error en recarga.");
+                $('#tablaProductosAlmacen').DataTable().destroy();
+                $('#tablaProductosAlmacen tbody').empty(); // Limpiar tbody antes de reinicializar
+                inicializarTablaProductos(); // Llama a la función de inicialización
+            }
         } else {
-            inicializarTablaProductos();
+            console.log("DataTables no está inicializada. Inicializando ahora.");
+            inicializarTablaProductos(); // Llama a la función de inicialización
         }
     });
 
-    $('a[data-toggle="tab"][href="#crearProductoPane"]').on('shown.bs.tab', function (e) {
-        if ($(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
-            generarSiguienteCodigoProductoParaModal();
-            $('#formDatosNuevoProductoRapido')[0].reset();
-            $('#modal_producto_fecha_ingreso_rapido').val('<?php echo date('Y-m-d'); ?>');
-             $('#modal_producto_iva_rapido').val(0);
-        }
-    });
-
-    $('a[data-toggle="tab"][href="#buscarProductoPane"]').on('shown.bs.tab', function (e) {
-        if ($(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
-            if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload(null, false);
-        }
-    });
-
-    $('#btnConfirmarNuevoProductoTemporal').on('click', function() {
-        var nombreRapido = $('#modal_producto_nombre_rapido').val().trim();
-        var idCategoriaRapido = $('#modal_producto_id_categoria_rapido').val();
-        var precioCompraRapidoStr = $('#modal_producto_precio_compra_rapido').val();
-        var precioVentaRapidoStr = $('#modal_producto_precio_venta_rapido').val();
-        var ivaRapidoStr = $('#modal_producto_iva_rapido').val();
-        var fechaIngresoRapido = $('#modal_producto_fecha_ingreso_rapido').val();
-
-        if (!nombreRapido) { Swal.fire('Atención', 'El nombre del producto es obligatorio.', 'warning'); return; }
-        if (!idCategoriaRapido) { Swal.fire('Atención', 'La categoría es obligatoria.', 'warning'); return; }
-        if (precioCompraRapidoStr === '' || isNaN(parseFloat(precioCompraRapidoStr)) || parseFloat(precioCompraRapidoStr) < 0) { Swal.fire('Atención', 'El precio de compra es obligatorio y no puede ser negativo.', 'warning'); return; }
-        if (precioVentaRapidoStr === '' || isNaN(parseFloat(precioVentaRapidoStr)) || parseFloat(precioVentaRapidoStr) < 0) { Swal.fire('Atención', 'El precio de venta es obligatorio y no puede ser negativo.', 'warning'); return; }
-        if (ivaRapidoStr === '' || isNaN(parseFloat(ivaRapidoStr)) || parseFloat(ivaRapidoStr) < 0) { Swal.fire('Atención', 'El IVA es obligatorio y no puede ser negativo.', 'warning'); return; }
-        if (!fechaIngresoRapido) { Swal.fire('Atención', 'La fecha de ingreso es obligatoria.', 'warning'); return; }
-        
-        var precioCompraRapido = parseFloat(precioCompraRapidoStr);
-        var precioVentaRapido = parseFloat(precioVentaRapidoStr);
-        var ivaRapido = parseFloat(ivaRapidoStr);
-
-        limpiarCamposProductoTemporal();
-
-        $('#temp_es_nuevo_producto').val('1');
-        $('#temp_id_producto').val(''); 
-        $('#temp_codigo_producto').val($('#modal_producto_codigo_rapido_display').val()); 
-        $('#temp_nombre_producto').val(nombreRapido);
-        $('#temp_precio_compra_sugerido_producto').val(precioCompraRapido.toFixed(2));
-        $('#temp_precio_compra').val(precioCompraRapido.toFixed(2));
-        $('#temp_iva_predeterminado_producto').val(ivaRapido.toFixed(2));
-        $('#temp_porcentaje_iva').val(ivaRapido.toFixed(2));
-        $('#temp_stock_actual_producto').val('0'); 
-
-        $('#temp_nueva_descripcion_producto').val($('#modal_producto_descripcion_rapido').val().trim());
-        $('#temp_nueva_id_categoria_producto').val(idCategoriaRapido);
-        $('#temp_nuevo_precio_venta_producto').val(precioVentaRapido.toFixed(2));
-        $('#temp_nuevo_stock_minimo_producto').val($('#modal_producto_stock_minimo_rapido').val() || '');
-        $('#temp_nuevo_stock_maximo_producto').val($('#modal_producto_stock_maximo_rapido').val() || '');
-        $('#temp_nueva_fecha_ingreso_producto').val(fechaIngresoRapido);
-        
-        $('#temp_producto_info').html(`NUEVO: ${nombreRapido} (Cód. Sugerido: ${$('#modal_producto_codigo_rapido_display').val()}) | IVA: ${ivaRapido.toFixed(2)}%`).show();
-        
-        $('#modalBuscarProducto').modal('hide');
-        $('#temp_cantidad').val('1').focus();
-    });
 
     function inicializarTablaProductos() {
-        tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
-            "processing": true, "serverSide": true,
-            "ajax": {
-                "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
-                "type": "POST",
-                "data": function (d) { d.id_usuario = idUsuarioActual; }
-            },
-            "columns": [
-                { "data": "id_producto", "visible": false }, 
-                { "data": "codigo" }, { "data": "nombre" }, { "data": "stock" },
-                { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
-                { "data": "iva_porcentaje_producto", "render": function(data){ return (parseFloat(data) || 0).toFixed(2) + '%';} }, 
-                { "data": "nombre_categoria" },
-                { "data": null, "orderable": false, "searchable": false, "defaultContent": "<button type='button' class='btn btn-sm btn-success seleccionar-producto-para-compra'><i class='fas fa-check-circle'></i> Sel.</button>" }
-            ],
-            "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
-            "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
-        });
+        console.log("Función inicializarTablaProductos llamada.");
+        try {
+            tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
+                    "type": "POST",
+                    "data": function (d) {
+                        d.id_usuario = idUsuarioActual;
+                        // console.log("Enviando datos AJAX para DataTables:", d); // Descomentar para depurar si es necesario
+                    },
+                    "error": function(jqXHR, textStatus, errorThrown) {
+                        console.error("Error en AJAX de DataTables:", textStatus, errorThrown);
+                        if (jqXHR.responseText) {
+                            console.error("Respuesta del servidor (primeros 500 chars):", jqXHR.responseText.substring(0, 500));
+                            // No mostrar alert() al usuario final por errores de AJAX de DataTables por defecto,
+                            // ya que DataTables tiene su propio manejo visual (aunque básico).
+                            // Considerar mostrar un mensaje más amigable si es un error recurrente o crítico.
+                        }
+                    }
+                },
+                "columns": [
+                    { "data": "id_producto" },
+                    { "data": "codigo" },
+                    { "data": "nombre" },
+                    { "data": "stock" },
+                    { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
+                    { "data": "iva_porcentaje_producto", "render": function(data, type, row){ return (parseFloat(data) || 0).toFixed(2) + '%';} }, 
+                    { "data": "nombre_categoria" },
+                    { 
+                        "data": null, 
+                        "title": "Acción", 
+                        "orderable": false, 
+                        "searchable": false,
+                        "defaultContent": "<button type='button' class='btn btn-sm btn-success seleccionar-producto-para-compra'><i class='fas fa-check-circle'></i> Sel.</button>" 
+                    }
+                ],
+                "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
+                "responsive": true, 
+                "lengthChange": true, 
+                "autoWidth": false, 
+                "pageLength": 5, 
+                "lengthMenu": [5, 10, 25, 50]
+            });
+            console.log("DataTables inicializada exitosamente.");
+        } catch (e) {
+            console.error("Error CRÍTICO durante la inicialización de DataTables:", e);
+            // Considerar un mensaje más amigable o un log a servidor si es un error crítico.
+        }
     }
 
-    // --- INICIO CAMBIO: Lógica de selección de producto mejorada ---
-    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
-        console.log("Botón seleccionar producto clickeado"); 
+        // Mover el manejador de clic FUERA de la inicialización, adjuntándolo a la tabla
+        // para que funcione con las filas creadas por DataTables.
+        $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
         if (!tablaProductosAlmacen) {
-            console.error("tablaProductosAlmacen no está inicializada.");
+            console.error("La instancia de tablaProductosAlmacen no está disponible.");
             return;
         }
-        var tr = $(this).closest('tr');
-        var row = tablaProductosAlmacen.row(tr);
-        var datosFila = row.data();
+        var fila = $(this).closest('tr');
+        // Manejo para filas responsive colapsadas
+        var datosFila;
+        if (tablaProductosAlmacen.row(fila).child.isShown()) { // Si la fila "child" (responsive) está mostrándose
+            datosFila = tablaProductosAlmacen.row(fila.prev('tr.dt-hasChild')).data(); // Obtener datos de la fila "parent"
+        } else {
+            datosFila = tablaProductosAlmacen.row(fila).data(); // Obtener datos de la fila actual
+        }
 
-        console.log("TR:", tr); 
-        console.log("Row object:", row); 
-        console.log("Datos de la fila (intento 1):", datosFila); 
 
         if (!datosFila) {
-            if (row.child.isShown()) { 
-                datosFila = tablaProductosAlmacen.row(tr.prev('tr.parent')).data();
-                console.log("Intentando con fila padre (responsive). Datos:", datosFila);
-            }
+            console.error("No se pudieron obtener los datos de la fila para el producto seleccionado.");
+            Swal.fire('Error', 'No se pudieron obtener los datos del producto. Intente de nuevo.', 'error');
+            return;
         }
+
+            console.log("--- Evento: Click en .seleccionar-producto-para-compra (Datos de Fila) ---");
+            console.log("Datos de la Fila Completa:", datosFila); 
+            console.log("ID del producto seleccionado:", datosFila.id_producto);
+            console.log("Nombre del producto:", datosFila.nombre);
+            console.log("IVA predeterminado (tb_almacen):", datosFila.iva_porcentaje_producto);
+            console.log("IVA última compra (subconsulta):", datosFila.iva_ultima_compra);
+
+
+            var idProducto = datosFila.id_producto;
+            // Verificar si el producto ya está en la lista
+            var yaEnLista = false;
+            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+                if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
+                    yaEnLista = true;
+                    return false; // Salir del bucle
+                }
+            });
+
+            if (yaEnLista) {
+                Swal.fire('Atención', 'Este producto ya ha sido añadido a la lista.', 'warning');
+                return;
+            }
         
-        if (!datosFila && tr.hasClass('child')) { // Si es fila hija y el anterior falló
-            var parentRowNode = tr.prev('tr.parent');
-            if (parentRowNode.length > 0) {
-                datosFila = tablaProductosAlmacen.row(parentRowNode).data();
-                console.log("Intentando con tr.prev('tr.parent') explícito. Datos:", datosFila);
-            } else { // Fallback si no hay 'tr.parent', intentar con el anterior inmediato
-                 datosFila = tablaProductosAlmacen.row(tr.prev()).data();
-                 console.log("Intentando con tr.prev() general. Datos:", datosFila);
-            }
-        }
-
-        if (!datosFila) {
-            Swal.fire('Error', 'No se pudieron obtener datos del producto. Por favor, revise la consola del navegador para más detalles.', 'error');
-            console.error("No se pudieron obtener datos de la fila. TR:", tr.get(0), "Row object:", row, "DatosFila final:", datosFila);
-            return;
-        }
-
-        limpiarCamposProductoTemporal();
-        $('#temp_es_nuevo_producto').val('0'); 
-        $('#temp_id_producto').val(datosFila.id_producto);
+            $('#temp_id_producto').val(datosFila.id_producto);
         $('#temp_nombre_producto').val(datosFila.nombre);
         $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
         $('#temp_stock_actual_producto').val(datosFila.stock || 0);
@@ -636,119 +627,107 @@ $(document).ready(function() {
         $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
         $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
 
-        let ivaAplicar = 0;
-        if (datosFila.iva_ultima_compra !== null && !isNaN(parseFloat(datosFila.iva_ultima_compra))) {
-            ivaAplicar = parseFloat(datosFila.iva_ultima_compra);
-        } else if (datosFila.iva_porcentaje_producto !== null && !isNaN(parseFloat(datosFila.iva_porcentaje_producto))) {
-            ivaAplicar = parseFloat(datosFila.iva_porcentaje_producto);
+        // ***** INICIO DE LA MODIFICACIÓN PARA IVA DINÁMICO *****
+        let ivaAplicar;
+        // Verificar si iva_ultima_compra existe, no es null y es un número válido
+        if (datosFila.hasOwnProperty('iva_ultima_compra') && datosFila.iva_ultima_compra !== null && !isNaN(parseFloat(datosFila.iva_ultima_compra))) {
+            ivaAplicar = parseFloat(datosFila.iva_ultima_compra).toFixed(2);
+            console.log("Aplicando IVA de última compra:", ivaAplicar + "%");
+        } else {
+            // Fallback al IVA predeterminado del producto si no hay última compra o es inválido
+            ivaAplicar = parseFloat(datosFila.iva_porcentaje_producto || 0).toFixed(2);
+            console.log("Aplicando IVA predeterminado del producto (tb_almacen):", ivaAplicar + "%");
         }
         
-        $('#temp_iva_predeterminado_producto').val(ivaAplicar.toFixed(2));
-        $('#temp_porcentaje_iva').val(ivaAplicar.toFixed(2));
+        $('#temp_iva_predeterminado_producto').val(ivaAplicar); // Campo oculto para referencia del IVA que se usó
+        $('#temp_porcentaje_iva').val(ivaAplicar); // Campo visible para el IVA del ítem actual
+        // ***** FIN DE LA MODIFICACIÓN PARA IVA DINÁMICO *****
         
-        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar.toFixed(2)}%`).show();
-        $('#temp_cantidad').val('1').focus(); 
+        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar}%`).show();
+        $('#temp_cantidad').val(1).focus(); 
+        
         $('#modalBuscarProducto').modal('hide');
     });
-    // --- FIN CAMBIO ---
    
+    // --- LÓGICA PARA AÑADIR PRODUCTO A LA TABLA DE ITEMS DE COMPRA ---
     $('#btnAnadirProductoALista').on('click', function() {
-    var nombreProducto = $('#temp_nombre_producto').val().trim();
-    var cantidadStr = $('#temp_cantidad').val();
-    var precioCompraStr = $('#temp_precio_compra').val();
-    var porcentajeIvaStr = $('#temp_porcentaje_iva').val();
-    
-    var esNuevoProducto = $('#temp_es_nuevo_producto').val() === '1';
-    var idProducto = $('#temp_id_producto').val();
-    var codigoProducto = $('#temp_codigo_producto').val();
-    var cantidad = parseInt(cantidadStr, 10);
-    // Validaciones (las que ya tienes)
-    if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
-    if (cantidadStr === '' || isNaN(cantidad) || cantidad <= 0 || parseFloat(cantidadStr) % 1 !== 0) {
-    Swal.fire('Atención', 'La cantidad debe ser un número entero mayor a cero.', 'warning');
-    $('#temp_cantidad').focus();
-    return;
-}
-    if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { Swal.fire('Atención', 'El precio de compra es obligatorio y no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return; }
-    if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { Swal.fire('Atención', 'El porcentaje de IVA es obligatorio y no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return; }
+        // Corrección de logs para este botón
+        console.log("--- Evento: Click en #btnAnadirProductoALista ---");
+        console.log("ID del producto desde #temp_id_producto:", $('#temp_id_producto').val());
+        console.log("Nombre del producto desde #temp_nombre_producto:", $('#temp_nombre_producto').val());
+        console.log("IVA desde #temp_porcentaje_iva:", $('#temp_porcentaje_iva').val());
 
-    
-    var precioCompra = parseFloat(precioCompraStr);
-    var porcentajeIva = parseFloat(porcentajeIvaStr);
+        var idProducto = $('#temp_id_producto').val();
+        var codigoProducto = $('#temp_codigo_producto').val();
+        var nombreProducto = $('#temp_nombre_producto').val();
+        var cantidad = parseFloat($('#temp_cantidad').val()) || 0;
+        var precioCompra = parseFloat($('#temp_precio_compra').val()) || 0;
+        var porcentajeIva = parseFloat($('#temp_porcentaje_iva').val()) || 0; // Este es el IVA que se decidió (última compra o predeterminado)
 
-    // Evitar duplicados (lógica que ya tienes)
-    var yaEnLista = false;
-    $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
-        if (!esNuevoProducto && $(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
-            Swal.fire('Atención', 'Este producto ya está en la lista.', 'warning');
-            yaEnLista = true; return false; 
+        if (!idProducto) {
+            Swal.fire('Atención', 'Debe seleccionar un producto.', 'warning'); return;
         }
-        if (esNuevoProducto && $(this).find('input[name="item_nombre_producto[]"]').val() == nombreProducto && $(this).find('input[name="item_es_nuevo[]"]').val() == '1') {
-             Swal.fire('Atención', 'Ya añadió un nuevo producto con este nombre. Si es diferente, use un nombre distintivo.', 'warning');
-            yaEnLista = true; return false;
+        if (cantidad <= 0) {
+            Swal.fire('Atención', 'La cantidad debe ser mayor a cero.', 'warning'); $('#temp_cantidad').focus(); return;
         }
+        if (precioCompra < 0) { 
+            Swal.fire('Atención', 'El precio de compra no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return;
+        }
+         if (porcentajeIva < 0) {
+            Swal.fire('Atención', 'El porcentaje de IVA no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return;
+        }
+
+        var yaEnLista = false;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+            if ($(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
+                yaEnLista = true; return false; 
+            }
+        });
+        if (yaEnLista) {
+            Swal.fire('Atención', 'Este producto ya está en la lista. Puede modificar la cantidad allí o eliminarlo y volver a añadirlo.', 'warning');
+            return;
+        }
+
+        contadorItemsCompra++;
+        var subtotalItem = cantidad * precioCompra;
+        var montoIvaItem = subtotalItem * (porcentajeIva / 100);
+        var totalItem = subtotalItem + montoIvaItem;
+
+        var nuevaFila = `
+            <tr>
+                <td>${contadorItemsCompra}</td>
+                <td>${codigoProducto}
+                    <input type="hidden" name="item_id_producto[]" value="${idProducto}">
+                    <input type="hidden" name="item_codigo_producto[]" value="${codigoProducto}">
+                    <input type="hidden" name="item_nombre_producto[]" value="${nombreProducto}">
+                </td>
+                <td>${nombreProducto}</td>
+                <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad" value="${cantidad}" min="1" style="width:70px;"></td>
+                <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;"></td>
+                <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;"></td>
+                <td class="item-subtotal">${subtotalItem.toFixed(2)}</td>
+                <td class="item-monto-iva">${montoIvaItem.toFixed(2)}</td>
+                <td class="item-total">${totalItem.toFixed(2)}</td>
+                <td><button type="button" class="btn btn-danger btn-sm btn-eliminar-item"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `;
+        
+        $('#filaNoItems').hide(); 
+        $('#tablaItemsCompra tbody').append(nuevaFila);
+        recalcularTotalesGenerales();
+
+        $('#temp_id_producto, #temp_codigo_producto, #temp_nombre_producto, #temp_iva_predeterminado_producto, #temp_precio_compra_sugerido_producto, #temp_stock_actual_producto').val('');
+        $('#temp_cantidad').val(1);
+        $('#temp_precio_compra').val(''); // Limpiar precio de compra
+        $('#temp_porcentaje_iva').val(0); // Resetear IVA a 0 para el siguiente
+        $('#temp_producto_info').hide().empty();
+        $('#temp_nombre_producto').focus(); 
     });
-    if (yaEnLista) return;
 
-    // --- INICIO DE LA MODIFICACIÓN IMPORTANTE ---
-    let input_es_nuevo_val = esNuevoProducto ? '1' : '0';
-    let input_id_producto_val = esNuevoProducto ? '' : idProducto; // ID vacío si es nuevo para almacén
-
-    // Siempre definir estos campos, vacíos si no es un "nuevo producto para almacén"
-    let input_nueva_descripcion_val = esNuevoProducto ? ($('#temp_nueva_descripcion_producto').val() || '') : '';
-    let input_nueva_id_categoria_val = esNuevoProducto ? ($('#temp_nueva_id_categoria_producto').val() || '') : '';
-    let input_nuevo_precio_venta_val = esNuevoProducto ? ($('#temp_nuevo_precio_venta_producto').val() || '') : '';
-    let input_nuevo_stock_minimo_val = esNuevoProducto ? ($('#temp_nuevo_stock_minimo_producto').val() || '') : '';
-    let input_nuevo_stock_maximo_val = esNuevoProducto ? ($('#temp_nuevo_stock_maximo_producto').val() || '') : '';
-    let input_nueva_fecha_ingreso_val = esNuevoProducto ? ($('#temp_nueva_fecha_ingreso_producto').val() || '') : '';
-    // --- FIN DE LA MODIFICACIÓN IMPORTANTE ---
-
-    contadorItemsCompra++;
-    var subtotalItem = cantidad * precioCompra;
-    var montoIvaItem = subtotalItem * (porcentajeIva / 100);
-    var totalItem = subtotalItem + montoIvaItem;
-
-    var nuevaFila = `
-        <tr>
-            <td>${contadorItemsCompra}</td>
-            <td>${codigoProducto || (esNuevoProducto ? 'PENDIENTE' : 'N/A')}
-                
-                <input type="hidden" name="item_es_nuevo[]" value="${input_es_nuevo_val}">
-                <input type="hidden" name="item_id_producto[]" value="${input_id_producto_val}"> 
-                
-                <input type="hidden" name="item_nueva_descripcion[]" value="${input_nueva_descripcion_val}">
-                <input type="hidden" name="item_nueva_id_categoria[]" value="${input_nueva_id_categoria_val}">
-                <input type="hidden" name="item_nuevo_precio_venta[]" value="${input_nuevo_precio_venta_val}">
-                <input type="hidden" name="item_nuevo_stock_minimo[]" value="${input_nuevo_stock_minimo_val}">
-                <input type="hidden" name="item_nuevo_stock_maximo[]" value="${input_nuevo_stock_maximo_val}">
-                <input type="hidden" name="item_nueva_fecha_ingreso[]" value="${input_nueva_fecha_ingreso_val}">
-                
-                {/* Campos comunes a todos los ítems */}
-                <input type="hidden" name="item_codigo_producto[]" value="${codigoProducto || ''}">
-                <input type="hidden" name="item_nombre_producto[]" value="${nombreProducto}">
-            </td>
-            <td>${nombreProducto} ${esNuevoProducto ? '<span class="badge badge-info">Nuevo</span>' : ''}</td>
-            // Dentro de la plantilla de nuevaFilaHTML
-            <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${parseInt(cantidad)}" min="1" step="1" style="width:70px;" required pattern="[0-9]*"></td>
-            <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio text-right" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;" required></td>
-            <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva text-right" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;" required></td>
-            <td class="item-subtotal text-right">${subtotalItem.toFixed(2)}</td>
-            <td class="item-monto-iva text-right">${montoIvaItem.toFixed(2)}</td>
-            <td class="item-total text-right font-weight-bold">${totalItem.toFixed(2)}</td>
-            <td><button type="button" class="btn btn-danger btn-sm btn-eliminar-item"><i class="fas fa-trash"></i></button></td>
-        </tr>
-    `;
-    
-    $('#filaNoItems').hide(); 
-    $('#tablaItemsCompra tbody').append(nuevaFila);
-    recalcularTotalesGenerales();
-    limpiarCamposProductoTemporal();
-    $('#temp_nombre_producto').focus(); 
-});
-
+    // --- RECALCULAR TOTALES DE UN ITEM SI SE MODIFICA EN LA TABLA ---
     $('#tablaItemsCompra tbody').on('change keyup', '.item-cantidad, .item-precio, .item-iva', function() {
         var fila = $(this).closest('tr');
-        var cantidad = parseInt(fila.find('.item-cantidad').val(), 10) || 0; // Usar parseInt
+        var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
         var precio = parseFloat(fila.find('.item-precio').val()) || 0;
         var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
 
@@ -763,6 +742,7 @@ $(document).ready(function() {
         recalcularTotalesGenerales();
     });
     
+    // --- ELIMINAR ITEM DE LA LISTA ---
     $('#tablaItemsCompra tbody').on('click', '.btn-eliminar-item', function() {
         $(this).closest('tr').remove();
         recalcularTotalesGenerales();
@@ -771,24 +751,32 @@ $(document).ready(function() {
             contadorItemsCompra = 0; 
         } else {
             var count = 1;
-            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function(idx, tr){
-                $(tr).find('td:first').text(idx + 1);
+            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function(){
+                $(this).find('td:first').text(count++);
             });
-            contadorItemsCompra = $('#tablaItemsCompra tbody tr').not('#filaNoItems').length;
+            contadorItemsCompra = count -1;
         }
     });
 
+    // --- RECALCULAR TOTALES GENERALES DE LA COMPRA ---
     function recalcularTotalesGenerales() {
         var subtotalGeneral = 0;
         var montoIvaGeneral = 0;
+        var totalGeneral = 0;
 
         $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
-            var subtotalItem = parseFloat($(this).find('.item-subtotal').text()) || 0;
-            var montoIvaItem = parseFloat($(this).find('.item-monto-iva').text()) || 0;
+            var fila = $(this);
+            var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
+            var precio = parseFloat(fila.find('.item-precio').val()) || 0;
+            var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
+
+            var subtotalItem = cantidad * precio;
+            var montoIvaItem = subtotalItem * (ivaPct / 100);
+            
             subtotalGeneral += subtotalItem;
             montoIvaGeneral += montoIvaItem;
         });
-        var totalGeneral = subtotalGeneral + montoIvaGeneral;
+        totalGeneral = subtotalGeneral + montoIvaGeneral;
 
         $('#subtotal_general_compra_display').text(subtotalGeneral.toFixed(2));
         $('#monto_iva_general_display').text(montoIvaGeneral.toFixed(2));
@@ -799,22 +787,22 @@ $(document).ready(function() {
         $('#total_general_compra_hidden').val(totalGeneral.toFixed(2));
     }
 
-    // --- LÓGICA PARA PROVEEDORES ---
+    // --- LÓGICA PARA PROVEEDORES (MODAL Y FORMULARIO) ---
     $('#modalBuscarProveedor').on('shown.bs.modal', function () {
         if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
             tablaProveedores = $('#tablaProveedores').DataTable({
                 "processing": true, "serverSide": true,
                 "ajax": {"url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", "type": "POST"},
                 "columns": [
-                    { "data": "id_proveedor", "visible": false }, 
-                    { "data": "nombre_proveedor"}, { "data": "empresa" }, 
-                    { "data": "celular" }, { "data": "telefono" }, { "data": "email" }, 
-                    { "data": "direccion" },
-                    { "data": null, "orderable": false, "searchable": false,
+                    { "data": "id_proveedor", "title": "ID" }, { "data": "nombre_proveedor", "title": "Nombre" },
+                    { "data": "empresa", "title": "Empresa" }, { "data": "celular", "title": "Celular" },
+                    { "data": "telefono", "title": "Teléfono" }, { "data": "email", "title": "Email" },
+                    { "data": "direccion", "title": "Dirección" },
+                    { "data": null, "title": "Acción", "orderable": false, "searchable": false,
                         "render": function (data, type, row) {
                             return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" 
                                 data-id="${row.id_proveedor}" data-nombre="${row.nombre_proveedor}"
-                                data-empresa="${row.empresa || ''}" data-celular="${row.celular || ''}">
+                                data-empresa="${row.empresa || 'N/A'}" data-celular="${row.celular || 'N/A'}">
                                 <i class="fas fa-check-circle"></i> Seleccionar</button>`;
                         }
                     }
@@ -838,30 +826,35 @@ $(document).ready(function() {
 
     $('#formNuevoProveedor').on('submit', function(e) {
         e.preventDefault();
-        var formData = $(this).serialize() + '&id_usuario=' + idUsuarioActual; 
+        var formData = $(this).serialize(); 
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php',
             type: 'POST', data: formData, dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
                     Swal.fire('¡Éxito!', response.message || 'Proveedor creado.', 'success');
-                    var provData = response.data || { id_proveedor: response.creadoId, nombre_proveedor: $('#nuevo_proveedor_nombre').val(), empresa: $('#nuevo_proveedor_empresa').val(), celular: $('#nuevo_proveedor_celular').val() };
-                    if(provData.id_proveedor) { 
-                        $('#id_proveedor_compra').val(provData.id_proveedor);
-                        $('#nombre_proveedor_compra_display').val(provData.nombre_proveedor);
-                        $('#info_empresa_proveedor').text(provData.empresa || '');
-                        $('#info_celular_proveedor').text(provData.celular || '');
+                    if(response.data && response.data.id_proveedor) { 
+                         $('#id_proveedor_compra').val(response.data.id_proveedor);
+                        $('#nombre_proveedor_compra_display').val(response.data.nombre_proveedor);
+                        $('#info_empresa_proveedor').text(response.data.empresa || 'N/A');
+                        $('#info_celular_proveedor').text(response.data.celular || 'N/A');
                         $('#detalle_proveedor_seleccionado').show();
+                    } else if (response.creadoId) { 
+                         $('#id_proveedor_compra').val(response.creadoId);
+                         $('#nombre_proveedor_compra_display').val( $('#nuevo_proveedor_nombre').val());
+                         $('#info_empresa_proveedor').text( $('#nuevo_proveedor_empresa').val() || 'N/A');
+                         $('#info_celular_proveedor').text( $('#nuevo_proveedor_celular').val() || 'N/A');
+                         $('#detalle_proveedor_seleccionado').show();
                     }
                     $('#modalBuscarProveedor').modal('hide');
                     $('#formNuevoProveedor')[0].reset();
                     if(tablaProveedores) tablaProveedores.ajax.reload(null, false);
                 } else {
-                    Swal.fire('Error', response.message || 'No se pudo crear el proveedor.', 'error');
+                    Swal.fire('Error', response.message || 'No se pudo crear.', 'error');
                 }
             },
             error: function() { 
-                Swal.fire('Error de Conexión', 'No se pudo conectar para crear el proveedor.', 'error');
+                Swal.fire('Error de Conexión', 'No se pudo conectar.', 'error');
             }
         });
     });
@@ -894,7 +887,6 @@ $(document).ready(function() {
             e.preventDefault();
             return false;
         }
-        $('#tablaItemsCompra tbody .item-cantidad, #tablaItemsCompra tbody .item-precio, #tablaItemsCompra tbody .item-iva').trigger('change'); 
     });
 });
 </script>

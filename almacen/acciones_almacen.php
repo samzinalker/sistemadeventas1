@@ -36,8 +36,7 @@ if (!isset($_SESSION['id_usuario'])) {
     echo json_encode($response);
     exit;
 }
-$id_usuario_actual = (int)$_SESSION['id_usuario']; // Usar este como el ID del creador
-
+$id_usuario_actual = $_SESSION['id_usuario'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $almacenModel = new AlmacenModel($pdo);
@@ -46,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     if ($accion === 'crear_producto_almacen_rapido') {
         // Validar que el id_usuario_creador coincida con la sesión
         $id_usuario_creador_post = filter_input(INPUT_POST, 'id_usuario_creador', FILTER_VALIDATE_INT);
-        
         if ($id_usuario_creador_post !== $id_usuario_actual) {
             $response['message'] = 'Error de validación de usuario.';
             echo json_encode($response);
