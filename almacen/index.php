@@ -268,10 +268,10 @@ $pagina_activa = 'almacen_listado'; // Para resaltar en el menú
                                     $contador_prod = 0;
                                     if (!empty($productos_datos)) {
                                         foreach ($productos_datos as $item){
-                                            $id_producto_loop = $item['id_producto']; // Renombrar para evitar conflicto con $id_producto
+                                            $id_producto_loop = $item['id_producto'];
                                             $stock_actual = $item['stock'];
                                             $stock_minimo = $item['stock_minimo'] ?? 0;
-                                            $stock_maximo = $item['stock_maximo'] ?? 0; // Si es 0 o null, no se considera para advertencia de exceso
+                                            $stock_maximo = $item['stock_maximo'] ?? 0;
 
                                             $stock_display_class = '';
                                             if ($stock_actual < $stock_minimo) {
@@ -330,6 +330,24 @@ $pagina_activa = 'almacen_listado'; // Para resaltar en el menú
 
 <script>
 $(document).ready(function () {
+    // Validar que la tabla tenga contenido válido antes de inicializar DataTable
+    var tablaValida = true;
+    
+    // Verificar que todas las filas tengan el mismo número de columnas
+    var numColumnas = $('#tabla_productos thead tr th').length;
+    $('#tabla_productos tbody tr').each(function() {
+        var numCeldas = $(this).find('td').length;
+        if (numCeldas !== numColumnas) {
+            console.error('Fila con número incorrecto de columnas:', this, 'Esperadas:', numColumnas, 'Encontradas:', numCeldas);
+            tablaValida = false;
+        }
+    });
+    
+    if (!tablaValida) {
+        console.error('La tabla tiene problemas de estructura. No se inicializará DataTable.');
+        return;
+    }
+
     // Inicializar DataTable con manejo de errores
     try {
         var tablaProductos = $("#tabla_productos").DataTable({
