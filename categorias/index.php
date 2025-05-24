@@ -226,7 +226,24 @@ $(document).ready(function () {
             { extend: 'copy', text: 'Copiar', exportOptions: { columns: [0, 1, 2] }},
             { extend: 'csv', text: 'CSV', exportOptions: { columns: [0, 1, 2] }},
             { extend: 'excel', text: 'Excel', exportOptions: { columns: [0, 1, 2] }},
-            { extend: 'pdf', text: 'PDF', exportOptions: { columns: [0, 1, 2] }, orientation: 'portrait', pageSize: 'A4', customize: function (doc) { doc.defaultStyle.fontSize = 10; doc.styles.tableHe[...]
+            // SECCIÓN CORREGIDA:
+            { 
+                extend: 'pdf', 
+                text: 'PDF', 
+                exportOptions: { columns: [0, 1, 2] }, 
+                orientation: 'portrait', 
+                pageSize: 'A4', 
+                customize: function (doc) { 
+                    doc.defaultStyle.fontSize = 10; 
+                    // Ejemplo de una personalización completa (puedes ajustarla o eliminarla si no la necesitas):
+                    // doc.styles.tableHeader = { 
+                    //     bold: true,
+                    //     fontSize: 11,
+                    //     color: 'black'
+                    // };
+                    // doc.content[1].table.widths = Array(doc.content[1].table.body[0].length + 1).join('*').split(''); // Ajustar anchos de columna
+                } 
+            },
             { extend: 'print', text: 'Imprimir', exportOptions: { columns: [0, 1, 2] }},
             { extend: 'colvis', text: 'Visibilidad Columnas'}
         ]
@@ -279,8 +296,9 @@ $(document).ready(function () {
                     window.location.href = response.redirectTo;
                 }
             })
-            .fail(function () {
-                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
+            .fail(function (jqXHR, textStatus, errorThrown) { // Mejor manejo de errores AJAX
+                console.error("Error en AJAX para crear categoría: ", textStatus, errorThrown, jqXHR.responseText);
+                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor. Revisa la consola para más detalles.', 'error');
             });
     });
 
@@ -321,8 +339,9 @@ $(document).ready(function () {
                     window.location.href = response.redirectTo;
                 }
             })
-            .fail(function () {
-                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
+            .fail(function (jqXHR, textStatus, errorThrown) { // Mejor manejo de errores AJAX
+                console.error("Error en AJAX para actualizar categoría: ", textStatus, errorThrown, jqXHR.responseText);
+                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor. Revisa la consola para más detalles.', 'error');
             });
     });
 
@@ -351,9 +370,10 @@ $(document).ready(function () {
                     window.location.href = response.redirectTo;
                 }
             })
-            .fail(function () {
+            .fail(function (jqXHR, textStatus, errorThrown) { // Mejor manejo de errores AJAX
+                console.error("Error en AJAX para eliminar categoría: ", textStatus, errorThrown, jqXHR.responseText);
                 $('#modal-delete').modal('hide');
-                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
+                mostrarAlerta('Error de Conexión', 'No se pudo contactar al servidor. Revisa la consola para más detalles.', 'error');
             });
     });
     
