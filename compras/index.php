@@ -107,10 +107,10 @@ include '../layout/mensajes.php';
                                                                 </a>
                                                                 <!-- Futuro: Botones para Editar/Eliminar si es necesario -->
                                                                 <!-- 
-                                                                <a href="<?php echo $URL; ?>/compras/edit.php?id=<?php echo $compra['id_compra']; ?>" class="btn btn-success btn-xs" title="Editar Compra">
+                                                                <a href="<?php echo $URL; ?>/compras/edit.php?id=<?php echo $compra['id_compra']; ?>" class="btn btn-success btn-xs" title="Editar Compr[...]
                                                                     <i class="fas fa-edit"></i>
                                                                 </a>
-                                                                <button type="button" class="btn btn-danger btn-xs btn-delete-compra" data-id="<?php echo $compra['id_compra']; ?>" title="Eliminar Compra">
+                                                                <button type="button" class="btn btn-danger btn-xs btn-delete-compra" data-id="<?php echo $compra['id_compra']; ?>" title="Eliminar Comp[...]
                                                                     <i class="fas fa-trash"></i>
                                                                 </button>
                                                                 -->
@@ -120,13 +120,10 @@ include '../layout/mensajes.php';
                                                 </tr>
                                         <?php
                                             }
-                                        } else {
-                                        ?>
-                                            <tr>
-                                                <td colspan="8"><center>No tienes compras registradas actualmente.</center></td>
-                                            </tr>
-                                        <?php
                                         }
+                                        // EL BLOQUE 'else' QUE IMPRIMÍA LA FILA CON COLSPAN HA SIDO ELIMINADO.
+                                        // SI $compras_datos ESTÁ VACÍO, EL TBODY QUEDARÁ VACÍO
+                                        // Y DATATABLES MOSTRARÁ EL MENSAJE DE 'sEmptyTable'.
                                         ?>
                                     </tbody>
                                 </table>
