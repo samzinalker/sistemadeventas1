@@ -124,7 +124,7 @@ include '../layout/mensajes.php';
                                     <div class="col-md-2">
                                         <div class="form-group">
                                             <label for="temp_cantidad">Cantidad <span class="text-danger">*</span></label>
-                                            <input type="number" class="form-control" id="temp_cantidad" min="0.01" step="0.01" value="1.00">
+                                            <input type="number" class="form-control" id="temp_cantidad" min="1" step="1" value="1" pattern="[0-9]*">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -416,7 +416,7 @@ $(document).ready(function() {
         $('#temp_stock_actual_producto').val('');
         $('#temp_precio_compra').val('');
         $('#temp_porcentaje_iva').val('0');
-        $('#temp_cantidad').val('1.00'); 
+        $('#temp_cantidad').val('1'); 
         $('#temp_producto_info').hide().empty();
         $('#temp_es_nuevo_producto').val('0');
         $('#temp_nueva_descripcion_producto').val('');
@@ -664,11 +664,15 @@ $(document).ready(function() {
 
     // Validaciones (las que ya tienes)
     if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
-    if (cantidadStr === '' || isNaN(parseFloat(cantidadStr)) || parseFloat(cantidadStr) <= 0) { Swal.fire('Atención', 'La cantidad debe ser un número mayor a cero.', 'warning'); $('#temp_cantidad').focus(); return; }
+    if (cantidadStr === '' || isNaN(cantidad) || cantidad <= 0 || parseFloat(cantidadStr) % 1 !== 0) {
+    Swal.fire('Atención', 'La cantidad debe ser un número entero mayor a cero.', 'warning');
+    $('#temp_cantidad').focus();
+    return;
+}
     if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { Swal.fire('Atención', 'El precio de compra es obligatorio y no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return; }
     if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { Swal.fire('Atención', 'El porcentaje de IVA es obligatorio y no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return; }
 
-    var cantidad = parseFloat(cantidadStr);
+    var cantidad = parseInt(cantidadStr, 10);
     var precioCompra = parseFloat(precioCompraStr);
     var porcentajeIva = parseFloat(porcentajeIvaStr);
 
@@ -708,7 +712,7 @@ $(document).ready(function() {
         <tr>
             <td>${contadorItemsCompra}</td>
             <td>${codigoProducto || (esNuevoProducto ? 'PENDIENTE' : 'N/A')}
-                {/* Todos estos campos deben existir para cada ítem para mantener la consistencia */}
+                
                 <input type="hidden" name="item_es_nuevo[]" value="${input_es_nuevo_val}">
                 <input type="hidden" name="item_id_producto[]" value="${input_id_producto_val}"> 
                 
@@ -724,7 +728,8 @@ $(document).ready(function() {
                 <input type="hidden" name="item_nombre_producto[]" value="${nombreProducto}">
             </td>
             <td>${nombreProducto} ${esNuevoProducto ? '<span class="badge badge-info">Nuevo</span>' : ''}</td>
-            <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${cantidad.toFixed(2)}" min="0.01" step="0.01" style="width:70px;" required></td>
+            // Dentro de la plantilla de nuevaFilaHTML
+            <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${parseInt(cantidad)}" min="1" step="1" style="width:70px;" required pattern="[0-9]*"></td>
             <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio text-right" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;" required></td>
             <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva text-right" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;" required></td>
             <td class="item-subtotal text-right">${subtotalItem.toFixed(2)}</td>
@@ -743,7 +748,7 @@ $(document).ready(function() {
 
     $('#tablaItemsCompra tbody').on('change keyup', '.item-cantidad, .item-precio, .item-iva', function() {
         var fila = $(this).closest('tr');
-        var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
+        var cantidad = parseInt(fila.find('.item-cantidad').val(), 10) || 0; // Usar parseInt
         var precio = parseFloat(fila.find('.item-precio').val()) || 0;
         var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
 

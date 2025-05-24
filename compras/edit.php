@@ -129,10 +129,11 @@ include '../layout/mensajes.php';
                                              <small id="temp_producto_info" class="form-text text-muted" style="display:none;"></small>
                                         </div>
                                     </div>
+                                    <!-- En compras/create.php y compras/edit.php -->
                                     <div class="col-md-2">
-                                        <div class="form-group">
-                                            <label for="temp_cantidad">Cantidad <span class="text-danger">*</span></label>
-                                            <input type="number" class="form-control" id="temp_cantidad" min="0.01" step="0.01" value="1.00">
+                                       <div class="form-group">
+                                           <label for="temp_cantidad">Cantidad</label>
+                                            <input type="number" class="form-control" id="temp_cantidad" min="1" step="1" value="1" pattern="[0-9]*">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -419,7 +420,7 @@ $(document).ready(function() {
         $('#temp_stock_actual_producto').val('');
         $('#temp_precio_compra').val('');
         $('#temp_porcentaje_iva').val('0');
-        $('#temp_cantidad').val('1.00');
+        $('#temp_cantidad').val('1');
         $('#temp_producto_info').hide().empty();
         
         $('#temp_es_nuevo_producto_almacen').val('0'); // Resetear flag
@@ -663,7 +664,8 @@ $(document).ready(function() {
                 <input type="hidden" name="item_nueva_fecha_ingreso[]" value="${input_nueva_fecha_ingreso}">
             </td>
             <td>${nombreProducto} ${badgeItem}</td>
-            <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${cantidad.toFixed(2)}" min="0.01" step="0.01" style="width:70px;" required></td>
+            
+            <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${parseInt(cantidad)}" min="1" step="1" style="width:70px;" required pattern="[0-9]*"></td>
             <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio text-right" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;" required></td>
             <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva text-right" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;" required></td>
             <td class="item-subtotal text-right">${subtotalItem.toFixed(2)}</td>
@@ -713,11 +715,15 @@ $(document).ready(function() {
         var codigoProductoSeleccionado = $('#temp_codigo_producto').val();
 
         if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
-        if (cantidadStr === '' || isNaN(parseFloat(cantidadStr)) || parseFloat(cantidadStr) <= 0) { /* ... error ... */ return; }
-        if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { /* ... error ... */ return; }
+        if (cantidadStr === '' || isNaN(cantidad) || cantidad <= 0 || parseFloat(cantidadStr) % 1 !== 0) {
+         Swal.fire('Atención', 'La cantidad debe ser un número entero mayor a cero.', 'warning');
+         $('#temp_cantidad').focus();
+        return;
+        }       
+       if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { /* ... error ... */ return; }
         if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { /* ... error ... */ return; }
     
-        var cantidad = parseFloat(cantidadStr);
+        var cantidad = parseInt(cantidadStr, 10);
         var precioCompra = parseFloat(precioCompraStr);
         var porcentajeIva = parseFloat(porcentajeIvaStr);
 
@@ -778,7 +784,7 @@ $(document).ready(function() {
             // Opcional: fila.addClass('item-modificado-visual'); 
         }
         
-        var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
+        var cantidad = parseInt(fila.find('.item-cantidad').val(), 10) || 0; // Usar parseInt
         var precio = parseFloat(fila.find('.item-precio').val()) || 0;
         var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
         var subtotal = cantidad * precio;
