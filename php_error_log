@@ -1,0 +1,57 @@
+[23-May-2025 13:14:13 America/Guayaquil] Error en delete_producto.php: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'id_producto' in 'where clause'
+[23-May-2025 13:14:15 America/Guayaquil] DEBUG layout/sesion.php: Contenido de SESSION al inicio para URI (/sistemadeventas/almacen/): Array
+(
+    [id_usuario] => 1
+    [sesion_email] => marcelo@gmail.com
+    [rol] => administrador
+    [nombres] => marcelo mamani
+    [ultimo_iva_por_producto] => Array
+        (
+        )
+
+    [iva_productos] => Array
+        (
+        )
+
+)
+
+[23-May-2025 13:14:15 America/Guayaquil] DEBUG layout/sesion.php: sesion_email encontrado: marcelo@gmail.com para URI (/sistemadeventas/almacen/)
+[23-May-2025 13:14:15 America/Guayaquil] DEBUG layout/sesion.php: Consulta de usuario ejecutada para marcelo@gmail.com
+[23-May-2025 13:14:15 America/Guayaquil] DEBUG layout/sesion.php: Usuario encontrado y sesión establecida: ID 1, Rol: administrador para URI (/sistemadeventas/almacen/)
+[23-May-2025 13:14:15 America/Guayaquil] DEBUG layout/sesion.php: Sesión validada exitosamente para URI: /sistemadeventas/almacen/. Usuario: marcelo mamani
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 96
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 97
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 106
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 112
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 127
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 128
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 137
+[23-May-2025 13:14:15 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 143
+[23-May-2025 13:14:16 America/Guayaquil] DEBUG layout/sesion.php: Contenido de SESSION al inicio para URI (/sistemadeventas/almacen/): Array
+(
+    [id_usuario] => 1
+    [sesion_email] => marcelo@gmail.com
+    [rol] => administrador
+    [nombres] => marcelo mamani
+    [ultimo_iva_por_producto] => Array
+        (
+        )
+
+    [iva_productos] => Array
+        (
+        )
+
+)
+
+[23-May-2025 13:14:16 America/Guayaquil] DEBUG layout/sesion.php: sesion_email encontrado: marcelo@gmail.com para URI (/sistemadeventas/almacen/)
+[23-May-2025 13:14:16 America/Guayaquil] DEBUG layout/sesion.php: Consulta de usuario ejecutada para marcelo@gmail.com
+[23-May-2025 13:14:16 America/Guayaquil] DEBUG layout/sesion.php: Usuario encontrado y sesión establecida: ID 1, Rol: administrador para URI (/sistemadeventas/almacen/)
+[23-May-2025 13:14:16 America/Guayaquil] DEBUG layout/sesion.php: Sesión validada exitosamente para URI: /sistemadeventas/almacen/. Usuario: marcelo mamani
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 96
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 97
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 106
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 112
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 127
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $modulo_abierto in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 128
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 137
+[23-May-2025 13:14:16 America/Guayaquil] PHP Warning:  Undefined variable $pagina_activa in C:\xampp\htdocs\sistemadeventas\layout\parte1.php on line 143

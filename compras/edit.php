@@ -1,18 +1,30 @@
 <?php
 include '../app/config.php'; // $URL, $pdo, $fechaHora
 include '../layout/sesion.php';
+require_once '../app/models/ComprasModel.php'; 
+require_once '../app/models/AlmacenModel.php'; 
 
-// include '../layout/permisos.php'; // Futuro para permisos en especificos roles
+// Verificar si se proporcionó un ID de compra y es válido
+if (!isset($_GET['id']) || !filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
+    setMensaje("ID de compra no válido o no proporcionado.", "error");
+    redirigir("compras/");
+    exit();
+}
+$id_compra_a_editar = (int)$_GET['id'];
+$id_usuario_sesion = (int)$_SESSION['id_usuario'];
+
+$compraModel = new CompraModel($pdo);
+$compra_existente = $compraModel->getCompraConDetallesPorId($id_compra_a_editar, $id_usuario_sesion);
+
+if (!$compra_existente) {
+    setMensaje("Compra no encontrada o no tienes permiso para editarla.", "error");
+    redirigir("compras/");
+    exit();
+}
+
+$items_compra_existente_json = json_encode($compra_existente['detalles']);
 
 include '../layout/parte1.php';
-
-if (!isset($_SESSION['id_usuario'])) {
-    echo "<div class='container'>Error: No se pudo obtener el ID del usuario de la sesión. Por favor, inicie sesión nuevamente.</div>";
-    include '../layout/parte2.php';
-    exit;
-}
-$id_usuario_sesion = $_SESSION['id_usuario'];
-
 include '../layout/mensajes.php';
 ?>
 
@@ -23,41 +35,40 @@ include '../layout/mensajes.php';
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Registrar Nueva Compra</h1>
-                </div><!-- /.col -->
+                    <h1 class="m-0">Editar Compra: <?php echo htmlspecialchars($compra_existente['codigo_compra_referencia']); ?></h1>
+                </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="<?php echo $URL;?>/compras/">Mis Compras</a></li>
-                        <li class="breadcrumb-item active">Registrar Nueva Compra</li>
+                        <li class="breadcrumb-item active">Editar Compra</li>
                     </ol>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                </div>
+            </div>
+        </div>
     </div>
     <!-- /.content-header -->
 
     <!-- Main content -->
     <div class="content">
         <div class="container-fluid">
-            <form action="<?php echo $URL;?>/app/controllers/compras/controller_create_compra.php" method="POST" id="formNuevaCompra">
+            <form action="<?php echo $URL;?>/app/controllers/compras/controller_update_compra.php" method="POST" id="formEditarCompra">
                 <input type="hidden" name="id_usuario_compra" value="<?php echo $id_usuario_sesion; ?>">
+                <input type="hidden" name="id_compra_a_editar" value="<?php echo $compra_existente['id_compra']; ?>">
                 
                 <div class="row">
-                    <!-- Columna Izquierda: Datos Generales y Selección de Productos -->
                     <div class="col-md-8">
-                        <div class="card card-primary">
+                        <div class="card card-warning">
                             <div class="card-header">
                                 <h3 class="card-title">Datos Generales y Productos</h3>
                             </div>
                             <div class="card-body">
-                                <!-- Datos del Proveedor y Fecha -->
                                 <div class="row">
                                     <div class="col-md-7">
                                         <div class="form-group">
                                             <label for="proveedor">Proveedor <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" placeholder="Seleccione un proveedor" readonly required>
-                                                <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" required>
+                                                <input type="text" class="form-control" id="nombre_proveedor_compra_display" name="nombre_proveedor_compra_display" value="<?php echo htmlspecialchars($compra_existente['nombre_proveedor']); ?>" placeholder="Seleccione un proveedor" readonly required>
+                                                <input type="hidden" id="id_proveedor_compra" name="id_proveedor_compra" value="<?php echo $compra_existente['id_proveedor']; ?>" required>
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalBuscarProveedor">
                                                         <i class="fas fa-search"></i> Buscar/Crear
@@ -65,33 +76,32 @@ include '../layout/mensajes.php';
                                                 </div>
                                             </div>
                                         </div>
-                                        <div id="detalle_proveedor_seleccionado" class="alert alert-light mt-0 mb-2 py-1 px-2" style="display:none; font-size:0.9em;">
-                                            <small><strong>Empresa:</strong> <span id="info_empresa_proveedor"></span> | <strong>Celular:</strong> <span id="info_celular_proveedor"></span></small>
+                                        <div id="detalle_proveedor_seleccionado" class="alert alert-light mt-0 mb-2 py-1 px-2" style="font-size:0.9em; <?php echo ($compra_existente['empresa_proveedor'] || $compra_existente['celular_proveedor']) ? '' : 'display:none;'; ?>">
+                                            <small><strong>Empresa:</strong> <span id="info_empresa_proveedor"><?php echo htmlspecialchars($compra_existente['empresa_proveedor'] ?? ''); ?></span> | <strong>Celular:</strong> <span id="info_celular_proveedor"><?php echo htmlspecialchars($compra_existente['celular_proveedor'] ?? ''); ?></span></small>
                                         </div>
                                     </div>
                                     <div class="col-md-5">
                                         <div class="form-group">
                                             <label for="fecha_compra_compra">Fecha de Compra <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control" id="fecha_compra_compra" name="fecha_compra_compra" value="<?php echo date('Y-m-d'); ?>" required>
+                                            <input type="date" class="form-control" id="fecha_compra_compra" name="fecha_compra_compra" value="<?php echo htmlspecialchars($compra_existente['fecha_compra']); ?>" required>
                                         </div>
                                     </div>
                                 </div>
                                  <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="nro_compra_referencia">Nro. Compra (Referencia Interna) <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="nro_compra_referencia" name="nro_compra_referencia" required readonly>
+                                            <label for="nro_compra_referencia">Nro. Compra (Referencia Interna)</label>
+                                            <input type="text" class="form-control" id="nro_compra_referencia" name="nro_compra_referencia" value="<?php echo htmlspecialchars($compra_existente['codigo_compra_referencia']); ?>" readonly>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="comprobante_compra">Comprobante (Factura/Boleta Nro.)</label>
-                                            <input type="text" class="form-control" id="comprobante_compra" name="comprobante_compra">
+                                            <input type="text" class="form-control" id="comprobante_compra" name="comprobante_compra" value="<?php echo htmlspecialchars($compra_existente['comprobante'] ?? ''); ?>">
                                         </div>
                                     </div>
                                 </div>
                                 <hr>
-                                <!-- Sección para Añadir Productos a la Lista -->
                                 <h5>Añadir Producto a la Compra</h5>
                                 <div class="row align-items-end">
                                     <div class="col-md-5">
@@ -99,21 +109,19 @@ include '../layout/mensajes.php';
                                             <label for="temp_nombre_producto">Producto <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <input type="text" class="form-control" id="temp_nombre_producto" placeholder="Buscar o crear producto..." readonly>
-                                                
                                                 <input type="hidden" id="temp_id_producto">
                                                 <input type="hidden" id="temp_codigo_producto">
                                                 <input type="hidden" id="temp_iva_predeterminado_producto">
                                                 <input type="hidden" id="temp_precio_compra_sugerido_producto">
                                                 <input type="hidden" id="temp_stock_actual_producto">
                                                 
-                                                <input type="hidden" id="temp_es_nuevo_producto" value="0">
+                                                <input type="hidden" id="temp_es_nuevo_producto_almacen" value="0"> 
                                                 <input type="hidden" id="temp_nueva_descripcion_producto">
                                                 <input type="hidden" id="temp_nueva_id_categoria_producto">
                                                 <input type="hidden" id="temp_nuevo_precio_venta_producto">
                                                 <input type="hidden" id="temp_nuevo_stock_minimo_producto">
                                                 <input type="hidden" id="temp_nuevo_stock_maximo_producto">
                                                 <input type="hidden" id="temp_nueva_fecha_ingreso_producto">
-
                                                 <div class="input-group-append">
                                                     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalBuscarProducto"><i class="fas fa-search"></i></button>
                                                 </div>
@@ -132,7 +140,7 @@ include '../layout/mensajes.php';
                                             <label for="temp_precio_compra">Precio U. <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                                                <input type="number" step="0.01" class="form-control" id="temp_precio_compra" min="0" placeholder="0.00">
+                                                <input type="number" step="0.01" class="form-control" id="temp_precio_compra" min="0">
                                             </div>
                                         </div>
                                     </div>
@@ -150,7 +158,6 @@ include '../layout/mensajes.php';
                                     </div>
                                 </div>
                                 <hr>
-                                <!-- Tabla de Ítems de la Compra -->
                                 <h5>Ítems de la Compra</h5>
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-hover table-sm" id="tablaItemsCompra">
@@ -169,7 +176,7 @@ include '../layout/mensajes.php';
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr id="filaNoItems">
+                                            <tr id="filaNoItems" style="<?php echo empty($compra_existente['detalles']) ? '' : 'display:none;'; ?>">
                                                 <td colspan="10" class="text-center">No hay productos añadidos a la compra.</td>
                                             </tr>
                                         </tbody>
@@ -179,9 +186,8 @@ include '../layout/mensajes.php';
                         </div>
                     </div>
 
-                    <!-- Columna Derecha: Resumen y Totales -->
                     <div class="col-md-4">
-                        <div class="card card-primary">
+                        <div class="card card-warning">
                              <div class="card-header">
                                 <h3 class="card-title">Resumen de la Compra</h3>
                             </div>
@@ -192,25 +198,23 @@ include '../layout/mensajes.php';
                                     <hr>
                                     <h3>Total Compra: <span class="text-primary">$<span id="total_general_compra_display">0.00</span></span></h3>
                                 </div>
-                                
                                 <input type="hidden" name="subtotal_general_compra_calculado" id="subtotal_general_compra_hidden">
                                 <input type="hidden" name="monto_iva_general_calculado" id="monto_iva_general_hidden">
                                 <input type="hidden" name="total_general_compra_calculado" id="total_general_compra_hidden">
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> Registrar Compra</button>
+                                <button type="submit" class="btn btn-warning btn-block"><i class="fas fa-save"></i> Guardar Cambios</button>
                                 <a href="<?php echo $URL;?>/compras/" class="btn btn-secondary btn-block mt-2"><i class="fas fa-times"></i> Cancelar</a>
                             </div>
                         </div>
                     </div>
                 </div>
             </form>
-        </div><!-- /.container-fluid -->
+        </div>
     </div>
-    <!-- /.content -->
 </div>
-<!-- /.content-wrapper -->
 
+<!-- Modales (Buscar/Crear Producto y Proveedor) - Idénticos a create.php -->
 <!-- Modal Buscar/Crear Producto -->
 <div class="modal fade" id="modalBuscarProducto" tabindex="-1" role="dialog" aria-labelledby="modalBuscarProductoLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -250,7 +254,7 @@ include '../layout/mensajes.php';
                         </table>
                     </div>
                     <div class="tab-pane fade p-3" id="crearProductoPane" role="tabpanel" aria-labelledby="crear-producto-tab">
-                        <h5>Registrar Nuevo Producto (se creará al finalizar la compra)</h5>
+                        <h5>Registrar Nuevo Producto (se creará en su almacén y se añadirá a esta compra)</h5>
                         <div id="formDatosNuevoProductoRapido" class="mt-3">
                             <div class="row">
                                 <div class="col-md-4 form-group">
@@ -397,15 +401,14 @@ include '../layout/mensajes.php';
     </div>
 </div>
 
-<?php
-include '../layout/parte2.php';
-?>
+
+<?php include '../layout/parte2.php'; ?>
 <script>
 $(document).ready(function() {
     var tablaProductosAlmacen;
     var tablaProveedores; 
-    var idUsuarioActual = <?php echo json_encode((int)$id_usuario_sesion); ?>; 
-    var contadorItemsCompra = 0;
+    var idUsuarioActual = <?php echo json_encode($id_usuario_sesion); ?>;
+    var itemsOriginales = <?php echo $items_compra_existente_json; ?>;
 
     function limpiarCamposProductoTemporal() {
         $('#temp_id_producto').val('');
@@ -416,9 +419,10 @@ $(document).ready(function() {
         $('#temp_stock_actual_producto').val('');
         $('#temp_precio_compra').val('');
         $('#temp_porcentaje_iva').val('0');
-        $('#temp_cantidad').val('1.00'); 
+        $('#temp_cantidad').val('1.00');
         $('#temp_producto_info').hide().empty();
-        $('#temp_es_nuevo_producto').val('0');
+        
+        $('#temp_es_nuevo_producto_almacen').val('0'); // Resetear flag
         $('#temp_nueva_descripcion_producto').val('');
         $('#temp_nueva_id_categoria_producto').val('');
         $('#temp_nuevo_precio_venta_producto').val('');
@@ -427,101 +431,63 @@ $(document).ready(function() {
         $('#temp_nueva_fecha_ingreso_producto').val('');
     }
 
-    function generarNroCompraReferencia() {
-        $('#nro_compra_referencia').val('Generando...');
-        $.ajax({
-            url: '<?php echo $URL; ?>/app/controllers/compras/controller_generar_codigo_compra.php',
-            type: 'POST', 
-            dataType: 'json',
-            success: function(response) {
-                if (response && response.status === 'success' && response.codigo_compra) {
-                    $('#nro_compra_referencia').val(response.codigo_compra);
-                } else {
-                    $('#nro_compra_referencia').val('Error REF');
-                    Swal.fire('Error', response.message || 'No se pudo generar la referencia de compra.', 'error');
-                }
-            },
-            error: function() {
-                $('#nro_compra_referencia').val('Error Conexión REF');
-                Swal.fire('Error', 'No se pudo conectar para generar la referencia de compra.', 'error');
-            }
-        });
-    }
-
-    function generarSiguienteCodigoProductoParaModal() {
+    function generarSiguienteCodigoProductoParaModal() { 
         $('#modal_producto_codigo_rapido_display').val('Generando...');
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/almacen/controller_generar_siguiente_codigo.php',
-            type: 'POST',
-            data: { id_usuario: idUsuarioActual },
-            dataType: 'json',
+            type: 'POST', data: { id_usuario: idUsuarioActual }, dataType: 'json',
             success: function(response) {
                 if (response && response.status === 'success' && response.nuevo_codigo) {
                     $('#modal_producto_codigo_rapido_display').val(response.nuevo_codigo);
-                } else {
-                    $('#modal_producto_codigo_rapido_display').val('Error GEN');
-                }
-            },
-            error: function() {
-                $('#modal_producto_codigo_rapido_display').val('Error CON');
-            }
+                } else { $('#modal_producto_codigo_rapido_display').val('Error GEN'); }
+            }, error: function() { $('#modal_producto_codigo_rapido_display').val('Error CON');}
         });
     }
     
-    function cargarCategoriasUsuarioParaModal() {
+    function cargarCategoriasUsuarioParaModal() { 
         $.ajax({
             url: '<?php echo $URL; ?>/app/controllers/categorias/controller_listar_categorias_usuario.php', 
-            type: 'POST', 
-            dataType: 'json',
-            data: { id_usuario: idUsuarioActual },
+            type: 'POST', dataType: 'json', data: { id_usuario: idUsuarioActual },
             success: function(response) {
                 var options = '<option value="">Seleccione una categoría</option>';
                 if(response && response.status === 'success' && response.data && response.data.length > 0) {
-                    response.data.forEach(function(cat) {
-                        options += '<option value="' + cat.id_categoria + '">' + cat.nombre_categoria + '</option>';
-                    });
-                } else {
-                     options = '<option value="">No tiene categorías o hubo un error.</option>';
-                }
+                    response.data.forEach(function(cat) { options += '<option value="' + cat.id_categoria + '">' + cat.nombre_categoria + '</option>'; });
+                } else { options = '<option value="">No tiene categorías o hubo un error.</option>';}
                 $('#modal_producto_id_categoria_rapido').html(options);
-            },
-            error: function() {
-                $('#modal_producto_id_categoria_rapido').html('<option value="">Error de conexión al cargar categorías</option>');
-            }
+            }, error: function() { $('#modal_producto_id_categoria_rapido').html('<option value="">Error de conexión</option>');}
         });
     }
 
-    $('#modalBuscarProducto').on('shown.bs.modal', function () {
+    $('#modalBuscarProducto').on('shown.bs.modal', function () { 
         cargarCategoriasUsuarioParaModal(); 
+        // Limpiar campos del tab "Crear Nuevo Producto" cada vez que se muestra esa pestaña
         if ($('#crear-producto-tab').hasClass('active')) { 
             generarSiguienteCodigoProductoParaModal();
-            $('#formDatosNuevoProductoRapido')[0].reset(); // Resetear todo el formulario
+            $('#formDatosNuevoProductoRapido').find('input[type="text"], input[type="number"]:not(#modal_producto_iva_rapido), textarea').val('');
+            $('#formDatosNuevoProductoRapido').find('select').val('');
             $('#modal_producto_fecha_ingreso_rapido').val('<?php echo date('Y-m-d'); ?>');
-            $('#modal_producto_iva_rapido').val(0);
+            // $('#modal_producto_iva_rapido').val(0); // Mantener el IVA si se pre-llenó
         }
         if ($.fn.DataTable.isDataTable('#tablaProductosAlmacen')) {
             tablaProductosAlmacen.ajax.reload(null, false);
-        } else {
-            inicializarTablaProductos();
-        }
+        } else { inicializarTablaProductos(); }
     });
 
-    $('a[data-toggle="tab"][href="#crearProductoPane"]').on('shown.bs.tab', function (e) {
+    $('a[data-toggle="tab"][href="#crearProductoPane"]').on('shown.bs.tab', function (e) { 
         if ($(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
             generarSiguienteCodigoProductoParaModal();
-            $('#formDatosNuevoProductoRapido')[0].reset();
+            $('#formDatosNuevoProductoRapido').find('input[type="text"], input[type="number"]:not(#modal_producto_iva_rapido), textarea').val('');
+            $('#formDatosNuevoProductoRapido').find('select').val('');
             $('#modal_producto_fecha_ingreso_rapido').val('<?php echo date('Y-m-d'); ?>');
-             $('#modal_producto_iva_rapido').val(0);
         }
     });
-
-    $('a[data-toggle="tab"][href="#buscarProductoPane"]').on('shown.bs.tab', function (e) {
-        if ($(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
+    $('a[data-toggle="tab"][href="#buscarProductoPane"]').on('shown.bs.tab', function (e) { 
+         if ($(e.target).closest('.modal').attr('id') === 'modalBuscarProducto') {
             if (tablaProductosAlmacen) tablaProductosAlmacen.ajax.reload(null, false);
         }
     });
 
-    $('#btnConfirmarNuevoProductoTemporal').on('click', function() {
+    $('#btnConfirmarNuevoProductoTemporal').on('click', function() { 
         var nombreRapido = $('#modal_producto_nombre_rapido').val().trim();
         var idCategoriaRapido = $('#modal_producto_id_categoria_rapido').val();
         var precioCompraRapidoStr = $('#modal_producto_precio_compra_rapido').val();
@@ -539,19 +505,17 @@ $(document).ready(function() {
         var precioCompraRapido = parseFloat(precioCompraRapidoStr);
         var precioVentaRapido = parseFloat(precioVentaRapidoStr);
         var ivaRapido = parseFloat(ivaRapidoStr);
+        
+        limpiarCamposProductoTemporal(); // Limpia todos los campos temp_
 
-        limpiarCamposProductoTemporal();
-
-        $('#temp_es_nuevo_producto').val('1');
-        $('#temp_id_producto').val(''); 
+        $('#temp_es_nuevo_producto_almacen').val('1'); // Marcar como nuevo para almacén
+        $('#temp_id_producto').val(''); // No tiene ID de producto existente
         $('#temp_codigo_producto').val($('#modal_producto_codigo_rapido_display').val()); 
         $('#temp_nombre_producto').val(nombreRapido);
-        $('#temp_precio_compra_sugerido_producto').val(precioCompraRapido.toFixed(2));
-        $('#temp_precio_compra').val(precioCompraRapido.toFixed(2));
-        $('#temp_iva_predeterminado_producto').val(ivaRapido.toFixed(2));
-        $('#temp_porcentaje_iva').val(ivaRapido.toFixed(2));
-        $('#temp_stock_actual_producto').val('0'); 
-
+        $('#temp_precio_compra').val(precioCompraRapido.toFixed(2)); // Precio para el ítem actual
+        $('#temp_porcentaje_iva').val(ivaRapido.toFixed(2)); // IVA para el ítem actual
+        
+        // Guardar los datos para crear el producto en tb_almacen
         $('#temp_nueva_descripcion_producto').val($('#modal_producto_descripcion_rapido').val().trim());
         $('#temp_nueva_id_categoria_producto').val(idCategoriaRapido);
         $('#temp_nuevo_precio_venta_producto').val(precioVentaRapido.toFixed(2));
@@ -559,23 +523,17 @@ $(document).ready(function() {
         $('#temp_nuevo_stock_maximo_producto').val($('#modal_producto_stock_maximo_rapido').val() || '');
         $('#temp_nueva_fecha_ingreso_producto').val(fechaIngresoRapido);
         
-        $('#temp_producto_info').html(`NUEVO: ${nombreRapido} (Cód. Sugerido: ${$('#modal_producto_codigo_rapido_display').val()}) | IVA: ${ivaRapido.toFixed(2)}%`).show();
-        
+        $('#temp_producto_info').html(`NUEVO PARA ALMACÉN: ${nombreRapido} (Cód. Sugerido: ${$('#modal_producto_codigo_rapido_display').val()}) | IVA: ${ivaRapido.toFixed(2)}%`).show();
         $('#modalBuscarProducto').modal('hide');
         $('#temp_cantidad').val('1.00').focus();
     });
 
-    function inicializarTablaProductos() {
+    function inicializarTablaProductos() { 
         tablaProductosAlmacen = $('#tablaProductosAlmacen').DataTable({
             "processing": true, "serverSide": true,
-            "ajax": {
-                "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php",
-                "type": "POST",
-                "data": function (d) { d.id_usuario = idUsuarioActual; }
-            },
+            "ajax": { "url": "<?php echo $URL; ?>/app/controllers/almacen/controller_buscar_productos_dt.php", "type": "POST", "data": function (d) { d.id_usuario = idUsuarioActual; }},
             "columns": [
-                { "data": "id_producto", "visible": false }, 
-                { "data": "codigo" }, { "data": "nombre" }, { "data": "stock" },
+                { "data": "id_producto", "visible": false }, { "data": "codigo" }, { "data": "nombre" }, { "data": "stock" },
                 { "data": "precio_compra", "render": $.fn.dataTable.render.number(',', '.', 2, '$') },
                 { "data": "iva_porcentaje_producto", "render": function(data){ return (parseFloat(data) || 0).toFixed(2) + '%';} }, 
                 { "data": "nombre_categoria" },
@@ -586,144 +544,125 @@ $(document).ready(function() {
         });
     }
 
-    // --- INICIO CAMBIO: Lógica de selección de producto mejorada ---
-    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () {
-        console.log("Botón seleccionar producto clickeado"); 
-        if (!tablaProductosAlmacen) {
-            console.error("tablaProductosAlmacen no está inicializada.");
-            return;
-        }
-        var tr = $(this).closest('tr');
-        var row = tablaProductosAlmacen.row(tr);
-        var datosFila = row.data();
+    // ESTA ES LA FUNCIÓN MENCIONADA POR EL USUARIO
+    $('#tablaProductosAlmacen tbody').on('click', '.seleccionar-producto-para-compra', function () { 
+    // --- INICIO DEL CÓDIGO A REEMPLAZAR / MODIFICAR ---
+    console.log("Botón seleccionar producto clickeado en EDIT.PHP"); // Añade un log para diferenciar
+    if (!tablaProductosAlmacen) {
+        console.error("tablaProductosAlmacen no está inicializada en EDIT.PHP.");
+        return;
+    }
+    var tr = $(this).closest('tr');
+    var row = tablaProductosAlmacen.row(tr);
+    var datosFila = row.data();
 
-        console.log("TR:", tr); 
-        console.log("Row object:", row); 
-        console.log("Datos de la fila (intento 1):", datosFila); 
+    console.log("EDIT.PHP - TR:", tr); 
+    console.log("EDIT.PHP - Row object:", row); 
+    console.log("EDIT.PHP - Datos de la fila (intento 1):", datosFila); 
 
-        if (!datosFila) {
-            if (row.child.isShown()) { 
-                datosFila = tablaProductosAlmacen.row(tr.prev('tr.parent')).data();
-                console.log("Intentando con fila padre (responsive). Datos:", datosFila);
-            }
+    if (!datosFila) {
+        if (row.child.isShown()) { 
+            datosFila = tablaProductosAlmacen.row(tr.prev('tr.parent')).data();
+            console.log("EDIT.PHP - Intentando con fila padre (responsive). Datos:", datosFila);
         }
-        
-        if (!datosFila && tr.hasClass('child')) { // Si es fila hija y el anterior falló
-            var parentRowNode = tr.prev('tr.parent');
-            if (parentRowNode.length > 0) {
-                datosFila = tablaProductosAlmacen.row(parentRowNode).data();
-                console.log("Intentando con tr.prev('tr.parent') explícito. Datos:", datosFila);
-            } else { // Fallback si no hay 'tr.parent', intentar con el anterior inmediato
-                 datosFila = tablaProductosAlmacen.row(tr.prev()).data();
-                 console.log("Intentando con tr.prev() general. Datos:", datosFila);
-            }
-        }
-
-        if (!datosFila) {
-            Swal.fire('Error', 'No se pudieron obtener datos del producto. Por favor, revise la consola del navegador para más detalles.', 'error');
-            console.error("No se pudieron obtener datos de la fila. TR:", tr.get(0), "Row object:", row, "DatosFila final:", datosFila);
-            return;
-        }
-
-        limpiarCamposProductoTemporal();
-        $('#temp_es_nuevo_producto').val('0'); 
-        $('#temp_id_producto').val(datosFila.id_producto);
-        $('#temp_nombre_producto').val(datosFila.nombre);
-        $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
-        $('#temp_stock_actual_producto').val(datosFila.stock || 0);
-        
-        let precioCompraSugerido = parseFloat(datosFila.precio_compra || 0).toFixed(2);
-        $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
-        $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : '');
-
-        let ivaAplicar = 0;
-        if (datosFila.iva_ultima_compra !== null && !isNaN(parseFloat(datosFila.iva_ultima_compra))) {
-            ivaAplicar = parseFloat(datosFila.iva_ultima_compra);
-        } else if (datosFila.iva_porcentaje_producto !== null && !isNaN(parseFloat(datosFila.iva_porcentaje_producto))) {
-            ivaAplicar = parseFloat(datosFila.iva_porcentaje_producto);
-        }
-        
-        $('#temp_iva_predeterminado_producto').val(ivaAplicar.toFixed(2));
-        $('#temp_porcentaje_iva').val(ivaAplicar.toFixed(2));
-        
-        $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar.toFixed(2)}%`).show();
-        $('#temp_cantidad').val('1.00').focus(); 
-        $('#modalBuscarProducto').modal('hide');
-    });
-    // --- FIN CAMBIO ---
-   
-    $('#btnAnadirProductoALista').on('click', function() {
-    var nombreProducto = $('#temp_nombre_producto').val().trim();
-    var cantidadStr = $('#temp_cantidad').val();
-    var precioCompraStr = $('#temp_precio_compra').val();
-    var porcentajeIvaStr = $('#temp_porcentaje_iva').val();
+    }
     
-    var esNuevoProducto = $('#temp_es_nuevo_producto').val() === '1';
-    var idProducto = $('#temp_id_producto').val(); // Usado si !esNuevoProducto
-    var codigoProducto = $('#temp_codigo_producto').val();
-
-    // Validaciones (las que ya tienes)
-    if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
-    if (cantidadStr === '' || isNaN(parseFloat(cantidadStr)) || parseFloat(cantidadStr) <= 0) { Swal.fire('Atención', 'La cantidad debe ser un número mayor a cero.', 'warning'); $('#temp_cantidad').focus(); return; }
-    if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { Swal.fire('Atención', 'El precio de compra es obligatorio y no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return; }
-    if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { Swal.fire('Atención', 'El porcentaje de IVA es obligatorio y no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return; }
-
-    var cantidad = parseFloat(cantidadStr);
-    var precioCompra = parseFloat(precioCompraStr);
-    var porcentajeIva = parseFloat(porcentajeIvaStr);
-
-    // Evitar duplicados (lógica que ya tienes)
-    var yaEnLista = false;
-    $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
-        if (!esNuevoProducto && $(this).find('input[name="item_id_producto[]"]').val() == idProducto) {
-            Swal.fire('Atención', 'Este producto ya está en la lista.', 'warning');
-            yaEnLista = true; return false; 
+    if (!datosFila && tr.hasClass('child')) { 
+        var parentRowNode = tr.prev('tr.parent');
+        if (parentRowNode.length > 0) {
+            datosFila = tablaProductosAlmacen.row(parentRowNode).data();
+            console.log("EDIT.PHP - Intentando con tr.prev('tr.parent') explícito. Datos:", datosFila);
+        } else {
+             datosFila = tablaProductosAlmacen.row(tr.prev()).data();
+             console.log("EDIT.PHP - Intentando con tr.prev() general. Datos:", datosFila);
         }
-        if (esNuevoProducto && $(this).find('input[name="item_nombre_producto[]"]').val() == nombreProducto && $(this).find('input[name="item_es_nuevo[]"]').val() == '1') {
-             Swal.fire('Atención', 'Ya añadió un nuevo producto con este nombre. Si es diferente, use un nombre distintivo.', 'warning');
-            yaEnLista = true; return false;
-        }
-    });
-    if (yaEnLista) return;
+    }
 
-    // --- INICIO DE LA MODIFICACIÓN IMPORTANTE ---
-    let input_es_nuevo_val = esNuevoProducto ? '1' : '0';
-    let input_id_producto_val = esNuevoProducto ? '' : idProducto; // ID vacío si es nuevo para almacén
+    if (!datosFila) {
+        Swal.fire('Error', 'No se pudieron obtener datos del producto. Por favor, revise la consola del navegador para más detalles.', 'error');
+        console.error("EDIT.PHP - No se pudieron obtener datos de la fila. TR:", tr.get(0), "Row object:", row, "DatosFila final:", datosFila);
+        return;
+    }
+        
+    limpiarCamposProductoTemporal(); 
+    $('#temp_es_nuevo_producto_almacen').val('0'); 
+    $('#temp_id_producto').val(datosFila.id_producto); 
+    $('#temp_nombre_producto').val(datosFila.nombre);
+    $('#temp_codigo_producto').val(datosFila.codigo || 'N/A');
+    $('#temp_stock_actual_producto').val(datosFila.stock || 0);
+    
+    let precioCompraSugerido = parseFloat(datosFila.precio_compra || 0).toFixed(2);
+    $('#temp_precio_compra_sugerido_producto').val(precioCompraSugerido);
+    $('#temp_precio_compra').val(precioCompraSugerido > 0 ? precioCompraSugerido : ''); 
 
-    // Siempre definir estos campos, vacíos si no es un "nuevo producto para almacén"
-    let input_nueva_descripcion_val = esNuevoProducto ? ($('#temp_nueva_descripcion_producto').val() || '') : '';
-    let input_nueva_id_categoria_val = esNuevoProducto ? ($('#temp_nueva_id_categoria_producto').val() || '') : '';
-    let input_nuevo_precio_venta_val = esNuevoProducto ? ($('#temp_nuevo_precio_venta_producto').val() || '') : '';
-    let input_nuevo_stock_minimo_val = esNuevoProducto ? ($('#temp_nuevo_stock_minimo_producto').val() || '') : '';
-    let input_nuevo_stock_maximo_val = esNuevoProducto ? ($('#temp_nuevo_stock_maximo_producto').val() || '') : '';
-    let input_nueva_fecha_ingreso_val = esNuevoProducto ? ($('#temp_nueva_fecha_ingreso_producto').val() || '') : '';
-    // --- FIN DE LA MODIFICACIÓN IMPORTANTE ---
+    let ivaAplicar = parseFloat(datosFila.iva_ultima_compra !== null && !isNaN(parseFloat(datosFila.iva_ultima_compra)) ? datosFila.iva_ultima_compra : (datosFila.iva_porcentaje_producto || 0)).toFixed(2);
+    $('#temp_iva_predeterminado_producto').val(ivaAplicar); 
+    $('#temp_porcentaje_iva').val(ivaAplicar); 
+    
+    $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar}%`).show();
+    $('#temp_cantidad').val('1.00').focus(); 
+    $('#modalBuscarProducto').modal('hide');
+});
+   
+    function anadirItemATabla(itemData, esItemExistenteDeBD = false) {
+        var idProducto = itemData.id_producto || ''; 
+    var codigoProducto = itemData.codigo_producto || (itemData.es_nuevo_para_almacen ? 'PENDIENTE' : 'N/A');
+    var nombreProducto = itemData.nombre_producto;
+    var cantidad = parseFloat(itemData.cantidad) || 0;
+    var precioCompra = parseFloat(itemData.precio_compra_unitario) || 0;
+    var porcentajeIva = parseFloat(itemData.porcentaje_iva_item) || 0;
+    
+    var idDetalleCompraOriginal = esItemExistenteDeBD ? (itemData.id_detalle_compra || '') : '';
 
-    contadorItemsCompra++;
     var subtotalItem = cantidad * precioCompra;
     var montoIvaItem = subtotalItem * (porcentajeIva / 100);
     var totalItem = subtotalItem + montoIvaItem;
 
-    var nuevaFila = `
-        <tr>
-            <td>${contadorItemsCompra}</td>
-            <td>${codigoProducto || (esNuevoProducto ? 'PENDIENTE' : 'N/A')}
-                {/* Todos estos campos deben existir para cada ítem para mantener la consistencia */}
-                <input type="hidden" name="item_es_nuevo[]" value="${input_es_nuevo_val}">
-                <input type="hidden" name="item_id_producto[]" value="${input_id_producto_val}"> 
-                
-                <input type="hidden" name="item_nueva_descripcion[]" value="${input_nueva_descripcion_val}">
-                <input type="hidden" name="item_nueva_id_categoria[]" value="${input_nueva_id_categoria_val}">
-                <input type="hidden" name="item_nuevo_precio_venta[]" value="${input_nuevo_precio_venta_val}">
-                <input type="hidden" name="item_nuevo_stock_minimo[]" value="${input_nuevo_stock_minimo_val}">
-                <input type="hidden" name="item_nuevo_stock_maximo[]" value="${input_nuevo_stock_maximo_val}">
-                <input type="hidden" name="item_nueva_fecha_ingreso[]" value="${input_nueva_fecha_ingreso_val}">
-                
-                {/* Campos comunes a todos los ítems */}
-                <input type="hidden" name="item_codigo_producto[]" value="${codigoProducto || ''}">
+    var estadoItemActual = '';
+    var esNuevoFlagParaInput = '0'; // Valor por defecto para item_es_nuevo[]
+    var badgeItem = '';
+
+    let input_nueva_descripcion = itemData.es_nuevo_para_almacen ? (itemData.nueva_descripcion || '') : '';
+    let input_nueva_id_categoria = itemData.es_nuevo_para_almacen ? (itemData.nueva_id_categoria || '') : '';
+    let input_nuevo_precio_venta = itemData.es_nuevo_para_almacen ? (itemData.nuevo_precio_venta || '') : '';
+    let input_nuevo_stock_minimo = itemData.es_nuevo_para_almacen ? (itemData.nuevo_stock_minimo || '') : '';
+    let input_nuevo_stock_maximo = itemData.es_nuevo_para_almacen ? (itemData.nuevo_stock_maximo || '') : '';
+    let input_nueva_fecha_ingreso = itemData.es_nuevo_para_almacen ? (itemData.nueva_fecha_ingreso || '') : '';
+
+
+    if (itemData.es_nuevo_para_almacen) { 
+        estadoItemActual = 'nuevo_almacen';
+        esNuevoFlagParaInput = '1'; // Marcar como '1' para item_es_nuevo[]
+        badgeItem = '<span class="badge badge-info ml-1">Nuevo Almacén</span>';
+    } else if (esItemExistenteDeBD) { 
+        estadoItemActual = 'existente'; // Se cambiará a 'modificado' si el usuario edita algo
+                                        // esNuevoFlagParaInput permanece '0'
+    } else { // Producto existente en almacén, pero nuevo para esta compra (añadido en esta sesión de edición)
+        estadoItemActual = 'nuevo_item_existente_almacen';
+        badgeItem = '<span class="badge badge-success ml-1">Añadido</span>';
+                                        // esNuevoFlagParaInput permanece '0'
+    }
+        
+    var nuevaFilaHTML = `
+        <tr data-id-detalle-original="${idDetalleCompraOriginal}" data-estado-item="${estadoItemActual}">
+            <td></td> {/* El número se pondrá con actualizarNumeracionFilas */}
+            <td>${codigoProducto}
+                <input type="hidden" name="item_id_detalle_compra[]" value="${idDetalleCompraOriginal}">
+                <input type="hidden" name="item_estado[]" value="${estadoItemActual}">
+                <input type="hidden" name="item_id_producto[]" value="${idProducto}">
+                <input type="hidden" name="item_codigo_producto[]" value="${codigoProducto}">
                 <input type="hidden" name="item_nombre_producto[]" value="${nombreProducto}">
+                
+                
+                <input type="hidden" name="item_es_nuevo[]" value="${esNuevoFlagParaInput}">
+                <input type="hidden" name="item_nueva_descripcion[]" value="${input_nueva_descripcion}">
+                <input type="hidden" name="item_nueva_id_categoria[]" value="${input_nueva_id_categoria}">
+                <input type="hidden" name="item_nuevo_precio_venta[]" value="${input_nuevo_precio_venta}">
+                <input type="hidden" name="item_nuevo_stock_minimo[]" value="${input_nuevo_stock_minimo}">
+                <input type="hidden" name="item_nuevo_stock_maximo[]" value="${input_nuevo_stock_maximo}">
+                <input type="hidden" name="item_nueva_fecha_ingreso[]" value="${input_nueva_fecha_ingreso}">
             </td>
-            <td>${nombreProducto} ${esNuevoProducto ? '<span class="badge badge-info">Nuevo</span>' : ''}</td>
+            <td>${nombreProducto} ${badgeItem}</td>
             <td><input type="number" name="item_cantidad[]" class="form-control form-control-sm item-cantidad text-right" value="${cantidad.toFixed(2)}" min="0.01" step="0.01" style="width:70px;" required></td>
             <td><input type="number" name="item_precio_unitario[]" class="form-control form-control-sm item-precio text-right" step="0.01" value="${precioCompra.toFixed(2)}" min="0" style="width:90px;" required></td>
             <td><input type="number" name="item_porcentaje_iva[]" class="form-control form-control-sm item-iva text-right" step="0.01" value="${porcentajeIva.toFixed(2)}" min="0" style="width:60px;" required></td>
@@ -733,95 +672,178 @@ $(document).ready(function() {
             <td><button type="button" class="btn btn-danger btn-sm btn-eliminar-item"><i class="fas fa-trash"></i></button></td>
         </tr>
     `;
-    
     $('#filaNoItems').hide(); 
-    $('#tablaItemsCompra tbody').append(nuevaFila);
-    recalcularTotalesGenerales();
-    limpiarCamposProductoTemporal();
-    $('#temp_nombre_producto').focus(); 
-});
+    $('#tablaItemsCompra tbody').append(nuevaFilaHTML);
+    actualizarNumeracionFilas();
+}
+    
+    function actualizarNumeracionFilas() {
+        var countVisible = 1;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').each(function(){
+            $(this).find('td:first').text(countVisible++);
+        });
+    }
+
+    function cargarItemsExistentes() {
+        if (itemsOriginales && itemsOriginales.length > 0) {
+            itemsOriginales.forEach(function(item) {
+                anadirItemATabla({
+                    id_detalle_compra: item.id_detalle_compra,
+                    id_producto: item.id_producto,
+                    codigo_producto: item.codigo_producto,
+                    nombre_producto: item.nombre_producto,
+                    cantidad: item.cantidad,
+                    precio_compra_unitario: item.precio_compra_unitario,
+                    porcentaje_iva_item: item.porcentaje_iva_item,
+                    es_nuevo_para_almacen: false // Estos no son nuevos para almacén
+                }, true); // true indica que es un ítem existente de la BD
+            });
+            recalcularTotalesGenerales();
+        }
+    }
+
+    $('#btnAnadirProductoALista').on('click', function() {
+        var nombreProducto = $('#temp_nombre_producto').val().trim();
+        var cantidadStr = $('#temp_cantidad').val();
+        var precioCompraStr = $('#temp_precio_compra').val();
+        var porcentajeIvaStr = $('#temp_porcentaje_iva').val();
+        
+        var esNuevoParaAlmacenFlag = $('#temp_es_nuevo_producto_almacen').val() === '1';
+        var idProductoSeleccionado = $('#temp_id_producto').val(); // Será '' si es nuevo para almacén
+        var codigoProductoSeleccionado = $('#temp_codigo_producto').val();
+
+        if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
+        if (cantidadStr === '' || isNaN(parseFloat(cantidadStr)) || parseFloat(cantidadStr) <= 0) { /* ... error ... */ return; }
+        if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { /* ... error ... */ return; }
+        if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { /* ... error ... */ return; }
+    
+        var cantidad = parseFloat(cantidadStr);
+        var precioCompra = parseFloat(precioCompraStr);
+        var porcentajeIva = parseFloat(porcentajeIvaStr);
+
+        // Evitar duplicados
+        var yaEnLista = false;
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').each(function() {
+            let idProdEnTabla = $(this).find('input[name="item_id_producto[]"]').val();
+            let nombreProdEnTabla = $(this).find('input[name="item_nombre_producto[]"]').val();
+            let estadoItemEnTabla = $(this).find('input[name="item_estado[]"]').val();
+
+            if (esNuevoParaAlmacenFlag) { // Si se intenta añadir un "nuevo para almacén"
+                if (estadoItemEnTabla === 'nuevo_almacen' && nombreProdEnTabla === nombreProducto) {
+                    Swal.fire('Atención', 'Ya añadió un nuevo producto para almacén con este nombre.', 'warning');
+                    yaEnLista = true; return false;
+                }
+            } else { // Si se intenta añadir un producto existente en almacén
+                if (idProdEnTabla == idProductoSeleccionado) {
+                    yaEnLista = true; return false;
+                }
+            }
+        });
+        if (yaEnLista) { 
+            if(esNuevoParaAlmacenFlag) return; // El Swal ya se mostró
+            Swal.fire('Atención', 'Este producto ya está en la lista.', 'warning'); return; 
+        }
+
+        let datosNuevoItem = {
+            id_producto: esNuevoParaAlmacenFlag ? '' : idProductoSeleccionado,
+            codigo_producto: codigoProductoSeleccionado,
+            nombre_producto: nombreProducto,
+            cantidad: cantidad,
+            precio_compra_unitario: precioCompra,
+            porcentaje_iva_item: porcentajeIva,
+            es_nuevo_para_almacen: esNuevoParaAlmacenFlag 
+        };
+
+        if (esNuevoParaAlmacenFlag) {
+            datosNuevoItem.nueva_descripcion = $('#temp_nueva_descripcion_producto').val();
+            datosNuevoItem.nueva_id_categoria = $('#temp_nueva_id_categoria_producto').val();
+            datosNuevoItem.nuevo_precio_venta = $('#temp_nuevo_precio_venta_producto').val();
+            datosNuevoItem.nuevo_stock_minimo = $('#temp_nuevo_stock_minimo_producto').val();
+            datosNuevoItem.nuevo_stock_maximo = $('#temp_nuevo_stock_maximo_producto').val();
+            datosNuevoItem.nueva_fecha_ingreso = $('#temp_nueva_fecha_ingreso_producto').val();
+        }
+        
+        anadirItemATabla(datosNuevoItem, false); // false porque no es un ítem que venía de la BD originalmente
+        recalcularTotalesGenerales();
+        limpiarCamposProductoTemporal();
+        $('#temp_nombre_producto').focus(); 
+    });
 
     $('#tablaItemsCompra tbody').on('change keyup', '.item-cantidad, .item-precio, .item-iva', function() {
         var fila = $(this).closest('tr');
+        var estadoInput = fila.find('input[name="item_estado[]"]');
+        if (estadoInput.val() === 'existente') { // Si era existente y se modificó
+            estadoInput.val('modificado');
+            fila.attr('data-estado-item', 'modificado'); // Actualizar data attribute también
+            // Opcional: fila.addClass('item-modificado-visual'); 
+        }
+        
         var cantidad = parseFloat(fila.find('.item-cantidad').val()) || 0;
         var precio = parseFloat(fila.find('.item-precio').val()) || 0;
         var ivaPct = parseFloat(fila.find('.item-iva').val()) || 0;
-
         var subtotal = cantidad * precio;
         var montoIva = subtotal * (ivaPct / 100);
         var total = subtotal + montoIva;
-
         fila.find('.item-subtotal').text(subtotal.toFixed(2));
         fila.find('.item-monto-iva').text(montoIva.toFixed(2));
         fila.find('.item-total').text(total.toFixed(2));
-        
         recalcularTotalesGenerales();
     });
     
     $('#tablaItemsCompra tbody').on('click', '.btn-eliminar-item', function() {
-        $(this).closest('tr').remove();
+        var fila = $(this).closest('tr');
+        var estadoInput = fila.find('input[name="item_estado[]"]');
+        var idDetalleOriginal = fila.data('id-detalle-original'); 
+
+        if (idDetalleOriginal && (estadoInput.val() === 'existente' || estadoInput.val() === 'modificado')) {
+            estadoInput.val('eliminado');
+            fila.attr('data-estado-item', 'eliminado');
+            fila.addClass('item-eliminado-visual').hide(); 
+        } else { // Ítem nuevo (añadido en esta sesión de edición), se elimina del DOM
+            fila.remove();
+        }
+        
         recalcularTotalesGenerales();
-        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems').length === 0) {
+        actualizarNumeracionFilas();
+        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').length === 0) {
             $('#filaNoItems').show();
-            contadorItemsCompra = 0; 
-        } else {
-            var count = 1;
-            $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function(idx, tr){
-                $(tr).find('td:first').text(idx + 1);
-            });
-            contadorItemsCompra = $('#tablaItemsCompra tbody tr').not('#filaNoItems').length;
         }
     });
 
-    function recalcularTotalesGenerales() {
+    function recalcularTotalesGenerales() { 
         var subtotalGeneral = 0;
         var montoIvaGeneral = 0;
-
-        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').each(function() { 
             var subtotalItem = parseFloat($(this).find('.item-subtotal').text()) || 0;
             var montoIvaItem = parseFloat($(this).find('.item-monto-iva').text()) || 0;
             subtotalGeneral += subtotalItem;
             montoIvaGeneral += montoIvaItem;
         });
         var totalGeneral = subtotalGeneral + montoIvaGeneral;
-
         $('#subtotal_general_compra_display').text(subtotalGeneral.toFixed(2));
         $('#monto_iva_general_display').text(montoIvaGeneral.toFixed(2));
         $('#total_general_compra_display').text(totalGeneral.toFixed(2));
-
         $('#subtotal_general_compra_hidden').val(subtotalGeneral.toFixed(2));
         $('#monto_iva_general_hidden').val(montoIvaGeneral.toFixed(2));
         $('#total_general_compra_hidden').val(totalGeneral.toFixed(2));
     }
 
-    // --- LÓGICA PARA PROVEEDORES ---
+    // --- LÓGICA PARA PROVEEDORES (Idéntica a create.php, adaptada si es necesario) ---
     $('#modalBuscarProveedor').on('shown.bs.modal', function () {
         if (!$.fn.DataTable.isDataTable('#tablaProveedores')) {
             tablaProveedores = $('#tablaProveedores').DataTable({
                 "processing": true, "serverSide": true,
-                "ajax": {"url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", "type": "POST"},
+                "ajax": {"url": "<?php echo $URL; ?>/app/controllers/proveedores/controller_proveedores_serverside.php", "type": "POST"}, // Asume que este controlador existe y funciona
                 "columns": [
-                    { "data": "id_proveedor", "visible": false }, 
-                    { "data": "nombre_proveedor"}, { "data": "empresa" }, 
-                    { "data": "celular" }, { "data": "telefono" }, { "data": "email" }, 
-                    { "data": "direccion" },
-                    { "data": null, "orderable": false, "searchable": false,
-                        "render": function (data, type, row) {
-                            return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" 
-                                data-id="${row.id_proveedor}" data-nombre="${row.nombre_proveedor}"
-                                data-empresa="${row.empresa || ''}" data-celular="${row.celular || ''}">
-                                <i class="fas fa-check-circle"></i> Seleccionar</button>`;
-                        }
-                    }
+                    { "data": "id_proveedor", "visible": false }, { "data": "nombre_proveedor"}, { "data": "empresa" }, 
+                    { "data": "celular" }, { "data": "telefono" }, { "data": "email" }, { "data": "direccion" },
+                    { "data": null, "orderable": false, "searchable": false, "render": function (data, type, row) { return `<button type="button" class="btn btn-success btn-sm seleccionar-proveedor" data-id="${row.id_proveedor}" data-nombre="${row.nombre_proveedor}" data-empresa="${row.empresa || ''}" data-celular="${row.celular || ''}"><i class="fas fa-check-circle"></i> Seleccionar</button>`;}}
                 ],
                 "language": {"url": "<?php echo $URL;?>/public/templeates/AdminLTE-3.2.0/plugins/datatables-plugins/i18n/es_es.json"},
                 "responsive": true, "lengthChange": true, "autoWidth": false, "pageLength": 5, "lengthMenu": [5, 10, 25, 50]
             });
-        } else {
-            tablaProveedores.ajax.reload(null, false); 
-        }
+        } else { tablaProveedores.ajax.reload(null, false); }
     });
-
     $('#tablaProveedores tbody').on('click', '.seleccionar-proveedor', function () {
         $('#id_proveedor_compra').val($(this).data('id'));
         $('#nombre_proveedor_compra_display').val($(this).data('nombre'));
@@ -830,17 +852,21 @@ $(document).ready(function() {
         $('#detalle_proveedor_seleccionado').show();
         $('#modalBuscarProveedor').modal('hide');
     });
-
-    $('#formNuevoProveedor').on('submit', function(e) {
+    $('#formNuevoProveedor').on('submit', function(e) { 
         e.preventDefault();
-        var formData = $(this).serialize() + '&id_usuario=' + idUsuarioActual; 
+        var formData = $(this).serialize() + '&id_usuario=' + idUsuarioActual;
         $.ajax({
-            url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php',
-            type: 'POST', data: formData, dataType: 'json',
+            url: '<?php echo $URL; ?>/app/controllers/proveedores/create.php', type: 'POST', data: formData, dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
                     Swal.fire('¡Éxito!', response.message || 'Proveedor creado.', 'success');
-                    var provData = response.data || { id_proveedor: response.creadoId, nombre_proveedor: $('#nuevo_proveedor_nombre').val(), empresa: $('#nuevo_proveedor_empresa').val(), celular: $('#nuevo_proveedor_celular').val() };
+                    // Asumimos que create.php devuelve el ID del proveedor creado o sus datos
+                    var provData = response.data || { 
+                        id_proveedor: response.creadoId || null, // Ajusta según lo que devuelva tu controlador
+                        nombre_proveedor: $('#nuevo_proveedor_nombre').val(), 
+                        empresa: $('#nuevo_proveedor_empresa').val(), 
+                        celular: $('#nuevo_proveedor_celular').val() 
+                    };
                     if(provData.id_proveedor) { 
                         $('#id_proveedor_compra').val(provData.id_proveedor);
                         $('#nombre_proveedor_compra_display').val(provData.nombre_proveedor);
@@ -851,32 +877,24 @@ $(document).ready(function() {
                     $('#modalBuscarProveedor').modal('hide');
                     $('#formNuevoProveedor')[0].reset();
                     if(tablaProveedores) tablaProveedores.ajax.reload(null, false);
-                } else {
-                    Swal.fire('Error', response.message || 'No se pudo crear el proveedor.', 'error');
-                }
-            },
-            error: function() { 
-                Swal.fire('Error de Conexión', 'No se pudo conectar para crear el proveedor.', 'error');
-            }
+                } else { Swal.fire('Error', response.message || 'No se pudo crear el proveedor.', 'error'); }
+            }, error: function() { Swal.fire('Error de Conexión', 'No se pudo conectar para crear el proveedor.', 'error');}
         });
     });
     
     // --- INICIALIZACIÓN Y VALIDACIÓN DEL FORMULARIO PRINCIPAL ---
-    generarNroCompraReferencia();
-    recalcularTotalesGenerales(); 
+    cargarItemsExistentes(); 
+    // recalcularTotalesGenerales(); // Se llama dentro de cargarItemsExistentes si hay items
 
-    $('#formNuevaCompra').on('submit', function(e){
+    $('#formEditarCompra').on('submit', function(e){
         if (!$('#id_proveedor_compra').val()) { 
             e.preventDefault(); Swal.fire('Atención', 'Debe seleccionar un proveedor.', 'warning'); return false;
         }
-        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems').length === 0) {
-            e.preventDefault(); Swal.fire('Atención', 'Debe añadir al menos un producto a la compra.', 'warning'); return false;
-        }
-        if (!$('#nro_compra_referencia').val() || $('#nro_compra_referencia').val() === 'Generando...' || $('#nro_compra_referencia').val().startsWith('Error')) {
-            e.preventDefault(); Swal.fire('Atención', 'Espere a que se genere el Número de Compra o verifique si hay errores.', 'warning'); return false;
+        if ($('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').length === 0) { 
+            e.preventDefault(); Swal.fire('Atención', 'Debe haber al menos un producto en la compra.', 'warning'); return false;
         }
         var itemsValidos = true;
-        $('#tablaItemsCompra tbody tr').not('#filaNoItems').each(function() {
+        $('#tablaItemsCompra tbody tr').not('#filaNoItems, .item-eliminado-visual').each(function() {
             var cantidad = parseFloat($(this).find('.item-cantidad').val()) || 0;
             if (cantidad <= 0) {
                 itemsValidos = false;
@@ -886,10 +904,24 @@ $(document).ready(function() {
             }
         });
         if(!itemsValidos) {
-            e.preventDefault();
-            return false;
+            e.preventDefault(); return false;
         }
-        $('#tablaItemsCompra tbody .item-cantidad, #tablaItemsCompra tbody .item-precio, #tablaItemsCompra tbody .item-iva').trigger('change'); 
+        // Forzar un 'change' para asegurar que los últimos valores de los inputs se procesen
+        // y los estados de los ítems (ej. 'modificado') se establezcan correctamente antes del submit.
+        $('#tablaItemsCompra tbody .item-cantidad, #tablaItemsCompra tbody .item-precio, #tablaItemsCompra tbody .item-iva').trigger('change');
     });
 });
 </script>
+<style>
+    .item-eliminado-visual {
+        /* Estilos opcionales para ítems marcados para eliminar pero aún en el DOM (ocultos por .hide()) */
+         background-color: #ffdddd !important; 
+         text-decoration: line-through !important; 
+    }
+    
+    
+    .item-modificado-visual td {
+        background-color: #fff3cd; 
+    }
+    
+</style>

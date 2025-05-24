@@ -69,7 +69,7 @@ include '../layout/mensajes.php';
                                             foreach ($compras_datos as $compra) {
                                                 $contador_compras++;
                                         ?>
-                                                <tr>
+                                                <tr id="fila_compra_<?php echo $compra['id_compra']; ?>"> 
                                                     <td><center><?php echo $contador_compras; ?></center></td>
                                                     <td><?php echo htmlspecialchars($compra['codigo_compra_referencia']); ?></td>
                                                     <td>
@@ -103,17 +103,18 @@ include '../layout/mensajes.php';
                                                         <center>
                                                             <div class="btn-group">
                                                                 <a href="<?php echo $URL; ?>/compras/show.php?id=<?php echo $compra['id_compra']; ?>" class="btn btn-info btn-xs" title="Ver Detalles">
-                                                                    <i class="fas fa-eye"></i> Ver
+                                                                    <i class="fas fa-eye"></i>
                                                                 </a>
-                                                                <!-- Futuro: Botones para Editar/Eliminar si es necesario -->
-                                                                <!-- 
+                                                                
                                                                 <a href="<?php echo $URL; ?>/compras/edit.php?id=<?php echo $compra['id_compra']; ?>" class="btn btn-success btn-xs" title="Editar Compra">
-                                                                    <i class="fas fa-edit"></i>
+                                                                <i class="fas fa-edit"></i>
                                                                 </a>
-                                                                <button type="button" class="btn btn-danger btn-xs btn-delete-compra" data-id="<?php echo $compra['id_compra']; ?>" title="Eliminar Compra">
+                                                                <button type="button" class="btn btn-danger btn-xs btn-delete-compra" 
+                                                                        data-id="<?php echo $compra['id_compra']; ?>" 
+                                                                        data-codigo="<?php echo htmlspecialchars($compra['codigo_compra_referencia']); ?>"
+                                                                        title="Eliminar Compra">
                                                                     <i class="fas fa-trash"></i>
                                                                 </button>
-                                                                -->
                                                             </div>
                                                         </center>
                                                     </td>
@@ -143,24 +144,44 @@ include '../layout/mensajes.php';
     <!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
+<!-- Modal para Confirmar Eliminación de Compra -->
+<div class="modal fade" id="modal-delete-compra" tabindex="-1" role="dialog" aria-labelledby="modalDeleteCompraLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalDeleteCompraLabel">Confirmar Eliminación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="id_compra_delete_hidden">
+                <p>¿Está seguro de eliminar la compra: <strong id="codigo_compra_delete_display"></strong>?</p>
+                <p class="text-danger"><small><strong>Advertencia:</strong> Esta acción también revertirá el stock de los productos asociados a esta compra. Esta acción no se puede deshacer.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn_confirmar_delete_compra">Eliminar Compra</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php include '../layout/parte2.php'; // Pie de página, JS global ?>
 
 <!-- Script específico para esta página (DataTables) -->
 <script>
 $(document).ready(function() {
-    $('#tabla_compras_listado').DataTable({
+    var tablaCompras = $('#tabla_compras_listado').DataTable({
         "responsive": true,
         "lengthChange": true,
         "autoWidth": false,
-        "pageLength": 10, // Mostrar 10 por defecto
+        "pageLength": 10, 
         "buttons": [
             { extend: 'copy', text: '<i class="fas fa-copy"></i> Copiar', className: 'btn-sm' },
             { extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn-sm' },
             { extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn-sm', orientation: 'landscape' },
             { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir', className: 'btn-sm' }
         ],
-        "language": {
+        "language": { /* Tu configuración de idioma para DataTables */
             "sProcessing":     "Procesando...",
             "sLengthMenu":     "Mostrar _MENU_ registros",
             "sZeroRecords":    "No se encontraron resultados",
@@ -191,6 +212,69 @@ $(document).ready(function() {
                 }
             }
         }
-    }).buttons().container().appendTo('#tabla_compras_listado_wrapper .col-md-6:eq(0)');
+    });
+    tablaCompras.buttons().container().appendTo('#tabla_compras_listado_wrapper .col-md-6:eq(0)');
+
+    // Lógica para el botón de eliminar compra
+    $('#tabla_compras_listado tbody').on('click', '.btn-delete-compra', function () {
+        var idCompra = $(this).data('id');
+        var codigoCompra = $(this).data('codigo');
+        
+        $('#id_compra_delete_hidden').val(idCompra);
+        $('#codigo_compra_delete_display').text(codigoCompra);
+        $('#modal-delete-compra').modal('show');
+    });
+
+    // Lógica para confirmar la eliminación de la compra
+    $('#btn_confirmar_delete_compra').on('click', function () {
+        var idCompra = $('#id_compra_delete_hidden').val();
+        
+        // Deshabilitar botón para evitar múltiples clics
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Eliminando...');
+
+        $.ajax({
+            url: '<?php echo $URL; ?>/app/controllers/compras/controller_delete_compra.php',
+            type: 'POST',
+            data: { id_compra: idCompra },
+            dataType: 'json',
+            success: function(response) {
+                $('#modal-delete-compra').modal('hide');
+                if (response.status === 'success') {
+                    Swal.fire({
+                        title: '¡Eliminado!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Opción 1: Recargar toda la página (si la eliminación de DataTables falla o se prefiere)
+                        // location.reload(); 
+                        
+                        // Opción 2: Eliminar la fila de DataTables y redibujar (más eficiente)
+                        // Asegúrate que la variable idCompra esté disponible aquí.
+                        console.log("Intentando eliminar fila: #fila_compra_" + idCompra);
+                        console.log("Elemento encontrado:", $('#fila_compra_' + idCompra).length);
+                        if (tablaCompras && typeof tablaCompras.row === 'function' && $('#fila_compra_' + idCompra).length > 0) {
+                           tablaCompras.row('#fila_compra_' + idCompra).remove().draw(false);
+                        } else {
+                           console.error("No se pudo eliminar la fila de DataTables, recargando página.");
+                           location.reload(); // Fallback si no se puede eliminar la fila
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', response.message || 'No se pudo eliminar la compra.', 'error');
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                $('#modal-delete-compra').modal('hide');
+                console.error("Error AJAX al eliminar compra:", textStatus, errorThrown, jqXHR.responseText);
+                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor.', 'error');
+            },
+            complete: function() {
+                // Volver a habilitar el botón
+                $('#btn_confirmar_delete_compra').prop('disabled', false).html('Eliminar Compra');
+            }
+        });
+    });
 });
 </script>
