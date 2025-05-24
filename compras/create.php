@@ -416,7 +416,7 @@ $(document).ready(function() {
         $('#temp_stock_actual_producto').val('');
         $('#temp_precio_compra').val('');
         $('#temp_porcentaje_iva').val('0');
-        $('#temp_cantidad').val('1'); 
+        $('#temp_cantidad').val('1').focus();
         $('#temp_producto_info').hide().empty();
         $('#temp_es_nuevo_producto').val('0');
         $('#temp_nueva_descripcion_producto').val('');
@@ -562,7 +562,7 @@ $(document).ready(function() {
         $('#temp_producto_info').html(`NUEVO: ${nombreRapido} (Cód. Sugerido: ${$('#modal_producto_codigo_rapido_display').val()}) | IVA: ${ivaRapido.toFixed(2)}%`).show();
         
         $('#modalBuscarProducto').modal('hide');
-        $('#temp_cantidad').val('1.00').focus();
+        $('#temp_cantidad').val('1').focus();
     });
 
     function inicializarTablaProductos() {
@@ -647,7 +647,7 @@ $(document).ready(function() {
         $('#temp_porcentaje_iva').val(ivaAplicar.toFixed(2));
         
         $('#temp_producto_info').html(`Cód: ${datosFila.codigo || 'N/A'} | Stock: ${datosFila.stock || 0} | IVA Aplicado: ${ivaAplicar.toFixed(2)}%`).show();
-        $('#temp_cantidad').val('1.00').focus(); 
+        $('#temp_cantidad').val('1').focus(); 
         $('#modalBuscarProducto').modal('hide');
     });
     // --- FIN CAMBIO ---
