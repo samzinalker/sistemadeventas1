@@ -659,9 +659,9 @@ $(document).ready(function() {
     var porcentajeIvaStr = $('#temp_porcentaje_iva').val();
     
     var esNuevoProducto = $('#temp_es_nuevo_producto').val() === '1';
-    var idProducto = $('#temp_id_producto').val(); // Usado si !esNuevoProducto
+    var idProducto = $('#temp_id_producto').val();
     var codigoProducto = $('#temp_codigo_producto').val();
-
+    var cantidad = parseInt(cantidadStr, 10);
     // Validaciones (las que ya tienes)
     if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
     if (cantidadStr === '' || isNaN(cantidad) || cantidad <= 0 || parseFloat(cantidadStr) % 1 !== 0) {
@@ -672,7 +672,7 @@ $(document).ready(function() {
     if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { Swal.fire('Atención', 'El precio de compra es obligatorio y no puede ser negativo.', 'warning'); $('#temp_precio_compra').focus(); return; }
     if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { Swal.fire('Atención', 'El porcentaje de IVA es obligatorio y no puede ser negativo.', 'warning'); $('#temp_porcentaje_iva').focus(); return; }
 
-    var cantidad = parseInt(cantidadStr, 10);
+    
     var precioCompra = parseFloat(precioCompraStr);
     var porcentajeIva = parseFloat(porcentajeIvaStr);
 

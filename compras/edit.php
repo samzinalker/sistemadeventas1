@@ -713,7 +713,7 @@ $(document).ready(function() {
         var esNuevoParaAlmacenFlag = $('#temp_es_nuevo_producto_almacen').val() === '1';
         var idProductoSeleccionado = $('#temp_id_producto').val(); // Será '' si es nuevo para almacén
         var codigoProductoSeleccionado = $('#temp_codigo_producto').val();
-
+        var cantidad = parseInt(cantidadStr, 10);
         if (!nombreProducto) { Swal.fire('Atención', 'Debe seleccionar o definir un producto.', 'warning'); return; }
         if (cantidadStr === '' || isNaN(cantidad) || cantidad <= 0 || parseFloat(cantidadStr) % 1 !== 0) {
          Swal.fire('Atención', 'La cantidad debe ser un número entero mayor a cero.', 'warning');
@@ -723,7 +723,7 @@ $(document).ready(function() {
        if (precioCompraStr === '' || isNaN(parseFloat(precioCompraStr)) || parseFloat(precioCompraStr) < 0) { /* ... error ... */ return; }
         if (porcentajeIvaStr === '' || isNaN(parseFloat(porcentajeIvaStr)) || parseFloat(porcentajeIvaStr) < 0) { /* ... error ... */ return; }
     
-        var cantidad = parseInt(cantidadStr, 10);
+        
         var precioCompra = parseFloat(precioCompraStr);
         var porcentajeIva = parseFloat(porcentajeIvaStr);
 
